@@ -1,0 +1,121 @@
+name: Release
+
+# A tag v<version> publishes the baker to crates.io as `aslnut-baker` and makes the GitHub release.
+# Registries are immutable: every check runs before anything is published.
+#
+# Set up once (repository Settings):
+#   1. crates.io → Account Settings → API Tokens → a token with the publish-new and publish-update scopes
+#      (limited to the crate aslnut-baker once it exists).
+#   2. Settings → Environments → new environment `release` (optionally: required reviewers, tags only).
+#   3. In that environment: secret CRATES_IO_TOKEN = the token.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}   # a manual run checks and packages, and never publishes (the publish needs a tag)
+
+# What crates.io builds from is the source; these only make the binary this workflow attaches small.
+env:
+  CARGO_PROFILE_RELEASE_DEBUG: "0"
+  CARGO_PROFILE_RELEASE_STRIP: "true"
+  CARGO_PROFILE_RELEASE_LTO: "true"
+
+jobs:
+  # ── One version everywhere: the tag, the library's package.json and the baker's Cargo.toml ──
+  verify-version:
+    name: Verify the tag matches both versions
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        shell: bash
+        run: |
+          CRATE=$(grep -m1 -E '^version = ' packages/baker/Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          LIB=$(node -p "require('./packages/aslnut/package.json').version")
+          echo "baker (Cargo.toml): $CRATE · library (package.json): $LIB"
+          if [ "$CRATE" != "$LIB" ]; then
+            echo "::error::packages/baker/Cargo.toml ($CRATE) and packages/aslnut/package.json ($LIB) disagree: give both the release's version"
+            exit 1
+          fi
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            TAG="${GITHUB_REF_NAME#v}"
+            if [ "$TAG" != "$CRATE" ]; then
+              echo "::error::tag ${GITHUB_REF_NAME} != version $CRATE: bump both files to the tag's version (or retag), then push again"
+              exit 1
+            fi
+            echo "tag and versions agree on $CRATE"
+          else
+            echo "manual run (not a tag): the tag check is skipped"
+          fi
+          echo "version=$CRATE" >> "$GITHUB_OUTPUT"
+
+  # ── The same gate as CI, on the tagged commit ──
+  test:
+    name: Test the tagged commit
+    needs: verify-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run check -w packages/aslnut
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p aslnut-baker --release
+      - run: cargo publish -p aslnut-baker --dry-run
+
+  # ── crates.io: `cargo install aslnut-baker` ──
+  publish-crate:
+    name: Publish aslnut-baker to crates.io
+    needs: [verify-version, test]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    environment:
+      name: release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # a re-run after a partial release: the version already on crates.io is not an error
+      - name: Publish (skipped if this version is already there)
+        shell: bash
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+          VERSION: ${{ needs.verify-version.outputs.version }}
+        run: |
+          if curl -sf -A "aslnut-release (github.com/aslnut/aslnut)" "https://crates.io/api/v1/crates/aslnut-baker/$VERSION" > /dev/null; then
+            echo "aslnut-baker $VERSION is already on crates.io: nothing to publish"
+          else
+            cargo publish -p aslnut-baker
+          fi
+
+  # ── The GitHub release: the changelog's section for this version, and the baker's Linux binary ──
+  github-release:
+    name: GitHub release
+    needs: [verify-version, test]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build -p aslnut-baker --release --bin aslnut-baker
+      - name: Notes and binary
+        shell: bash
+        env:
+          VERSION: ${{ needs.verify-version.outputs.version }}
+        run: |
+          awk -v v="## $VERSION" '$0 == v { on = 1; next } /^## / && on { exit } on' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "aslnut $VERSION" > notes.md
+          tar -czf "aslnut-baker-$VERSION-x86_64-linux.tar.gz" -C target/release aslnut-baker
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: aslnut ${{ needs.verify-version.outputs.version }}
+          body_path: notes.md
+          files: aslnut-baker-*.tar.gz

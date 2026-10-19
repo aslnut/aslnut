@@ -1,0 +1,45 @@
+name: CI
+
+# The push and pull-request gate that release.yml is not: the library's tests and its checks (types, shader twins,
+# the public interface frozen in packages/aslnut/api/aslnut.api.txt), and the baker's tests, build and package.
+# The browser smoke (WebGPU and WebGL2 on a real chip) runs on the maintainers' machines before a tag, not here.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  library:
+    name: Library (tests, types, API)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # node --test runs the TypeScript as is (Node 24 strips the types); tests that need data packs skip themselves
+      - run: npm test
+      # tsc, the WGSL/GLSL twins, and tools/api.mjs: a line of the frozen interface gone or changed fails here
+      - run: npm run check -w packages/aslnut
+
+  baker:
+    name: Baker (tests, build, package)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p aslnut-baker --release
+      # every target as the release publishes it, and the browser's build (no threads, no files)
+      - run: cargo build -p aslnut-baker --release --all-targets
+      - run: cargo build -p aslnut-baker --release --target wasm32-unknown-unknown --no-default-features
+      # what crates.io would receive: packaged and built from the package alone
+      - run: cargo publish -p aslnut-baker --dry-run

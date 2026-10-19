@@ -1,5 +1,5 @@
 //! The command line: bake a place from the dataset's road inputs into a pack folder of your own.
-//!   baker <roads input dir> <place> --out <dir> [--rules rules.json] [--built <old pack dir>]
+//!   aslnut-baker <roads input dir> <place> --out <dir> [--rules rules.json] [--built <old pack dir>]
 //! Reads <dir>/<place>.geojson, .ground.json, .ground.f32 and (where there) .paths.geojson, .reserve.geojson,
 //! .water.geojson; writes <out>/<place>/ (index.json, tiles, clamp, terrain.json, walk.json, each with its .gz).
 //! --built copies an existing pack's built/ (buildings, trees, furniture) and its stage 12 to 15 records.
