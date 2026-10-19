@@ -1,0 +1,269 @@
+{
+ "stamp": "draft · 2026-10-13 08:53",
+ "sections": [
+  {
+   "title": "Start",
+   "pages": [
+    {
+     "path": "README",
+     "title": "aslnut"
+    },
+    {
+     "path": "authoring",
+     "title": "Authoring (for people and assistants)"
+    },
+    {
+     "path": "concepts/principles",
+     "title": "Principles"
+    },
+    {
+     "path": "map",
+     "title": "The map"
+    },
+    {
+     "path": "coverage",
+     "title": "Coverage"
+    }
+   ]
+  },
+  {
+   "title": "Concepts",
+   "pages": [
+    {
+     "path": "concepts/world-and-body",
+     "title": "World and body"
+    },
+    {
+     "path": "concepts/presence",
+     "title": "Presence and when"
+    },
+    {
+     "path": "concepts/observation",
+     "title": "Observation"
+    },
+    {
+     "path": "concepts/encoding",
+     "title": "Encoding and layers"
+    },
+    {
+     "path": "concepts/configurable",
+     "title": "Everything configurable"
+    },
+    {
+     "path": "concepts/data",
+     "title": "Data"
+    },
+    {
+     "path": "concepts/order",
+     "title": "Order"
+    },
+    {
+     "path": "concepts/interaction",
+     "title": "Interaction"
+    },
+    {
+     "path": "concepts/states",
+     "title": "States: answers as presentations"
+    },
+    {
+     "path": "concepts/shapes",
+     "title": "Shapes"
+    },
+    {
+     "path": "concepts/entities",
+     "title": "Entities"
+    },
+    {
+     "path": "concepts/reveal",
+     "title": "Reveal"
+    },
+    {
+     "path": "concepts/quality",
+     "title": "Quality"
+    },
+    {
+     "path": "concepts/graphics",
+     "title": "WebGPU and WebGL2"
+    },
+    {
+     "path": "concepts/formats",
+     "title": "Formats"
+    },
+    {
+     "path": "concepts/compile",
+     "title": "Compile"
+    },
+    {
+     "path": "concepts/physics",
+     "title": "Physics"
+    },
+    {
+     "path": "concepts/live-twins",
+     "title": "Live twins"
+    },
+    {
+     "path": "concepts/space",
+     "title": "Space"
+    },
+    {
+     "path": "concepts/underground",
+     "title": "Underground"
+    },
+    {
+     "path": "concepts/sky",
+     "title": "Sky"
+    },
+    {
+     "path": "concepts/networks",
+     "title": "Networks"
+    },
+    {
+     "path": "concepts/fabric",
+     "title": "The fabric"
+    },
+    {
+     "path": "concepts/real-world-authoring",
+     "title": "Real-world authoring"
+    },
+    {
+     "path": "concepts/performance",
+     "title": "Phones and performance"
+    },
+    {
+     "path": "concepts/hosting",
+     "title": "Hosting"
+    },
+    {
+     "path": "concepts/llms",
+     "title": "For LLMs"
+    },
+    {
+     "path": "concepts/licences",
+     "title": "Licences"
+    },
+    {
+     "path": "concepts/extending",
+     "title": "Extending"
+    },
+    {
+     "path": "concepts/boundaries",
+     "title": "Boundaries"
+    }
+   ]
+  },
+  {
+   "title": "Reference",
+   "pages": [
+    {
+     "path": "reference/README",
+     "title": "The whole tree"
+    },
+    {
+     "path": "reference/core/space",
+     "title": "core › space",
+     "sub": true
+    },
+    {
+     "path": "reference/core/time",
+     "title": "core › time",
+     "sub": true
+    },
+    {
+     "path": "reference/core/data",
+     "title": "core › data",
+     "sub": true
+    },
+    {
+     "path": "reference/core/observation",
+     "title": "core › observation",
+     "sub": true
+    },
+    {
+     "path": "reference/core/geometry",
+     "title": "core › geometry",
+     "sub": true
+    },
+    {
+     "path": "reference/core/encoding",
+     "title": "core › encoding",
+     "sub": true
+    },
+    {
+     "path": "reference/core/render",
+     "title": "core › render",
+     "sub": true
+    },
+    {
+     "path": "reference/core/interaction",
+     "title": "core › interaction",
+     "sub": true
+    },
+    {
+     "path": "reference/core/entities",
+     "title": "core › entities",
+     "sub": true
+    },
+    {
+     "path": "reference/core/simulation",
+     "title": "core › simulation",
+     "sub": true
+    },
+    {
+     "path": "reference/core/world",
+     "title": "core › world",
+     "sub": true
+    },
+    {
+     "path": "reference/core/runtime",
+     "title": "core › runtime",
+     "sub": true
+    },
+    {
+     "path": "reference/modules/world",
+     "title": "modules › world",
+     "sub": true
+    },
+    {
+     "path": "reference/modules/earth",
+     "title": "modules › earth",
+     "sub": true
+    },
+    {
+     "path": "reference/modules/space",
+     "title": "modules › space",
+     "sub": true
+    },
+    {
+     "path": "reference/modules/presets",
+     "title": "modules › presets",
+     "sub": true
+    },
+    {
+     "path": "reference/modules/human",
+     "title": "modules › presets › humans",
+     "sub": true
+    },
+    {
+     "path": "reference/kits/dashboard",
+     "title": "kits › dashboard",
+     "sub": true
+    },
+    {
+     "path": "reference/kits/game",
+     "title": "kits › game",
+     "sub": true
+    },
+    {
+     "path": "reference/kits/authoring",
+     "title": "kits › authoring",
+     "sub": true
+    },
+    {
+     "path": "reference/tools",
+     "title": "tools",
+     "sub": true
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>aslnut · lego</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #20262e; color: #e6ebf0; font: 13px/1.35 system-ui, sans-serif; overflow: hidden; }
+  #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #bar { position: fixed; left: 8px; top: calc(8px + env(safe-area-inset-top)); right: 8px; display: flex; flex-wrap: wrap; gap: 4px; z-index: 5; }
+  #bar a { color: #e6ebf0; background: rgba(10,14,22,.8); border: 1px solid rgba(255,255,255,.15); border-radius: 7px; padding: 4px 8px; text-decoration: none; }
+  #bar a.on { background: #2f81f7; border-color: #2f81f7; }
+  #note { position: fixed; left: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); max-width: 80vw; background: rgba(10,14,22,.8); border-radius: 7px; padding: 6px 9px; z-index: 5; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="bar"></div>
+<div id="note"></div>
+<script type="module" src="./main.ts"></script>
+</body>
+</html>

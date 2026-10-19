@@ -1,0 +1,44 @@
+# kits › dashboard
+
+> Draft under discussion. Statuses: **built** = in `packages/aslnut`, tested on WebGPU and WebGL2; **partly** = some of it there; **planned** = not there yet (a research prototype may exist).
+
+**In one line:** pieces a data dashboard needs on top of a world: legends made from scales, cards (a data card on each thing or feature, still or moving), statistics per area, and the layer list: a panel over the layers stacked on the world (core › encoding › layers: shown, faded, reordered, each with its legend), with the twin's own parts beside them; built only from core and modules.
+
+Concepts: [interaction](../../concepts/interaction.md) · [configurable](../../concepts/configurable.md)
+
+<!-- tree:reference/kits/dashboard -->
+```tree
+dashboard/
+├── legend
+├── cards
+├── stats
+└── layers
+```
+<!-- /tree -->
+
+## API
+
+| item | signature | params (type = default) | returns | status | example |
+|---|---|---|---|---|---|
+| `legend` | `legend(w, options)` · `legend(null, { for: scale }).describe()` | `for: string \| Scale` (a layer id: its `color` scale; or a scale) · `title?: string` · `position?: Corner = 'bottom-left'` · `format?: (v) => string` · `into?: HTMLElement` · `className?: string` · `prop?: string = 'color'` | `{ el, describe(), update(), remove() }` (drawn for you and kept up to date with the data; or described for your own UI) | [built] | `legend(w, { for: 'crime', title: 'per 1,000' })` |
+| `cards` | `cards(options)` (a data card on each thing or feature, still or moving) · `c.valuesOf(i, t?)` (what an item's card shows at a time) · `c.decisions()` (each card's collision now, read back: the tools') | `of: id \| Element \| Source \| array` (a set's moving things, by reference; a layer's or an instance set's features; a source, a group's) · `log?: Log` (what a value named by a string reads; default the set's own, a group's) · `icons?: IconAtlas` (marks › symbols › icon) · `header?: { icon?: Fn<string>, text?: Fn<string> }` · `rows?: { label, value: Channel, of?: Channel ('3/4'), decimals?: 0 \| 1 \| 2, bar?: true \| { domain } }[]` (six at most) · `fill?: { value: Channel, color: v => Color (any scale of the value), domain? }` · `badge?: { value: Channel, when?: (v, d) => boolean = v > 0 }` · `size?: px \| { px \| m, min, max } = 120` (its width: the one size rule; its layout scales with it) · `collide?: boolean = true` · `priority?: d => number` · `lift?: m \| d => m` · `at?` · `look?: { background, ink, inkOnDark, bar, badge, radius, dots = true }` (neutral: a white card, dark ink) · `tooltip?` · `onTap?` · `select?` · `when?`. A channel (core › data › history › channels): a number · `d => number` (each item's own) · `'name'` (the log's value) · `{ value, log?: Log \| d => Log, key?: d => id \| id[] }` (another log's, by key; several summed) · `relations.count` (the members a host holds) · `relations.members('sum' \| 'mean' \| 'min' \| 'max', value, log?)` (an aggregate of what its members carry while it holds them) · `{ formula: (v, d) => number, inputs? }` (of the others, and of channels of its own) | element | [built] (every part's channel derived once when the data comes, into one log: each item's samples at every time a channel changes, steps kept exact (two samples at one time); read on the chip at the world's time (a binary search, a mix): playing writes nothing, a scrub is the clock's one write (each card set's block). The header's text and the labels drawn once into a text atlas (the text mark's); the digits ('3/4', '−12.5') from a glyph atlas on the chip; the fill through a ramp, the ink dark or light by it. On a set's things by reference (its track, on the chip, after it in the frame). Collision: one room for every card set of a world (each card's claim in one order: the top set first, then its priority, then its id; decided on the chip from the last frame's picture, a card losing only to one before it; held 0.25 s after a change, faded 0.2 s; the rest dots); the governor steps them down (rows, then the header, then a dot). 500 cards, 100 of them on moving things, on a phone's page (390 × 844, dpr 2): 60 fps on WebGL2 (the chip), 0.1 ms of the main thread a frame for both card sets, a still view draws nothing; WebGPU (SwiftShader) 13.5 fps, the same 0.2 ms) | `cards({ of: 'stations', log: ports, icons: pics, header: { icon: 'station', text: d => d.props.name }, rows: [{ label: 'in use', value: { value: 'busy', key: portsOf }, of: d => d.props.ports, bar: true }], fill: { value: 'net', color: scale.linear(v => v, { domain: [-100, 100], range: 'rdbu' }) }, badge: { value: plugged.count } })` |
+| `stats` | `stats(options)` · `st.setOptions(p)` · `st.ranked(order?)` · `st.total` | `areas: Source` · `of?: Source` (counted where each feature's middle lies) · `filter?: Filter` · `count? \| sum? \| mean?: prop \| fn` · `value?: prop \| (area, agg) => number` (the area's own number) · `per?: 'km2' \| 'none' \| prop \| fn` · `scale?: number` (1000: per 1,000) | `Stats` (a source of rows `{ id, name, value, raw, count, area_km2, rank, share }`; live when its inputs or options change) | [built] | `stats({ areas: suburbs, of: parks, filter: { group: 'park' }, sum: 'ha', per: 'pop', scale: 1000 })` |
+| `layers` | the layer list, a panel over core › encoding › layers: `layers(w, options)` · `.describe()` · `.show(id, on)` · `.setOpacity(id, v)` · `.restack(group, idsTopFirst)` · `.fold()` | `groups?: Record<string, (Element \| string \| LayerPart)[]>` (named groups in this order: the twin's own parts apart from the data; a `LayerPart` is something switched that is not an element: `{ id, label, shown(), show(on), note?, radio? }`, the terrain's relief, a kind a layer builds; parts with the same `radio` name: one choice, drawn as radio buttons (a base map)) · `of?: (Element \| string)[]` (when no group names them; default every layer and element with a `label`) · `title?: string = 'Layers'` · `position?: Corner = 'top-right'` · `opacity?: boolean = true` · `reorder?: boolean = true` (drag a row's grip within its group) · `legend?: boolean = true` (its scale's classes, or a swatch) · `legends?: Record<id, Legend \| Scale>` · `modes?: boolean = false` (where each layer sits, tapped to change: builds its programs again) · `fade?: seconds = 0` · `folded?: boolean` (default: under 600 px) · `into?: HTMLElement` · `className?: string` · `add?: boolean \| { group?, services?: string[], make?: (pick) => Element, headers?, fetch?, proxy? } = false` (an 'add a layer' form: a WMS or WFS URL, its layers listed from its capabilities, one picked: a WMS layer as one picture of the view at .7 opacity, a WFS layer as areas, lines or points by its geometry (DescribeFeatureType), loaded once: the whole layer when small, else the view's box when added, into `group`) | `{ el, describe(), update(), remove(), show, setOpacity, restack, fold, listService(url, kind?), addFrom(pick) }` (a panel that folds to one button on a phone, rows of 44 px; kept in step with `w.add` / `w.remove` and with what is shown (its level, a toggle) through `w.on('elements')`; `describe()`: `{ title, groups: [{ name, items: [{ id, label, kind, sits, on, visible, opacity, legend, swatch, movable, radio? }] }] }` for your own UI; a legend may be a picture: `{ kind: 'image', image }`). Every change is a uniform or the draw order: one frame, nothing built again | [built] | `layers(w, { groups: { Data: ['suburbs', 'routes', 'stops'], Twin: [relief, 'roads', 'water'] } })` |
+
+## Example
+
+```ts
+w.add(
+  area({ id: 'crime', data: joined, color: scale.quantile(d => d.props.rate, { range: 'reds' }) }),
+  cards({ of: stations, header: { text: d => d.props.name }, rows: [{ label: 'officers', value: 'on duty' }], log: shifts }),
+);
+const l = legend({ for: 'crime', title: 'Crimes per 1,000' });
+// the layer list: the data over the twin, the twin's own parts a group of their own
+layers(w, { groups: { Data: ['crime', 'stations'], Twin: ['roads', 'water'] } });
+```
+
+Names over places are a layer's labels (core › encoding › layers › labels: `layer({ data, labels: { text } })`, readable by default), not a part of the kit.
+
+## Open questions
+
+- Does the kit draw its own HTML legend, or only return a description the app draws?

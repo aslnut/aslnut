@@ -1,0 +1,170 @@
+/* The twin dashboard's look (?ui=twin): light glass cards over a dark world, one thin bar on top, an orange accent,
+   big focused dialogs; on a phone the dialogs and the card of what was tapped come up from the bottom as sheets.
+   Everything here is under body.twin: the default look is untouched. Its tokens are the dashboard's (light theme). */
+body.twin {
+  --t-bg: #0d1626; --t-card: rgba(255, 255, 255, .88); --t-card-solid: #ffffff; --t-fg: #1b1f24; --t-muted: #525d68;
+  --t-muted-bg: #f4f6f9; --t-accent-bg: #e9edf3; --t-border: #dce3ec; --t-input: #cdd6e1; --t-primary: #ea5a0c; --t-primary-fg: #ffffff;
+  --t-ring: #1e66d6; --t-radius: 8px; --t-shadow: 0 10px 15px -3px rgba(0,0,0,.18), 0 4px 6px -4px rgba(0,0,0,.14);
+  --t-slate: rgba(15, 23, 42, .9); --t-slate-2: #1e293b; --t-slate-line: #475569; --t-emerald: #059669; --t-emerald-300: #6ee7b7;
+  background: var(--t-bg); color: var(--t-fg); font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+body.twin button { color: var(--t-fg); background: transparent; border: 1px solid transparent; border-radius: 6px; }
+body.twin button:hover { background: var(--t-muted-bg); }
+body.twin button.on { background: var(--t-primary); border-color: var(--t-primary); color: var(--t-primary-fg); }
+body.twin select, body.twin input[type=date] { color: var(--t-fg); background: var(--t-card-solid); border: 1px solid var(--t-input); border-radius: 6px; }
+body.twin input[type=range] { accent-color: var(--t-primary); width: 100%; }
+body.twin svg { display: block; }
+
+/* ── the one thin bar ─────────────────────────────────────────────────────────────────────────────────────────── */
+body.twin #top { left: 12px; right: 12px; top: calc(12px + env(safe-area-inset-top)); height: 48px; padding: 0 8px; gap: 8px; background: var(--t-card); border: 1px solid var(--t-border); border-radius: 12px; box-shadow: var(--t-shadow); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+body.twin #top .icon { width: 36px; height: 36px; background: transparent; border: 0; border-radius: 6px; color: var(--t-fg); }
+body.twin #top .icon:hover { background: var(--t-muted-bg); }
+body.twin #crumbs { font-weight: 400; text-shadow: none; font-size: 14px; gap: 4px; }
+body.twin #crumbs a { color: var(--t-fg); font-weight: 600; padding: 2px 4px; }
+body.twin #crumbs a.up { color: var(--t-muted); font-weight: 400; }
+body.twin #crumbs a:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+body.twin #crumbs a.up:hover { background: none; color: var(--t-fg); }
+body.twin #crumbs .sep { color: var(--t-muted); }
+body.twin #env { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 8px; border: 0; background: transparent; font-size: 14px; }
+body.twin #env:hover { background: var(--t-muted-bg); }
+body.twin #env-t { font-variant-numeric: tabular-nums; }
+body.twin #env-w { color: var(--t-muted); }
+body.twin .t-sep { width: 1px; height: 24px; background: var(--t-border); margin: 0 4px; flex: none; }
+body.twin #b-access { display: inline-flex; align-items: center; gap: 4px; height: 36px; padding: 0 8px; border: 0; font-size: 14px; }
+body.twin #b-access.on { background: var(--t-emerald); color: #fff; }
+body.twin #b-access svg { color: #16a34a; } body.twin #b-access.on svg { color: #fff; }
+
+/* ── dialogs: centred, white, with a dimmed world behind ─────────────────────────────────────────────────────── */
+#t-backdrop { display: none; }
+body.twin #t-backdrop { position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, .45); }
+body.twin #t-backdrop.open { display: block; }
+body.twin .dialog { box-sizing: border-box; top: 50%; transform: translate(-50%, -50%); width: min(760px, 94vw); max-height: min(86vh, 760px); background: var(--t-card-solid); color: var(--t-fg); border: 1px solid var(--t-border); border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,.4); }
+body.twin #d-env { width: min(560px, 94vw); }
+body.twin #d-layers { width: min(400px, 94vw); }
+body.twin .dialog header { border-bottom: 1px solid var(--t-border); font-size: 16px; font-weight: 600; padding: 14px 16px 10px; }
+body.twin .dialog header button { border: 0; color: var(--t-muted); padding: 4px 8px; }
+body.twin .pane { padding: 12px 16px 16px; gap: 12px; }
+body.twin .tabs { width: 220px; border-right: 1px solid var(--t-border); background: var(--t-muted-bg); padding: 8px; }
+body.twin .tabs button { color: var(--t-fg); padding: 8px 10px; border-radius: 6px; font-size: 14px; }
+body.twin .tabs button.on { background: var(--t-card-solid); color: var(--t-primary); border-color: var(--t-border); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+body.twin .tabs button .note { color: var(--t-muted); }
+body.twin .qs button { border: 1px solid var(--t-border); padding: 4px 9px; font-size: 13px; }
+body.twin .qs button.on { border-color: var(--t-primary); }
+body.twin .cfg { background: var(--t-muted-bg); border: 1px solid var(--t-border); border-radius: 8px; }
+body.twin .cfg label { color: var(--t-muted); font-size: 13px; }
+body.twin .desc { color: var(--t-muted); font-size: 13px; }
+body.twin .ranked td { border-bottom: 1px solid var(--t-border); }
+body.twin .ranked td.r { color: var(--t-muted); }
+body.twin .ranked .bar { background: var(--t-primary); opacity: .85; }
+body.twin .sources { color: var(--t-muted); } body.twin .sources a { color: var(--t-primary); }
+body.twin .actions { background: linear-gradient(180deg, rgba(255,255,255,0), #fff 30%); padding-top: 10px; }
+body.twin .actions button { border: 1px solid var(--t-border); padding: 7px 14px; font-weight: 500; }
+body.twin .actions .primary { background: var(--t-primary); border-color: var(--t-primary); color: var(--t-primary-fg); font-weight: 600; }
+/* the environment dialog (the dashboard's layout) */
+.t-env-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.t-env-head .h { font-size: 16px; font-weight: 600; } .t-env-head .s { font-size: 12px; color: var(--t-muted); }
+.t-env-head .big { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.t-chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 4px; }
+.t-chips .lbl { font-size: 12px; color: var(--t-muted); margin-right: 4px; }
+body.twin .t-chips button { border: 1px solid var(--t-border); font-size: 12px; padding: 3px 8px; }
+body.twin .t-chips button.on { border-color: var(--t-primary); }
+.t-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--t-muted); }
+.t-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; background: rgba(244,246,249,.8); border-radius: 8px; padding: 12px; font-size: 12px; }
+.t-facts .k { color: var(--t-muted); }
+.t-note { font-size: 11px; color: var(--t-muted); margin: 0; }
+.t-done { display: flex; justify-content: flex-end; }
+body.twin .t-done button { background: var(--t-primary); color: #fff; border-color: var(--t-primary); padding: 7px 16px; font-weight: 600; }
+/* the layers dialog: curated views as a list, analysis views as rows with a switch */
+body.twin #layers-pane .qs { display: flex; flex-direction: column; gap: 2px; }
+body.twin #layers-pane .qs button { display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; border: 0; padding: 9px 10px; font-size: 14px; border-radius: 6px; }
+body.twin #layers-pane .qs button::after { content: ''; width: 16px; height: 16px; border: 1px solid var(--t-input); border-radius: 4px; background: #fff; flex: none; }
+body.twin #layers-pane .qs button.on { background: var(--t-muted-bg); color: var(--t-fg); }
+body.twin #layers-pane .qs button.on::after { background: var(--t-primary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5 7 11l5-6' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat; border-color: var(--t-primary); }
+body.twin #layers-pane .t-group { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--t-muted); margin: 8px 0 2px; }
+
+/* ── the legend, bottom left ──────────────────────────────────────────────────────────────────────────────────── */
+body.twin #legend-box { left: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); width: 288px; max-width: calc(100vw - 32px); min-width: 0; background: var(--t-card); border: 1px solid var(--t-border); border-radius: 12px; padding: 12px; box-shadow: var(--t-shadow); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: var(--t-fg); box-sizing: border-box; }
+body.twin #legend-box .t { font-size: 14px; font-weight: 600; margin: 0; }
+#legend-sub, #legend-src { display: none; }
+body.twin #legend-sub { display: block; font-size: 12px; color: var(--t-muted); margin-bottom: 8px; }
+body.twin #legend-src { display: block; font-size: 11px; color: var(--t-muted); margin-top: 8px; }
+body.twin #legend-src a { color: var(--t-primary); }
+.t-legend-rows { font-size: 12px; color: var(--t-fg); display: flex; flex-direction: column; gap: 4px; font-variant-numeric: tabular-nums; }
+.t-legend-rows > div > span:first-child { width: 24px !important; height: 12px !important; border-radius: 2px !important; border: 1px solid var(--t-border); }
+
+/* ── the card of what was tapped: a side panel (right) ────────────────────────────────────────────────────────── */
+body.twin #card { right: 16px; top: calc(80px + env(safe-area-inset-top)); width: 320px; max-width: calc(100vw - 32px); box-sizing: border-box; background: rgba(255,255,255,.95); color: var(--t-fg); border: 1px solid var(--t-border); border-radius: 12px; padding: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); flex-direction: column; }
+body.twin #card[style*="block"] { display: flex !important; }
+body.twin #card h3 { order: 2; font-size: 18px; font-weight: 600; line-height: 1.2; margin: 0 28px 0 0; }
+body.twin #card > .k { order: 1; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--t-muted); margin-bottom: 2px; }
+body.twin #card table { order: 3; margin-top: 12px; font-size: 14px; border-collapse: collapse; }
+body.twin #card td { padding: 2px 0; } body.twin #card td.k { color: var(--t-muted); padding-right: 12px; } body.twin #card td.v { text-align: left; }
+body.twin #card .src { order: 4; border-top: 1px solid var(--t-border); padding-top: 8px; margin-top: 12px; font-size: 12px; color: var(--t-muted); }
+body.twin #card .x { position: absolute; right: 12px; top: 12px; color: var(--t-muted); padding: 2px 8px; }
+
+/* ── the analysis panels (park access, heat, storm water): dark slate over the world ─────────────────────────── */
+body.twin #access, body.twin #heat, body.twin #flood { left: 16px; top: calc(80px + env(safe-area-inset-top)); width: 288px; max-width: calc(100vw - 32px); box-sizing: border-box; background: var(--t-slate); color: #f1f5f9; border: 1px solid var(--t-slate-line); border-radius: 12px; padding: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 14px; }
+body.twin #access .t { color: var(--t-emerald-300); font-size: 12px; letter-spacing: .05em; }
+body.twin #access .qs { display: flex; background: var(--t-slate-2); border-radius: 8px; padding: 2px; gap: 0; margin-top: 8px; }
+body.twin #access .qs button { flex: 1; color: #cbd5e1; border: 0; padding: 4px 8px; font-size: 12px; }
+body.twin #access .qs button:hover { background: #334155; }
+body.twin #access .qs button.on { background: var(--t-emerald); color: #fff; }
+body.twin #access .desc { color: #cbd5e1; font-size: 13px; margin-top: 8px; }
+body.twin #access table { margin-top: 10px; font-size: 14px; }
+body.twin #access td.k { color: #94a3b8; }
+body.twin #access td.v { text-align: left; }
+body.twin #access .c-near { color: var(--t-emerald-300); } body.twin #access .c-med { color: #fde047; } body.twin #access .c-far { color: #f87171; }
+body.twin #access .t-flow { margin-top: 8px; display: inline-flex; }
+body.twin #access .t-flow button { flex: none; padding: 3px 12px; }
+body.twin #heat .desc, body.twin #flood .desc { color: #cbd5e1; }
+body.twin #heat button, body.twin #flood button { color: #e2e8f0; border-color: var(--t-slate-line); }
+body.twin #heat button.on, body.twin #flood button.on { background: var(--t-emerald); border-color: var(--t-emerald); }
+
+/* ── the mode bar (bottom centre) and the camera pad (bottom right) ───────────────────────────────────────────── */
+body.twin #modes { bottom: calc(16px + env(safe-area-inset-bottom)); gap: 4px; }
+body.twin #modes .bar { background: rgba(255,255,255,.9); border: 1px solid var(--t-border); border-radius: 12px; padding: 4px; gap: 4px; box-shadow: var(--t-shadow); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+body.twin #modes .bar button { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 8px; font-size: 14px; }
+body.twin #modes .bar button svg { width: 16px; height: 16px; }
+body.twin #person { color: var(--t-fg); }
+body.twin #kmh { color: var(--t-muted); font-size: 12px; white-space: nowrap; }
+body.twin #mode-help { background: rgba(255,255,255,.8); color: var(--t-muted); border-radius: 6px; padding: 2px 8px; font-size: 11px; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+#t-pad { display: none; }
+body.twin #t-pad { position: fixed; right: 16px; bottom: calc(28px + env(safe-area-inset-bottom)); z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 4px; background: rgba(255,255,255,.85); border: 1px solid var(--t-border); border-radius: 12px; padding: 6px; box-shadow: var(--t-shadow); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+body.twin #t-pad .r { display: flex; gap: 4px; }
+body.twin #t-pad button { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; border: 0; }
+body.twin #t-pad .north { width: 100%; height: auto; font-size: 11px; color: var(--t-muted); padding: 4px 8px; }
+body.twin #t-pad.hidden { display: none; }
+
+/* ── the rest: the hint, the street-level button, tooltips, loading ───────────────────────────────────────────── */
+body.twin #hint { top: calc(72px + env(safe-area-inset-top)); background: rgba(255,255,255,.9); color: var(--t-fg); border: 1px solid var(--t-border); box-shadow: var(--t-shadow); }
+body.twin #walk { background: var(--t-primary) !important; border-color: var(--t-primary) !important; color: #fff !important; border-radius: 10px !important; box-shadow: var(--t-shadow); bottom: calc(76px + env(safe-area-inset-bottom)) !important; }
+body.twin #panel { top: calc(68px + env(safe-area-inset-top)); left: 12px; background: var(--t-slate); }
+.twin-tip { position: fixed; z-index: 40; pointer-events: none; background: rgba(255,255,255,.95); color: #1b1f24; border: 1px solid #dce3ec; border-radius: 6px; padding: 4px 8px; font: 12px/1.4 ui-sans-serif, system-ui, sans-serif; box-shadow: 0 1px 3px rgba(0,0,0,.2); max-width: 260px; }
+.twin-tip b { font-weight: 600; } .twin-tip .m { color: #525d68; }
+#t-loading { display: none; }
+body.twin #t-loading { position: fixed; inset: 0; z-index: 4; display: flex; align-items: center; justify-content: center; font-size: 14px; color: rgba(255,255,255,.8); pointer-events: none; transition: opacity .4s; }
+body.twin #t-loading.gone { opacity: 0; }
+
+/* ── a phone: the bar holds its few buttons, dialogs and the tapped card come up as sheets from the bottom ────── */
+@media (max-width: 640px) {
+  body.twin #top { left: 8px; right: 8px; top: calc(8px + env(safe-area-inset-top)); height: 44px; padding: 0 4px; gap: 2px; }
+  body.twin #top .icon { width: 34px; height: 34px; }
+  body.twin #b-home, body.twin #b-settings, body.twin #b-access .lbl { display: none !important; }
+  body.twin #env { padding: 0 6px; gap: 4px; }
+  body.twin .t-sep { margin: 0 2px; }
+  body.twin .dialog, body.twin #d-env, body.twin #d-layers { left: 0; right: 0; top: auto; bottom: 0; transform: none; width: 100%; max-height: 82vh; border-radius: 16px 16px 0 0; padding-bottom: env(safe-area-inset-bottom); }
+  body.twin .dialog::before { content: ''; display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--t-input); margin: 8px auto 0; flex: none; }
+  body.twin .dialog header { padding: 8px 16px; }
+  body.twin .tabs { width: auto; background: var(--t-muted-bg); border-right: 0; border-bottom: 1px solid var(--t-border); }
+  body.twin #card { left: 0; right: 0; top: auto; bottom: 0; width: 100%; max-width: none; max-height: 48vh; overflow: auto; border-radius: 16px 16px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 12; }
+  body.twin #access .qs:not(.t-flow) + .desc, body.twin #access .row ~ .desc:last-child { display: none; }
+  body.twin #access table { margin-top: 6px; font-size: 13px; }
+  body.twin #access, body.twin #heat, body.twin #flood { left: 8px; top: calc(60px + env(safe-area-inset-top)); width: calc(100vw - 16px); max-width: none; max-height: 40vh; overflow: auto; padding: 12px; }
+  body.twin #legend-box { left: 8px; bottom: calc(18px + env(safe-area-inset-bottom)); width: min(260px, calc(100vw - 16px)); padding: 10px; }
+  body.twin #modes { bottom: calc(18px + env(safe-area-inset-bottom)); }
+  body.twin #modes .bar button { padding: 6px 9px; }
+  body.twin #modes .bar button .lbl { display: none; }
+  body.twin #mode-help { display: none; }
+  body.twin #t-pad { display: none; }
+  body.twin #hint { top: calc(60px + env(safe-area-inset-top)); }
+}

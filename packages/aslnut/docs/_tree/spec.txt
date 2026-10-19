@@ -1,0 +1,707 @@
+# The aslnut tree: the one source for reference/README.md, every reference page's subtree, and the map page.
+# Format: two spaces per level · name · [status] (leaves; groups are summed, with their own status counted when they have one) · @page (a reference page; children inherit it)
+# Statuses: built (in packages/aslnut, tested on WebGPU and WebGL2) · partly (some of it there) · planned (not there yet; a research prototype may exist) · proposed · open
+# Checkpoints: "+N" after a part = needed for checkpoint N (a group's tag covers every leaf under it); STATUS.md shows each one's %
+# checkpoint 1: the healthy-city twin (regions, walking, sun and shadows, heat)
+# checkpoint 2: the city at night in rain (a game: streets, traffic, people, lights, weather)
+# checkpoint 3: the riverfront city core (quays, outdoor stairs and terraces, bridges, a station; built from scans and data)
+aslnut
+  core
+    space @reference/core/space
+      bodies [partly]
+      frames
+        inertial [planned]
+        body-fixed [planned]
+        local [planned]
+        object [planned]
+        re-rooting [planned]
+      units [planned]
+      precision [built]
+      cells [planned]
+      ground
+        ground [partly]
+        shells [planned]
+        volumes [planned]
+      regions
+        tree [built] +1
+        rollup [built] +1
+        pack [planned]
+      observer
+        light-time [planned]
+        aberration [planned]
+        doppler [planned]
+        ship-time [planned]
+    time @reference/core/time
+      clock [built] +1 +2 +3
+      step [built] +1 +2 +3
+      calendars [planned]
+      scales [planned]
+      zones [built] +1 +2 +3
+      ranges [planned]
+      deep [planned]
+    data @reference/core/data
+      sources
+        tiles
+          xyz [built] +1 +2 +3
+          cog [planned]
+          wms [built]
+          pmtiles [built]
+          mvt [built]
+        files
+          geojson [built] +1 +2 +3
+          csv [built] +1
+        services
+          wfs [built]
+          stream [built]
+        custom [built] +1 +2 +3
+      loading
+        loader [built] +1 +2 +3
+        stores [built] +1 +2 +3
+        packs [built] +1 +2 +3
+        readiness [built] +1 +2 +3
+        tiles [built] +1 +2 +3
+        chunks
+          manifest [planned] +2
+          logic-pack [planned] +2
+          near [planned] +2
+          far [planned] +2
+          format [partly] +2
+          streamer [planned] +2
+          hot-swap [planned] +2
+          fallback [planned] +2
+      features
+        features [built] +1 +2 +3
+        rows [built] +1 +2 +3
+      query
+        join [built] +1 +2 +3
+        query [built] +1 +2 +3
+      live
+        set [built]
+        upsert [built]
+        patch [built]
+        remove [built]
+      history
+        log [built]
+        state-at [built]
+        replay [built]
+        checkpoints [planned]
+        epochs [planned]
+      scenarios
+        base [built] +1
+        variant [built] +1
+        diff [built] +1
+        compare [built] +1
+        overrides [planned]
+      rights
+        terms [built]
+        capabilities
+          show [built]
+          prefetch [built]
+          keep [built]
+          export [built]
+        attribution [built] +1 +2 +3
+        licences [planned]
+    observation @reference/core/observation
+      observers
+        orbit
+          views [built] +1 +2 +3
+          keys [built] +1 +2 +3
+          paths
+            line [partly]
+            bezier [planned]
+            spline [planned]
+            along [planned]
+            circle [partly]
+          aim
+            look-at [built]
+            along-path [planned]
+            heading [planned]
+            framing [planned]
+          lens
+            fov [planned]
+            focus [planned]
+            depth-of-field [planned]
+          speed
+            easing [built] +1 +2 +3
+            ease [planned]
+            constant [planned]
+            hold [planned]
+          moves
+            pan [planned]
+            tilt [planned]
+            roll [planned]
+            dolly [built]
+            truck [planned]
+            pedestal [planned]
+            crane [built]
+            zoom [planned]
+            dolly-zoom [planned]
+            arc [built]
+            track [built]
+            chase [built]
+            flyover [planned]
+            reveal [built]
+            whip-pan [planned]
+            rack-focus [planned]
+            shake [planned]
+          follow [built] +1 +2 +3
+          acrobatic [built]
+        eyes [planned]
+        sensor [planned]
+        fixed [planned]
+      levels
+        ladder [built]
+        level [built]
+        binding [built]
+      gates
+        margin [built]
+        dwell [built]
+        keep [built]
+      presence [built] +1 +2 +3
+    geometry @reference/core/geometry
+      shapes
+        shape [built] +1 +2
+        builder
+          solid [built] +1 +2 +3
+          extrude [built] +1 +2
+          lathe [built] +1 +2
+          sweep [built] +1 +2
+          copy [built] +1
+          scope [built] +1
+          mesh [built]
+        parts [built] +1 +2
+        levels
+          full [built] +1 +2 +3
+          simple [built] +1 +2 +3
+          box [built] +1 +2 +3
+          dot [built] +1 +2 +3
+          counted [built] +1 +2 +3
+          impostor [built] +1 +2 +3
+        instances [built] +1 +2 +3
+        checks [built] +1
+        recipes
+          branching [built] +1 +2 +3
+          kitbash [built] +1 +3
+          presets [built] +1 +2
+          package [built] +1
+      import
+        gltf [partly] +2 +3
+        gltf-extensions
+          draco [planned]
+          meshopt [planned]
+          ktx2 [planned]
+          lights [planned]
+          variants [planned]
+        obj [planned]
+        ply [planned]
+        tiles3d [planned]
+        splats [planned]
+        pointcloud [proposed] +3
+      landform
+        compose
+          layers [proposed] +3
+          footprints [proposed] +3
+          exclusion [partly] +3
+          ground [proposed] +3
+          foundation [partly] +3
+          fidelity [proposed] +3
+        terraform
+          flatten [proposed] +3
+          carve [proposed] +3
+          raise [proposed] +3
+          smooth [proposed] +3
+          sweep [proposed] +3
+          stamp [proposed] +3
+          erode [proposed] +3
+      networks
+        analysis
+          graph [built] +1 +2 +3
+          routing [built] +1 +2 +3
+          isochrones [built] +1
+          nearest [built] +1 +2 +3
+        lanes [planned] +2
+        walkways [built] +1 +2 +3
+        sections [partly] +1 +2 +3
+        junctions [partly] +1 +2 +3
+        structures
+          bridges [partly] +2 +3
+          piers [partly] +2 +3
+          culverts [planned] +2 +3
+          decks [partly] +2 +3
+          stairs [proposed] +2 +3
+          walls [proposed] +2 +3
+          terraces [proposed] +2 +3
+          ramps [proposed] +2 +3
+          railings [proposed] +2 +3
+        clamp [partly] +1 +2 +3
+      zones
+        booleans [planned] +2
+        kinds [planned] +2
+        rules
+          scatter [planned] +2
+          frontage [partly] +2
+    encoding @reference/core/encoding
+      marks
+        symbols
+          point [built] +1 +2 +3
+          icon [built]
+          text [built] +1 +2 +3
+        lines
+          line [built] +1 +2 +3
+          arc [built]
+          trail [built]
+          arrows [planned]
+        areas
+          area [built] +1 +2 +3
+          extrusion [built] +1 +2 +3
+          raster [built] +1
+          grid [planned]
+          rings [planned]
+        drape [built] +1 +2 +3
+        custom [built]
+      scales [built] +1 +2 +3
+      layers
+        layer [built]
+        labels [built] +1
+        legend [built]
+        stack [built]
+      join [built]
+    render @reference/core/render
+      graphics
+        interface [built] +1 +2 +3
+        webgpu [built] +1 +2 +3
+        webgl2 [built] +1 +2 +3
+        caps [built] +1 +2 +3
+        shaders
+          wgsl [built] +1 +2 +3
+          glsl [built] +1 +2 +3
+          translate [built] +1 +2 +3
+          hooks [built] +1 +2 +3
+        parity [built] +1 +2 +3
+      drawing
+        renderer [built] +1 +2 +3
+        instancing [built] +1 +2 +3
+        text [built] +1 +2 +3
+        quality [built] +1 +2 +3
+      look
+        materials [built] +1 +2 +3
+        lights [planned] +2 +3
+        shadows [built] +1 +2 +3
+        post [planned] +2
+        cutaway [planned]
+      style
+        ramp [built] +1 +2 +3
+        blend [partly]
+        lens [planned]
+        theme [built]
+        pattern
+          fill [proposed]
+          stroke [proposed]
+          along [proposed]
+      project
+        project [built] +1 +2 +3
+        visible [built]
+      reveal
+        modes [built] +1 +2 +3
+        timing [built] +1 +2 +3
+        define [built] +1 +2 +3
+        policy [built] +1 +2 +3
+      capture
+        capture [built]
+        ground-truth [planned]
+    interaction @reference/core/interaction
+      picking
+        picking [built] +1 +2 +3
+        hover [built] +1 +2 +3
+      events [built] +1 +2 +3
+      signals
+        signals [planned]
+        selection [built] +1 +2 +3
+      controllers [built] +1 +2 +3
+      history [planned]
+    entities @reference/core/entities
+      sets
+        sets [built] +2
+        crowds [planned] +2
+      identity
+        id [planned] +2
+        kind [built] +2
+        data [planned] +2
+      placement
+        place [partly] +2
+        thing [built] +1 +2 +3
+        attach [partly] +2
+      locomotion
+        none [planned] +2
+        rail [planned] +2 +3
+        lanes [planned] +2
+        surface [built] +1 +2 +3
+        air [built] +1 +2 +3
+        water [planned] +2
+      kinematics
+        hinge [built] +2
+        slider [built] +2
+        wheel [partly] +2
+        ball [planned] +2
+        custom [partly] +2
+      body
+        skeleton [built] +2
+        skin [built] +2
+        morphs [partly] +2
+      motion
+        states [planned] +2
+        clips [partly] +2
+        poses [planned] +2
+        ik [planned] +2
+        gaits [partly] +2
+        blending [partly] +2
+        look [planned] +2
+      drive
+        schedule [planned] +2
+        simulation [planned] +2
+        data [built] +2
+        player [built] +1 +2 +3
+        script [planned] +2
+    simulation @reference/core/simulation
+      agents
+        behaviour [planned] +2
+        rhythm [planned] +2
+        habitat [planned]
+        senses [planned]
+        populations [planned] +2
+        tiers [planned] +2
+      fields
+        raster [built] +1
+        surface [planned]
+        graph [planned]
+        volume [planned]
+        kernels [built] +1
+      rules
+        presets [built] +1
+        custom [built]
+        coupling [planned]
+        regimes [planned]
+      fidelity
+        fixed [planned]
+        observed [planned]
+      measure
+        probes [built] +1
+        sensors [planned]
+        validation [planned]
+      constants [built] +1
+      phenomena
+        heat [built] +1
+        fluids [planned]
+        fire [planned]
+        light [planned]
+        acoustics [planned]
+        contacts [planned]
+        orbits
+          ephemerides [planned]
+          tle [planned]
+          n-body [planned]
+          transfers [planned]
+        exchanges [planned]
+        growth [planned]
+    world @reference/core/world
+      elements
+        element [built] +1 +2 +3
+        props [partly]
+        order [built]
+      settings
+        params [built] +1 +2 +3
+        readouts [built] +1 +2 +3
+        points [built]
+      state
+        states [built]
+        settled [built] +1 +2 +3
+        json [planned]
+      describe
+        describe [planned]
+        schemas [partly]
+        guide [built]
+      extend
+        extend [built]
+        provide [planned]
+        hot-swap [partly]
+      lifecycle
+        world [built] +1 +2 +3
+        errors [built] +1 +2 +3
+        dispose [built] +1 +2 +3
+      host
+        canvases [planned]
+        plain [built] +1 +2 +3
+        react [planned]
+        zebflow [planned]
+        server-safe [built]
+        package [built] +1 +2 +3
+    runtime @reference/core/runtime
+      frame [built]
+      detail
+        detail [built] +1 +2 +3
+        priorities [built]
+        prefetch [built] +1 +2 +3
+      budget
+        budget [built] +1 +2 +3
+        governor [built] +1 +2 +3
+        memory [built] +1 +2 +3
+      workers
+        workers [built] +1 +2 +3
+        servers [planned]
+        compile [partly]
+      partners
+        external-engine [planned]
+        fmi [planned]
+        experiment [planned]
+      telemetry
+        telemetry [built]
+        remote-log [built] +1 +2 +3
+        shots [planned]
+  modules
+    shared [planned] @reference/modules/world~
+    world @reference/modules/world
+      surface
+        tiles [built] +1 +2 +3
+        imagery [built] +1 +2 +3
+        terrain [built] +1 +2 +3
+        street-detail [built] +1 +2 +3
+        provenance [planned]
+        sky [built] +1 +2 +3
+      plane [built]
+      sun [planned]
+      earth @reference/modules/earth
+        shared [partly]
+        body
+          earth [built] +1 +2 +3
+          base
+            imagery
+              esri [built] +1 +2 +3
+              osm [built]
+              sentinel [built]
+              mapbox [planned]
+              custom [built]
+            terrain
+              mapzen [built] +1 +2 +3
+              grid [built]
+              gebco [planned]
+              etopo [planned]
+              lidar [proposed] +3
+              custom [built]
+            basemap [planned]
+            coast [planned]
+            offline [built]
+        ground
+          terrain
+            terraform [planned] +3
+            looks [planned]
+          subsurface
+            strata [planned]
+            wells [planned]
+            aquifers [planned]
+            magma [planned]
+        air
+          atmosphere +1 +2 +3
+            scattering [built]
+            haze [built]
+            clouds [built]
+          weather +1 +2 +3
+            presets [built]
+            wind [built]
+            rain [built]
+            fog [built]
+          sky
+            sun [built] +1 +2 +3
+            moon [built] +1 +2 +3
+            stars [built] +1 +2 +3
+            cultures [planned]
+            locks [planned]
+        water
+          hydrology
+            water [built] +1 +2 +3
+            flow [planned]
+            channels [planned] +2 +3
+          sea
+            level [planned]
+            shore [built]
+            look [built]
+            exposed [planned]
+        climate
+          heat [built] +1
+          fire [planned]
+        life
+          society [planned]
+          ecology [planned]
+          places [planned]
+            lots [planned]
+            blocks [planned]
+          soundscape [planned]
+        analysis
+          geo [planned]
+          learn [planned]
+        presets
+          built
+            roads +2
+              sections [built] +1 +2 +3
+              junctions [planned]
+              markings [built] +1 +2 +3
+              decks [planned]
+              sidewalks [built] +1 +2 +3
+              elevated [planned]
+            rail [planned] +2 +3
+              track [planned]
+              crossings [planned]
+              viaducts [planned]
+              stations [proposed]
+            buildings
+              footprints [built] +1 +2 +3
+              cityjson [planned]
+              typology [built] +2
+              facades [planned] +2 +3
+              roofs [built] +1 +2 +3
+              windows [built] +1 +2 +3
+              frontage [partly] +2
+              landmarks [proposed] +3
+              interiors [proposed] +3
+            furniture +3
+              benches [proposed]
+              bollards [proposed]
+              bins [proposed]
+              umbrellas [proposed]
+              signs [proposed]
+              planters [proposed]
+            infrastructure
+              energy
+                wind-turbine [proposed]
+                solar-farm [proposed]
+                pylon [proposed]
+                substation [proposed]
+              mobility
+                charger [built]
+              utilities
+                pole [proposed]
+                lines [proposed]
+                pipe [proposed]
+                cabinet [proposed]
+            lights [planned] +2
+              street [planned] +3
+              vehicle [planned]
+              windows [planned]
+          mobility +2
+            traffic [planned]
+            signals [planned]
+            transit [planned]
+          living
+            plants
+              species [built] +1 +2 +3
+              growth [planned] +3
+              sway [planned] +2
+              canopy [built] +1 +2 +3
+      moon [planned]
+      mars [planned]
+      space @reference/modules/space
+        satellites
+          tle [planned]
+        asteroids [planned]
+        stars [planned]
+        constellations [planned]
+        galaxies [planned]
+        exoplanets [planned]
+    presets @reference/modules/presets
+      shared [planned]
+        locomotion +2
+          lane-follower [planned]
+          rail-follower [planned]
+          walker [built]
+      humans @reference/modules/human
+        body [built] +2 +3
+        face [built] +2
+        expressions
+          emotions [partly]
+          visemes [planned]
+          gestures [planned]
+          blink [built] +2
+        hair [built] +2
+        clothing [partly] +2
+        poses [built] +2
+        gaits [built] +2
+        people [built] +2
+        speech [planned]
+        vrm [planned] +2
+      animals
+        quadruped [planned]
+        bird [planned]
+        fish [planned]
+        reptile [planned]
+      vehicles
+        car [built] +1 +2 +3
+        motorbike [planned] +2
+        bus [planned] +2
+        minibus [planned] +2
+        train [planned] +2 +3
+      drones [built] +1 +2 +3
+      robots
+        robot [planned]
+        android [planned]
+  kits
+    dashboard @reference/kits/dashboard
+      legend [built] +1
+      cards [built]
+      stats [built] +1
+      layers [built]
+    game @reference/kits/game
+      avatars [built] +1 +2 +3
+      collision [built] +1 +2 +3
+    authoring @reference/kits/authoring
+      networks [planned]
+      zones [planned]
+      rules [planned]
+      terraform [planned]
+      diffs [planned] +3
+      pieces [proposed] +3
+  tools @reference/tools
+    geo [planned]
+    scan +3
+      classify [proposed]
+      align [proposed]
+      fit [proposed]
+      clean [proposed]
+      grid [proposed]
+    bake [partly]
+    compile
+      run
+        on-save [planned]
+        command [built]
+        page [planned]
+      inputs [partly]
+      steps
+        solve [partly]
+        resolve [planned]
+        mesh [planned]
+        assign [planned]
+        solids [planned]
+        logic [planned]
+        manifest [partly]
+      custom-steps [planned]
+      options [planned]
+      stale [planned]
+      outputs [partly]
+    convert
+      fbx [planned]
+      ifc [planned]
+      citygml [planned]
+      las [planned] +3
+      usd [planned]
+      i3s [proposed]
+    export
+      usd [planned]
+    checks
+      smoke [built] +1 +2 +3
+      parity [built] +1 +2 +3
+      twins [built] +1 +2 +3
+      regressions [built] +1 +2 +3
+      suite [built]
+      perf [built] +1 +2 +3
+      recipes [built]
+    catalog [planned]
+    cli [planned]
+    mcp [planned]

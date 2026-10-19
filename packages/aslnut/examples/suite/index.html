@@ -1,0 +1,52 @@
+<!doctype html>
+<!-- The performance suite: one URL, START, wait. Every case runs on WebGL2, then WebGPU where the device has it, the
+     same function each time; the results are sent as each case ends (where the build says: vite.config.ts).
+     ?quick=1 (about 3 minutes)  ?auto=1 (starts at once)  ?only=fast-zoom,hover  ?engines=webgl2,webgpu
+     ?set=focus (the open problems, repeated, then a soak) -->
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>aslnut · performance suite</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #05070c; color: #dde3ea; font: 14px/1.4 system-ui, sans-serif; overflow: hidden; }
+  #stage { position: fixed; inset: 0; }
+  #stage > div, #stage > canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #top { position: fixed; left: 8px; right: 8px; top: calc(8px + env(safe-area-inset-top)); z-index: 10; background: rgba(8,12,20,.82); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 8px 10px; pointer-events: none; }
+  #top .row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+  #bar { height: 6px; background: rgba(255,255,255,.12); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  #bar > i { display: block; height: 100%; width: 0; background: #2f81f7; transition: width .3s; }
+  #what { color: #9aa7b4; font-size: 12px; margin-top: 4px; }
+  #cover { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; background: #05070c; overflow: auto; }
+  #cover h1 { font-size: 20px; margin: 0; color: #fff; }
+  #cover p { margin: 0; color: #9aa7b4; max-width: 420px; }
+  #start { font: 700 22px system-ui, sans-serif; color: #fff; background: #2f81f7; border: 0; border-radius: 16px; padding: 18px 48px; }
+  #resume { border: 1px solid #f0883e; border-radius: 12px; padding: 10px 14px; max-width: 440px; }
+  #resume p { margin: 6px 0; color: #f0c08a; }
+  #resume button { font: 600 15px system-ui, sans-serif; border: 0; border-radius: 10px; padding: 10px 16px; color: #fff; }
+  #resume .go { background: #d97706; } #resume .drop { background: #30363d; }
+  #cover label { color: #c9d1d9; font-size: 13px; }
+  #done { display: none; }
+  table { border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+  th, td { padding: 3px 6px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  .good { color: #7ee787; } .bad { color: #ff7b72; } .dim { color: #6e7681; }
+  #tablewrap { max-width: 100%; overflow-x: auto; }
+</style></head><body>
+<div id="stage"></div>
+<div id="top" style="display:none">
+  <div class="row"><b id="title">aslnut · suite</b><span id="build"></span></div>
+  <div class="row"><span id="prog">–</span><span id="live">–</span></div>
+  <div id="bar"><i></i></div>
+  <div id="what"></div>
+</div>
+<div id="cover">
+  <h1>aslnut · performance suite</h1>
+  <p>Every case runs on WebGL2, then WebGPU if this device has it, the same view, data and timing. Results are sent as each case ends.</p>
+  <div id="resume" style="display:none"><p id="resume-what"></p><p><button id="resume-go" class="go">RESUME from the next run</button> <button id="resume-drop" class="drop">discard</button></p></div>
+  <button id="start">START</button>
+  <label><input type="checkbox" id="quick"> quick (about 3 minutes)</label>
+  <p id="est"></p>
+  <p>Don't touch the screen while it runs. Keep this tab in front.</p>
+  <div id="done"></div>
+</div>
+<script type="module" src="./main.ts"></script>
+</body></html>

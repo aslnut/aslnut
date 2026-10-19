@@ -1,0 +1,6 @@
+{
+  "quad": { "rotors": 4, "span": 0.6, "body": "#e5e7eb" },
+  "survey": { "rotors": 4, "span": 1.1, "body": "#f2f2f2", "arms": "#2d3748" },
+  "hexa": { "rotors": 6, "span": 1.4, "body": "#2f2f33", "arms": "#1f2937" },
+  "cargo": { "rotors": 8, "span": 1.9, "payload": true, "body": "#f2b705", "arms": "#2f2f33" }
+}

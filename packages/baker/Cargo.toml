@@ -1,0 +1,27 @@
+[package]
+name = "baker"
+version = "0.1.0"
+edition = "2021"
+description = "Road baker: designs streets from map lines (curves, cross-sections, junction patterns, one planar partition, heights) and writes aslnut's baked roads pack"
+license = "Apache-2.0"
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "baker"
+path = "src/main.rs"
+required-features = ["native"]
+
+[features]
+default = ["native"]
+# the command line: every core (rayon), files
+native = ["dep:rayon"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+base64 = "0.22"
+rayon = { version = "1", optional = true }

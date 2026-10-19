@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>aslnut · fleet</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #05070c; color: #dde3ea; font: 13px/1.35 system-ui, sans-serif; overflow: hidden; }
+  #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #panel { position: fixed; top: calc(8px + env(safe-area-inset-top)); left: 8px; max-width: min(340px, calc(100vw - 16px)); background: rgba(8, 12, 20, .78); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 6px 9px; backdrop-filter: blur(6px); font-size: 12px; }
+  #panel b { color: #fff; } #panel .row { display: flex; justify-content: space-between; gap: 10px; }
+  .webgpu { color: #7ee787; } .webgl2 { color: #79c0ff; }
+  #panel .why { color: #9aa7b4; font-size: 11px; }
+  #panel .err { color: #ff7b72; white-space: pre-wrap; font-size: 11px; max-height: 90px; overflow: auto; }
+  #panel a { color: #dde3ea; background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 6px; text-decoration: none; font-size: 11px; }
+  #panel a.on { background: #2f81f7; color: #fff; }
+  #bar { position: fixed; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; background: rgba(8,12,20,.88); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
+  #bar .row { display: flex; align-items: center; gap: 8px; }
+  #bar input[type=range] { flex: 1; min-width: 0; accent-color: #2f81f7; }
+  #bar button, #bar select { background: rgba(255,255,255,.08); color: #dde3ea; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; padding: 5px 9px; font: inherit; font-size: 13px; }
+  #bar button.on { background: #2f81f7; border-color: #2f81f7; color: #fff; }
+  #play { min-width: 64px; font-weight: 600; }
+  #clock { font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
+  #bar .lab { color: #9aa7b4; font-size: 12px; white-space: nowrap; }
+  #bar .num { font-variant-numeric: tabular-nums; min-width: 34px; color: #dde3ea; font-size: 12px; }
+  #key { display: flex; align-items: center; gap: 6px; color: #9aa7b4; font-size: 11px; }
+  #key i { display: inline-block; height: 8px; flex: 1; border-radius: 4px; background: linear-gradient(90deg, #a50026, #f46d43, #fee08b, #a6d96a, #1a9850); }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="panel"><div>loading…</div></div>
+<div id="bar">
+  <div class="row">
+    <button id="play">▶ play</button>
+    <input id="time" type="range" min="0" max="1" step="0.0005" value="0" aria-label="time">
+    <span id="clock">--:--</span>
+  </div>
+  <div class="row">
+    <span class="lab">speed</span><select id="speed" aria-label="speed"><option value="1">1×</option><option value="4">4×</option><option value="16">16×</option><option value="60">60×</option></select>
+    <span class="lab">trail</span><input id="trail" type="range" min="0" max="120" step="2" value="12" aria-label="trail seconds"><span id="trail-v" class="num">12 s</span>
+    <span class="lab">N</span><select id="n" aria-label="vehicles"><option>500</option><option>2000</option><option>10000</option></select>
+  </div>
+  <div id="key"><span>charge 0</span><i></i><span>1</span></div>
+</div>
+<script type="module" src="./main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "id": "drone",
+  "name": "Multirotor drone",
+  "version": "1.0.0",
+  "licence": "Apache-2.0",
+  "author": "aslnut",
+  "about": "A multirotor drone: 4 to 8 rotors on arms round a body, its span, landing legs, a camera under its nose and, if it carries one, a payload; its rotors are parts that spin (kinematics.ts), the camera and the payload anchors.",
+  "tags": ["drone", "aircraft", "uav"]
+}

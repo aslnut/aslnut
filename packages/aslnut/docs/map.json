@@ -1,0 +1,3812 @@
+{
+ "tree": {
+  "n": "aslnut",
+  "s": "partly",
+  "h": "",
+  "c": [
+   {
+    "n": "core",
+    "s": "partly",
+    "h": "",
+    "c": [
+     {
+      "n": "space",
+      "s": "partly",
+      "h": "reference/core/space",
+      "c": [
+       {
+        "n": "bodies",
+        "s": "partly",
+        "h": "reference/core/space~bodies"
+       },
+       {
+        "n": "frames",
+        "s": "planned",
+        "h": "reference/core/space~frames",
+        "c": [
+         {
+          "n": "inertial",
+          "s": "planned",
+          "h": "reference/core/space~frames-inertial"
+         },
+         {
+          "n": "body-fixed",
+          "s": "planned",
+          "h": "reference/core/space~frames-body-fixed"
+         },
+         {
+          "n": "local",
+          "s": "planned",
+          "h": "reference/core/space~frames-local"
+         },
+         {
+          "n": "object",
+          "s": "planned",
+          "h": "reference/core/space~frames-object"
+         },
+         {
+          "n": "re-rooting",
+          "s": "planned",
+          "h": "reference/core/space~frames-re-rooting"
+         }
+        ]
+       },
+       {
+        "n": "units",
+        "s": "planned",
+        "h": "reference/core/space~units"
+       },
+       {
+        "n": "precision",
+        "s": "built",
+        "h": "reference/core/space~precision"
+       },
+       {
+        "n": "cells",
+        "s": "planned",
+        "h": "reference/core/space~cells"
+       },
+       {
+        "n": "ground",
+        "s": "partly",
+        "h": "reference/core/space~ground",
+        "c": [
+         {
+          "n": "ground",
+          "s": "partly",
+          "h": "reference/core/space~ground-ground"
+         },
+         {
+          "n": "shells",
+          "s": "planned",
+          "h": "reference/core/space~ground-shells"
+         },
+         {
+          "n": "volumes",
+          "s": "planned",
+          "h": "reference/core/space~ground-volumes"
+         }
+        ]
+       },
+       {
+        "n": "regions",
+        "s": "partly",
+        "h": "reference/core/space~regions",
+        "c": [
+         {
+          "n": "tree",
+          "s": "built",
+          "h": "reference/core/space~regions-tree"
+         },
+         {
+          "n": "rollup",
+          "s": "built",
+          "h": "reference/core/space~regions-rollup"
+         },
+         {
+          "n": "pack",
+          "s": "planned",
+          "h": "reference/core/space~regions-pack"
+         }
+        ]
+       },
+       {
+        "n": "observer",
+        "s": "planned",
+        "h": "reference/core/space~observer",
+        "c": [
+         {
+          "n": "light-time",
+          "s": "planned",
+          "h": "reference/core/space~observer-light-time"
+         },
+         {
+          "n": "aberration",
+          "s": "planned",
+          "h": "reference/core/space~observer-aberration"
+         },
+         {
+          "n": "doppler",
+          "s": "planned",
+          "h": "reference/core/space~observer-doppler"
+         },
+         {
+          "n": "ship-time",
+          "s": "planned",
+          "h": "reference/core/space~observer-ship-time"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "n": "time",
+      "s": "partly",
+      "h": "reference/core/time",
+      "c": [
+       {
+        "n": "clock",
+        "s": "built",
+        "h": "reference/core/time~clock"
+       },
+       {
+        "n": "step",
+        "s": "built",
+        "h": "reference/core/time~step"
+       },
+       {
+        "n": "calendars",
+        "s": "planned",
+        "h": "reference/core/time~calendars"
+       },
+       {
+        "n": "scales",
+        "s": "planned",
+        "h": "reference/core/time~scales"
+       },
+       {
+        "n": "zones",
+        "s": "built",
+        "h": "reference/core/time~zones"
+       },
+       {
+        "n": "ranges",
+        "s": "planned",
+        "h": "reference/core/time~ranges"
+       },
+       {
+        "n": "deep",
+        "s": "planned",
+        "h": "reference/core/time~deep"
+       }
+      ]
+     },
+     {
+      "n": "data",
+      "s": "partly",
+      "h": "reference/core/data",
+      "c": [
+       {
+        "n": "sources",
+        "s": "partly",
+        "h": "reference/core/data~sources",
+        "c": [
+         {
+          "n": "tiles",
+          "s": "partly",
+          "h": "reference/core/data~sources-tiles",
+          "c": [
+           {
+            "n": "xyz",
+            "s": "built",
+            "h": "reference/core/data~sources-tiles-xyz"
+           },
+           {
+            "n": "cog",
+            "s": "planned",
+            "h": "reference/core/data~sources-tiles-cog"
+           },
+           {
+            "n": "wms",
+            "s": "built",
+            "h": "reference/core/data~sources-tiles-wms"
+           },
+           {
+            "n": "pmtiles",
+            "s": "built",
+            "h": "reference/core/data~sources-tiles-pmtiles"
+           },
+           {
+            "n": "mvt",
+            "s": "built",
+            "h": "reference/core/data~sources-tiles-mvt"
+           }
+          ]
+         },
+         {
+          "n": "files",
+          "s": "built",
+          "h": "reference/core/data~sources-files",
+          "c": [
+           {
+            "n": "geojson",
+            "s": "built",
+            "h": "reference/core/data~sources-files-geojson"
+           },
+           {
+            "n": "csv",
+            "s": "built",
+            "h": "reference/core/data~sources-files-csv"
+           }
+          ]
+         },
+         {
+          "n": "services",
+          "s": "built",
+          "h": "reference/core/data~sources-services",
+          "c": [
+           {
+            "n": "wfs",
+            "s": "built",
+            "h": "reference/core/data~sources-services-wfs"
+           },
+           {
+            "n": "stream",
+            "s": "built",
+            "h": "reference/core/data~sources-services-stream"
+           }
+          ]
+         },
+         {
+          "n": "custom",
+          "s": "built",
+          "h": "reference/core/data~sources-custom"
+         }
+        ]
+       },
+       {
+        "n": "loading",
+        "s": "partly",
+        "h": "reference/core/data~loading",
+        "c": [
+         {
+          "n": "loader",
+          "s": "built",
+          "h": "reference/core/data~loading-loader"
+         },
+         {
+          "n": "stores",
+          "s": "built",
+          "h": "reference/core/data~loading-stores"
+         },
+         {
+          "n": "packs",
+          "s": "built",
+          "h": "reference/core/data~loading-packs"
+         },
+         {
+          "n": "readiness",
+          "s": "built",
+          "h": "reference/core/data~loading-readiness"
+         },
+         {
+          "n": "tiles",
+          "s": "built",
+          "h": "reference/core/data~loading-tiles"
+         },
+         {
+          "n": "chunks",
+          "s": "partly",
+          "h": "reference/core/data~loading-chunks",
+          "c": [
+           {
+            "n": "manifest",
+            "s": "planned",
+            "h": "reference/core/data~loading-chunks-manifest"
+           },
+           {
+            "n": "logic-pack",
+            "s": "planned",
+            "h": "reference/core/data~loading-chunks-logic-pack"
+           },
+           {
+            "n": "near",
+            "s": "planned",
+            "h": "reference/core/data~loading-chunks-near"
+           },
+           {
+            "n": "far",
+            "s": "planned",
+            "h": "reference/core/data~loading-chunks-far"
+           },
+           {
+            "n": "format",
+            "s": "partly",
+            "h": "reference/core/data~loading-chunks-format"
+           },
+           {
+            "n": "streamer",
+            "s": "planned",
+            "h": "reference/core/data~loading-chunks-streamer"
+           },
+           {
+            "n": "hot-swap",
+            "s": "planned",
+            "h": "reference/core/data~loading-chunks-hot-swap"
+           },
+           {
+            "n": "fallback",
+            "s": "planned",
+            "h": "reference/core/data~loading-chunks-fallback"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "n": "features",
+        "s": "built",
+        "h": "reference/core/data~features",
+        "c": [
+         {
+          "n": "features",
+          "s": "built",
+          "h": "reference/core/data~features-features"
+         },
+         {
+          "n": "rows",
+          "s": "built",
+          "h": "reference/core/data~features-rows"
+         }
+        ]
+       },
+       {
+        "n": "query",
+        "s": "built",
+        "h": "reference/core/data~query",
+        "c": [
+         {
+          "n": "join",
+          "s": "built",
+          "h": "reference/core/data~query-join"
+         },
+         {
+          "n": "query",
+          "s": "built",
+          "h": "reference/core/data~query-query"
+         }
+        ]
+       },
+       {
+        "n": "live",
+        "s": "built",
+        "h": "reference/core/data~live",
+        "c": [
+         {
+          "n": "set",
+          "s": "built",
+          "h": "reference/core/data~live-set"
+         },
+         {
+          "n": "upsert",
+          "s": "built",
+          "h": "reference/core/data~live-upsert"
+         },
+         {
+          "n": "patch",
+          "s": "built",
+          "h": "reference/core/data~live-patch"
+         },
+         {
+          "n": "remove",
+          "s": "built",
+          "h": "reference/core/data~live-remove"
+         }
+        ]
+       },
+       {
+        "n": "history",
+        "s": "partly",
+        "h": "reference/core/data~history",
+        "c": [
+         {
+          "n": "log",
+          "s": "built",
+          "h": "reference/core/data~history-log"
+         },
+         {
+          "n": "state-at",
+          "s": "built",
+          "h": "reference/core/data~history-state-at"
+         },
+         {
+          "n": "replay",
+          "s": "built",
+          "h": "reference/core/data~history-replay"
+         },
+         {
+          "n": "checkpoints",
+          "s": "planned",
+          "h": "reference/core/data~history-checkpoints"
+         },
+         {
+          "n": "epochs",
+          "s": "planned",
+          "h": "reference/core/data~history-epochs"
+         }
+        ]
+       },
+       {
+        "n": "scenarios",
+        "s": "partly",
+        "h": "reference/core/data~scenarios",
+        "c": [
+         {
+          "n": "base",
+          "s": "built",
+          "h": "reference/core/data~scenarios-base"
+         },
+         {
+          "n": "variant",
+          "s": "built",
+          "h": "reference/core/data~scenarios-variant"
+         },
+         {
+          "n": "diff",
+          "s": "built",
+          "h": "reference/core/data~scenarios-diff"
+         },
+         {
+          "n": "compare",
+          "s": "built",
+          "h": "reference/core/data~scenarios-compare"
+         },
+         {
+          "n": "overrides",
+          "s": "planned",
+          "h": "reference/core/data~scenarios-overrides"
+         }
+        ]
+       },
+       {
+        "n": "rights",
+        "s": "partly",
+        "h": "reference/core/data~rights",
+        "c": [
+         {
+          "n": "terms",
+          "s": "built",
+          "h": "reference/core/data~rights-terms"
+         },
+         {
+          "n": "capabilities",
+          "s": "built",
+          "h": "reference/core/data~rights-capabilities",
+          "c": [
+           {
+            "n": "show",
+            "s": "built",
+            "h": "reference/core/data~rights-capabilities-show"
+           },
+           {
+            "n": "prefetch",
+            "s": "built",
+            "h": "reference/core/data~rights-capabilities-prefetch"
+           },
+           {
+            "n": "keep",
+            "s": "built",
+            "h": "reference/core/data~rights-capabilities-keep"
+           },
+           {
+            "n": "export",
+            "s": "built",
+            "h": "reference/core/data~rights-capabilities-export"
+           }
+          ]
+         },
+         {
+          "n": "attribution",
+          "s": "built",
+          "h": "reference/core/data~rights-attribution"
+         },
+         {
+          "n": "licences",
+          "s": "planned",
+          "h": "reference/core/data~rights-licences"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "n": "observation",
+      "s": "partly",
+      "h": "reference/core/observation",
+      "c": [
+       {
+        "n": "observers",
+        "s": "partly",
+        "h": "reference/core/observation~observers",
+        "c": [
+         {
+          "n": "orbit",
+          "s": "partly",
+          "h": "reference/core/observation~observers-orbit",
+          "c": [
+           {
+            "n": "views",
+            "s": "built",
+            "h": "reference/core/observation~observers-orbit-views"
+           },
+           {
+            "n": "keys",
+            "s": "built",
+            "h": "reference/core/observation~observers-orbit-keys"
+           },
+           {
+            "n": "paths",
+            "s": "partly",
+            "h": "reference/core/observation~observers-orbit-paths",
+            "c": [
+             {
+              "n": "line",
+              "s": "partly",
+              "h": "reference/core/observation~observers-orbit-paths-line"
+             },
+             {
+              "n": "bezier",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-paths-bezier"
+             },
+             {
+              "n": "spline",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-paths-spline"
+             },
+             {
+              "n": "along",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-paths-along"
+             },
+             {
+              "n": "circle",
+              "s": "partly",
+              "h": "reference/core/observation~observers-orbit-paths-circle"
+             }
+            ]
+           },
+           {
+            "n": "aim",
+            "s": "partly",
+            "h": "reference/core/observation~observers-orbit-aim",
+            "c": [
+             {
+              "n": "look-at",
+              "s": "built",
+              "h": "reference/core/observation~observers-orbit-aim-look-at"
+             },
+             {
+              "n": "along-path",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-aim-along-path"
+             },
+             {
+              "n": "heading",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-aim-heading"
+             },
+             {
+              "n": "framing",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-aim-framing"
+             }
+            ]
+           },
+           {
+            "n": "lens",
+            "s": "planned",
+            "h": "reference/core/observation~observers-orbit-lens",
+            "c": [
+             {
+              "n": "fov",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-lens-fov"
+             },
+             {
+              "n": "focus",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-lens-focus"
+             },
+             {
+              "n": "depth-of-field",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-lens-depth-of-field"
+             }
+            ]
+           },
+           {
+            "n": "speed",
+            "s": "partly",
+            "h": "reference/core/observation~observers-orbit-speed",
+            "c": [
+             {
+              "n": "easing",
+              "s": "built",
+              "h": "reference/core/observation~observers-orbit-speed-easing"
+             },
+             {
+              "n": "ease",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-speed-ease"
+             },
+             {
+              "n": "constant",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-speed-constant"
+             },
+             {
+              "n": "hold",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-speed-hold"
+             }
+            ]
+           },
+           {
+            "n": "moves",
+            "s": "partly",
+            "h": "reference/core/observation~observers-orbit-moves",
+            "c": [
+             {
+              "n": "pan",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-moves-pan"
+             },
+             {
+              "n": "tilt",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-moves-tilt"
+             },
+             {
+              "n": "roll",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-moves-roll"
+             },
+             {
+              "n": "dolly",
+              "s": "built",
+              "h": "reference/core/observation~observers-orbit-moves-dolly"
+             },
+             {
+              "n": "truck",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-moves-truck"
+             },
+             {
+              "n": "pedestal",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-moves-pedestal"
+             },
+             {
+              "n": "crane",
+              "s": "built",
+              "h": "reference/core/observation~observers-orbit-moves-crane"
+             },
+             {
+              "n": "zoom",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-moves-zoom"
+             },
+             {
+              "n": "dolly-zoom",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-moves-dolly-zoom"
+             },
+             {
+              "n": "arc",
+              "s": "built",
+              "h": "reference/core/observation~observers-orbit-moves-arc"
+             },
+             {
+              "n": "track",
+              "s": "built",
+              "h": "reference/core/observation~observers-orbit-moves-track"
+             },
+             {
+              "n": "chase",
+              "s": "built",
+              "h": "reference/core/observation~observers-orbit-moves-chase"
+             },
+             {
+              "n": "flyover",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-moves-flyover"
+             },
+             {
+              "n": "reveal",
+              "s": "built",
+              "h": "reference/core/observation~observers-orbit-moves-reveal"
+             },
+             {
+              "n": "whip-pan",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-moves-whip-pan"
+             },
+             {
+              "n": "rack-focus",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-moves-rack-focus"
+             },
+             {
+              "n": "shake",
+              "s": "planned",
+              "h": "reference/core/observation~observers-orbit-moves-shake"
+             }
+            ]
+           },
+           {
+            "n": "follow",
+            "s": "built",
+            "h": "reference/core/observation~observers-orbit-follow"
+           },
+           {
+            "n": "acrobatic",
+            "s": "built",
+            "h": "reference/core/observation~observers-orbit-acrobatic"
+           }
+          ]
+         },
+         {
+          "n": "eyes",
+          "s": "planned",
+          "h": "reference/core/observation~observers-eyes"
+         },
+         {
+          "n": "sensor",
+          "s": "planned",
+          "h": "reference/core/observation~observers-sensor"
+         },
+         {
+          "n": "fixed",
+          "s": "planned",
+          "h": "reference/core/observation~observers-fixed"
+         }
+        ]
+       },
+       {
+        "n": "levels",
+        "s": "built",
+        "h": "reference/core/observation~levels",
+        "c": [
+         {
+          "n": "ladder",
+          "s": "built",
+          "h": "reference/core/observation~levels-ladder"
+         },
+         {
+          "n": "level",
+          "s": "built",
+          "h": "reference/core/observation~levels-level"
+         },
+         {
+          "n": "binding",
+          "s": "built",
+          "h": "reference/core/observation~levels-binding"
+         }
+        ]
+       },
+       {
+        "n": "gates",
+        "s": "built",
+        "h": "reference/core/observation~gates",
+        "c": [
+         {
+          "n": "margin",
+          "s": "built",
+          "h": "reference/core/observation~gates-margin"
+         },
+         {
+          "n": "dwell",
+          "s": "built",
+          "h": "reference/core/observation~gates-dwell"
+         },
+         {
+          "n": "keep",
+          "s": "built",
+          "h": "reference/core/observation~gates-keep"
+         }
+        ]
+       },
+       {
+        "n": "presence",
+        "s": "built",
+        "h": "reference/core/observation~presence"
+       }
+      ]
+     },
+     {
+      "n": "geometry",
+      "s": "partly",
+      "h": "reference/core/geometry",
+      "c": [
+       {
+        "n": "shapes",
+        "s": "built",
+        "h": "reference/core/geometry~shapes",
+        "c": [
+         {
+          "n": "shape",
+          "s": "built",
+          "h": "reference/core/geometry~shapes-shape"
+         },
+         {
+          "n": "builder",
+          "s": "built",
+          "h": "reference/core/geometry~shapes-builder",
+          "c": [
+           {
+            "n": "solid",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-builder-solid"
+           },
+           {
+            "n": "extrude",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-builder-extrude"
+           },
+           {
+            "n": "lathe",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-builder-lathe"
+           },
+           {
+            "n": "sweep",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-builder-sweep"
+           },
+           {
+            "n": "copy",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-builder-copy"
+           },
+           {
+            "n": "scope",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-builder-scope"
+           },
+           {
+            "n": "mesh",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-builder-mesh"
+           }
+          ]
+         },
+         {
+          "n": "parts",
+          "s": "built",
+          "h": "reference/core/geometry~shapes-parts"
+         },
+         {
+          "n": "levels",
+          "s": "built",
+          "h": "reference/core/geometry~shapes-levels",
+          "c": [
+           {
+            "n": "full",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-levels-full"
+           },
+           {
+            "n": "simple",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-levels-simple"
+           },
+           {
+            "n": "box",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-levels-box"
+           },
+           {
+            "n": "dot",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-levels-dot"
+           },
+           {
+            "n": "counted",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-levels-counted"
+           },
+           {
+            "n": "impostor",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-levels-impostor"
+           }
+          ]
+         },
+         {
+          "n": "instances",
+          "s": "built",
+          "h": "reference/core/geometry~shapes-instances"
+         },
+         {
+          "n": "checks",
+          "s": "built",
+          "h": "reference/core/geometry~shapes-checks"
+         },
+         {
+          "n": "recipes",
+          "s": "built",
+          "h": "reference/core/geometry~shapes-recipes",
+          "c": [
+           {
+            "n": "branching",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-recipes-branching"
+           },
+           {
+            "n": "kitbash",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-recipes-kitbash"
+           },
+           {
+            "n": "presets",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-recipes-presets"
+           },
+           {
+            "n": "package",
+            "s": "built",
+            "h": "reference/core/geometry~shapes-recipes-package"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "n": "import",
+        "s": "partly",
+        "h": "reference/core/geometry~import",
+        "c": [
+         {
+          "n": "gltf",
+          "s": "partly",
+          "h": "reference/core/geometry~import-gltf"
+         },
+         {
+          "n": "gltf-extensions",
+          "s": "planned",
+          "h": "reference/core/geometry~import-gltf-extensions",
+          "c": [
+           {
+            "n": "draco",
+            "s": "planned",
+            "h": "reference/core/geometry~import-gltf-extensions-draco"
+           },
+           {
+            "n": "meshopt",
+            "s": "planned",
+            "h": "reference/core/geometry~import-gltf-extensions-meshopt"
+           },
+           {
+            "n": "ktx2",
+            "s": "planned",
+            "h": "reference/core/geometry~import-gltf-extensions-ktx2"
+           },
+           {
+            "n": "lights",
+            "s": "planned",
+            "h": "reference/core/geometry~import-gltf-extensions-lights"
+           },
+           {
+            "n": "variants",
+            "s": "planned",
+            "h": "reference/core/geometry~import-gltf-extensions-variants"
+           }
+          ]
+         },
+         {
+          "n": "obj",
+          "s": "planned",
+          "h": "reference/core/geometry~import-obj"
+         },
+         {
+          "n": "ply",
+          "s": "planned",
+          "h": "reference/core/geometry~import-ply"
+         },
+         {
+          "n": "tiles3d",
+          "s": "planned",
+          "h": "reference/core/geometry~import-tiles3d"
+         },
+         {
+          "n": "splats",
+          "s": "planned",
+          "h": "reference/core/geometry~import-splats"
+         },
+         {
+          "n": "pointcloud",
+          "s": "proposed",
+          "h": "reference/core/geometry~import-pointcloud"
+         }
+        ]
+       },
+       {
+        "n": "landform",
+        "s": "partly",
+        "h": "reference/core/geometry~landform",
+        "c": [
+         {
+          "n": "compose",
+          "s": "partly",
+          "h": "reference/core/geometry~landform-compose",
+          "c": [
+           {
+            "n": "layers",
+            "s": "proposed",
+            "h": "reference/core/geometry~landform-compose-layers"
+           },
+           {
+            "n": "footprints",
+            "s": "proposed",
+            "h": "reference/core/geometry~landform-compose-footprints"
+           },
+           {
+            "n": "exclusion",
+            "s": "partly",
+            "h": "reference/core/geometry~landform-compose-exclusion"
+           },
+           {
+            "n": "ground",
+            "s": "proposed",
+            "h": "reference/core/geometry~landform-compose-ground"
+           },
+           {
+            "n": "foundation",
+            "s": "partly",
+            "h": "reference/core/geometry~landform-compose-foundation"
+           },
+           {
+            "n": "fidelity",
+            "s": "proposed",
+            "h": "reference/core/geometry~landform-compose-fidelity"
+           }
+          ]
+         },
+         {
+          "n": "terraform",
+          "s": "proposed",
+          "h": "reference/core/geometry~landform-terraform",
+          "c": [
+           {
+            "n": "flatten",
+            "s": "proposed",
+            "h": "reference/core/geometry~landform-terraform-flatten"
+           },
+           {
+            "n": "carve",
+            "s": "proposed",
+            "h": "reference/core/geometry~landform-terraform-carve"
+           },
+           {
+            "n": "raise",
+            "s": "proposed",
+            "h": "reference/core/geometry~landform-terraform-raise"
+           },
+           {
+            "n": "smooth",
+            "s": "proposed",
+            "h": "reference/core/geometry~landform-terraform-smooth"
+           },
+           {
+            "n": "sweep",
+            "s": "proposed",
+            "h": "reference/core/geometry~landform-terraform-sweep"
+           },
+           {
+            "n": "stamp",
+            "s": "proposed",
+            "h": "reference/core/geometry~landform-terraform-stamp"
+           },
+           {
+            "n": "erode",
+            "s": "proposed",
+            "h": "reference/core/geometry~landform-terraform-erode"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "n": "networks",
+        "s": "partly",
+        "h": "reference/core/geometry~networks",
+        "c": [
+         {
+          "n": "analysis",
+          "s": "built",
+          "h": "reference/core/geometry~networks-analysis",
+          "c": [
+           {
+            "n": "graph",
+            "s": "built",
+            "h": "reference/core/geometry~networks-analysis-graph"
+           },
+           {
+            "n": "routing",
+            "s": "built",
+            "h": "reference/core/geometry~networks-analysis-routing"
+           },
+           {
+            "n": "isochrones",
+            "s": "built",
+            "h": "reference/core/geometry~networks-analysis-isochrones"
+           },
+           {
+            "n": "nearest",
+            "s": "built",
+            "h": "reference/core/geometry~networks-analysis-nearest"
+           }
+          ]
+         },
+         {
+          "n": "lanes",
+          "s": "planned",
+          "h": "reference/core/geometry~networks-lanes"
+         },
+         {
+          "n": "walkways",
+          "s": "built",
+          "h": "reference/core/geometry~networks-walkways"
+         },
+         {
+          "n": "sections",
+          "s": "partly",
+          "h": "reference/core/geometry~networks-sections"
+         },
+         {
+          "n": "junctions",
+          "s": "partly",
+          "h": "reference/core/geometry~networks-junctions"
+         },
+         {
+          "n": "structures",
+          "s": "partly",
+          "h": "reference/core/geometry~networks-structures",
+          "c": [
+           {
+            "n": "bridges",
+            "s": "partly",
+            "h": "reference/core/geometry~networks-structures-bridges"
+           },
+           {
+            "n": "piers",
+            "s": "partly",
+            "h": "reference/core/geometry~networks-structures-piers"
+           },
+           {
+            "n": "culverts",
+            "s": "planned",
+            "h": "reference/core/geometry~networks-structures-culverts"
+           },
+           {
+            "n": "decks",
+            "s": "partly",
+            "h": "reference/core/geometry~networks-structures-decks"
+           },
+           {
+            "n": "stairs",
+            "s": "proposed",
+            "h": "reference/core/geometry~networks-structures-stairs"
+           },
+           {
+            "n": "walls",
+            "s": "proposed",
+            "h": "reference/core/geometry~networks-structures-walls"
+           },
+           {
+            "n": "terraces",
+            "s": "proposed",
+            "h": "reference/core/geometry~networks-structures-terraces"
+           },
+           {
+            "n": "ramps",
+            "s": "proposed",
+            "h": "reference/core/geometry~networks-structures-ramps"
+           },
+           {
+            "n": "railings",
+            "s": "proposed",
+            "h": "reference/core/geometry~networks-structures-railings"
+           }
+          ]
+         },
+         {
+          "n": "clamp",
+          "s": "partly",
+          "h": "reference/core/geometry~networks-clamp"
+         }
+        ]
+       },
+       {
+        "n": "zones",
+        "s": "partly",
+        "h": "reference/core/geometry~zones",
+        "c": [
+         {
+          "n": "booleans",
+          "s": "planned",
+          "h": "reference/core/geometry~zones-booleans"
+         },
+         {
+          "n": "kinds",
+          "s": "planned",
+          "h": "reference/core/geometry~zones-kinds"
+         },
+         {
+          "n": "rules",
+          "s": "partly",
+          "h": "reference/core/geometry~zones-rules",
+          "c": [
+           {
+            "n": "scatter",
+            "s": "planned",
+            "h": "reference/core/geometry~zones-rules-scatter"
+           },
+           {
+            "n": "frontage",
+            "s": "partly",
+            "h": "reference/core/geometry~zones-rules-frontage"
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "n": "encoding",
+      "s": "partly",
+      "h": "reference/core/encoding",
+      "c": [
+       {
+        "n": "marks",
+        "s": "partly",
+        "h": "reference/core/encoding~marks",
+        "c": [
+         {
+          "n": "symbols",
+          "s": "built",
+          "h": "reference/core/encoding~marks-symbols",
+          "c": [
+           {
+            "n": "point",
+            "s": "built",
+            "h": "reference/core/encoding~marks-symbols-point"
+           },
+           {
+            "n": "icon",
+            "s": "built",
+            "h": "reference/core/encoding~marks-symbols-icon"
+           },
+           {
+            "n": "text",
+            "s": "built",
+            "h": "reference/core/encoding~marks-symbols-text"
+           }
+          ]
+         },
+         {
+          "n": "lines",
+          "s": "partly",
+          "h": "reference/core/encoding~marks-lines",
+          "c": [
+           {
+            "n": "line",
+            "s": "built",
+            "h": "reference/core/encoding~marks-lines-line"
+           },
+           {
+            "n": "arc",
+            "s": "built",
+            "h": "reference/core/encoding~marks-lines-arc"
+           },
+           {
+            "n": "trail",
+            "s": "built",
+            "h": "reference/core/encoding~marks-lines-trail"
+           },
+           {
+            "n": "arrows",
+            "s": "planned",
+            "h": "reference/core/encoding~marks-lines-arrows"
+           }
+          ]
+         },
+         {
+          "n": "areas",
+          "s": "partly",
+          "h": "reference/core/encoding~marks-areas",
+          "c": [
+           {
+            "n": "area",
+            "s": "built",
+            "h": "reference/core/encoding~marks-areas-area"
+           },
+           {
+            "n": "extrusion",
+            "s": "built",
+            "h": "reference/core/encoding~marks-areas-extrusion"
+           },
+           {
+            "n": "raster",
+            "s": "built",
+            "h": "reference/core/encoding~marks-areas-raster"
+           },
+           {
+            "n": "grid",
+            "s": "planned",
+            "h": "reference/core/encoding~marks-areas-grid"
+           },
+           {
+            "n": "rings",
+            "s": "planned",
+            "h": "reference/core/encoding~marks-areas-rings"
+           }
+          ]
+         },
+         {
+          "n": "drape",
+          "s": "built",
+          "h": "reference/core/encoding~marks-drape"
+         },
+         {
+          "n": "custom",
+          "s": "built",
+          "h": "reference/core/encoding~marks-custom"
+         }
+        ]
+       },
+       {
+        "n": "scales",
+        "s": "built",
+        "h": "reference/core/encoding~scales"
+       },
+       {
+        "n": "layers",
+        "s": "built",
+        "h": "reference/core/encoding~layers",
+        "c": [
+         {
+          "n": "layer",
+          "s": "built",
+          "h": "reference/core/encoding~layers-layer"
+         },
+         {
+          "n": "labels",
+          "s": "built",
+          "h": "reference/core/encoding~layers-labels"
+         },
+         {
+          "n": "legend",
+          "s": "built",
+          "h": "reference/core/encoding~layers-legend"
+         },
+         {
+          "n": "stack",
+          "s": "built",
+          "h": "reference/core/encoding~layers-stack"
+         }
+        ]
+       },
+       {
+        "n": "join",
+        "s": "built",
+        "h": "reference/core/encoding~join"
+       }
+      ]
+     },
+     {
+      "n": "render",
+      "s": "partly",
+      "h": "reference/core/render",
+      "c": [
+       {
+        "n": "graphics",
+        "s": "built",
+        "h": "reference/core/render~graphics",
+        "c": [
+         {
+          "n": "interface",
+          "s": "built",
+          "h": "reference/core/render~graphics-interface"
+         },
+         {
+          "n": "webgpu",
+          "s": "built",
+          "h": "reference/core/render~graphics-webgpu"
+         },
+         {
+          "n": "webgl2",
+          "s": "built",
+          "h": "reference/core/render~graphics-webgl2"
+         },
+         {
+          "n": "caps",
+          "s": "built",
+          "h": "reference/core/render~graphics-caps"
+         },
+         {
+          "n": "shaders",
+          "s": "built",
+          "h": "reference/core/render~graphics-shaders",
+          "c": [
+           {
+            "n": "wgsl",
+            "s": "built",
+            "h": "reference/core/render~graphics-shaders-wgsl"
+           },
+           {
+            "n": "glsl",
+            "s": "built",
+            "h": "reference/core/render~graphics-shaders-glsl"
+           },
+           {
+            "n": "translate",
+            "s": "built",
+            "h": "reference/core/render~graphics-shaders-translate"
+           },
+           {
+            "n": "hooks",
+            "s": "built",
+            "h": "reference/core/render~graphics-shaders-hooks"
+           }
+          ]
+         },
+         {
+          "n": "parity",
+          "s": "built",
+          "h": "reference/core/render~graphics-parity"
+         }
+        ]
+       },
+       {
+        "n": "drawing",
+        "s": "built",
+        "h": "reference/core/render~drawing",
+        "c": [
+         {
+          "n": "renderer",
+          "s": "built",
+          "h": "reference/core/render~drawing-renderer"
+         },
+         {
+          "n": "instancing",
+          "s": "built",
+          "h": "reference/core/render~drawing-instancing"
+         },
+         {
+          "n": "text",
+          "s": "built",
+          "h": "reference/core/render~drawing-text"
+         },
+         {
+          "n": "quality",
+          "s": "built",
+          "h": "reference/core/render~drawing-quality"
+         }
+        ]
+       },
+       {
+        "n": "look",
+        "s": "partly",
+        "h": "reference/core/render~look",
+        "c": [
+         {
+          "n": "materials",
+          "s": "built",
+          "h": "reference/core/render~look-materials"
+         },
+         {
+          "n": "lights",
+          "s": "planned",
+          "h": "reference/core/render~look-lights"
+         },
+         {
+          "n": "shadows",
+          "s": "built",
+          "h": "reference/core/render~look-shadows"
+         },
+         {
+          "n": "post",
+          "s": "planned",
+          "h": "reference/core/render~look-post"
+         },
+         {
+          "n": "cutaway",
+          "s": "planned",
+          "h": "reference/core/render~look-cutaway"
+         }
+        ]
+       },
+       {
+        "n": "style",
+        "s": "partly",
+        "h": "reference/core/render~style",
+        "c": [
+         {
+          "n": "ramp",
+          "s": "built",
+          "h": "reference/core/render~style-ramp"
+         },
+         {
+          "n": "blend",
+          "s": "partly",
+          "h": "reference/core/render~style-blend"
+         },
+         {
+          "n": "lens",
+          "s": "planned",
+          "h": "reference/core/render~style-lens"
+         },
+         {
+          "n": "theme",
+          "s": "built",
+          "h": "reference/core/render~style-theme"
+         },
+         {
+          "n": "pattern",
+          "s": "proposed",
+          "h": "reference/core/render~style-pattern",
+          "c": [
+           {
+            "n": "fill",
+            "s": "proposed",
+            "h": "reference/core/render~style-pattern-fill"
+           },
+           {
+            "n": "stroke",
+            "s": "proposed",
+            "h": "reference/core/render~style-pattern-stroke"
+           },
+           {
+            "n": "along",
+            "s": "proposed",
+            "h": "reference/core/render~style-pattern-along"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "n": "project",
+        "s": "built",
+        "h": "reference/core/render~project",
+        "c": [
+         {
+          "n": "project",
+          "s": "built",
+          "h": "reference/core/render~project-project"
+         },
+         {
+          "n": "visible",
+          "s": "built",
+          "h": "reference/core/render~project-visible"
+         }
+        ]
+       },
+       {
+        "n": "reveal",
+        "s": "built",
+        "h": "reference/core/render~reveal",
+        "c": [
+         {
+          "n": "modes",
+          "s": "built",
+          "h": "reference/core/render~reveal-modes"
+         },
+         {
+          "n": "timing",
+          "s": "built",
+          "h": "reference/core/render~reveal-timing"
+         },
+         {
+          "n": "define",
+          "s": "built",
+          "h": "reference/core/render~reveal-define"
+         },
+         {
+          "n": "policy",
+          "s": "built",
+          "h": "reference/core/render~reveal-policy"
+         }
+        ]
+       },
+       {
+        "n": "capture",
+        "s": "partly",
+        "h": "reference/core/render~capture",
+        "c": [
+         {
+          "n": "capture",
+          "s": "built",
+          "h": "reference/core/render~capture-capture"
+         },
+         {
+          "n": "ground-truth",
+          "s": "planned",
+          "h": "reference/core/render~capture-ground-truth"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "n": "interaction",
+      "s": "partly",
+      "h": "reference/core/interaction",
+      "c": [
+       {
+        "n": "picking",
+        "s": "built",
+        "h": "reference/core/interaction~picking",
+        "c": [
+         {
+          "n": "picking",
+          "s": "built",
+          "h": "reference/core/interaction~picking-picking"
+         },
+         {
+          "n": "hover",
+          "s": "built",
+          "h": "reference/core/interaction~picking-hover"
+         }
+        ]
+       },
+       {
+        "n": "events",
+        "s": "built",
+        "h": "reference/core/interaction~events"
+       },
+       {
+        "n": "signals",
+        "s": "partly",
+        "h": "reference/core/interaction~signals",
+        "c": [
+         {
+          "n": "signals",
+          "s": "planned",
+          "h": "reference/core/interaction~signals-signals"
+         },
+         {
+          "n": "selection",
+          "s": "built",
+          "h": "reference/core/interaction~signals-selection"
+         }
+        ]
+       },
+       {
+        "n": "controllers",
+        "s": "built",
+        "h": "reference/core/interaction~controllers"
+       },
+       {
+        "n": "history",
+        "s": "planned",
+        "h": "reference/core/interaction~history"
+       }
+      ]
+     },
+     {
+      "n": "entities",
+      "s": "partly",
+      "h": "reference/core/entities",
+      "c": [
+       {
+        "n": "sets",
+        "s": "partly",
+        "h": "reference/core/entities~sets",
+        "c": [
+         {
+          "n": "sets",
+          "s": "built",
+          "h": "reference/core/entities~sets-sets"
+         },
+         {
+          "n": "crowds",
+          "s": "planned",
+          "h": "reference/core/entities~sets-crowds"
+         }
+        ]
+       },
+       {
+        "n": "identity",
+        "s": "partly",
+        "h": "reference/core/entities~identity",
+        "c": [
+         {
+          "n": "id",
+          "s": "planned",
+          "h": "reference/core/entities~identity-id"
+         },
+         {
+          "n": "kind",
+          "s": "built",
+          "h": "reference/core/entities~identity-kind"
+         },
+         {
+          "n": "data",
+          "s": "planned",
+          "h": "reference/core/entities~identity-data"
+         }
+        ]
+       },
+       {
+        "n": "placement",
+        "s": "partly",
+        "h": "reference/core/entities~placement",
+        "c": [
+         {
+          "n": "place",
+          "s": "partly",
+          "h": "reference/core/entities~placement-place"
+         },
+         {
+          "n": "thing",
+          "s": "built",
+          "h": "reference/core/entities~placement-thing"
+         },
+         {
+          "n": "attach",
+          "s": "partly",
+          "h": "reference/core/entities~placement-attach"
+         }
+        ]
+       },
+       {
+        "n": "locomotion",
+        "s": "partly",
+        "h": "reference/core/entities~locomotion",
+        "c": [
+         {
+          "n": "none",
+          "s": "planned",
+          "h": "reference/core/entities~locomotion-none"
+         },
+         {
+          "n": "rail",
+          "s": "planned",
+          "h": "reference/core/entities~locomotion-rail"
+         },
+         {
+          "n": "lanes",
+          "s": "planned",
+          "h": "reference/core/entities~locomotion-lanes"
+         },
+         {
+          "n": "surface",
+          "s": "built",
+          "h": "reference/core/entities~locomotion-surface"
+         },
+         {
+          "n": "air",
+          "s": "built",
+          "h": "reference/core/entities~locomotion-air"
+         },
+         {
+          "n": "water",
+          "s": "planned",
+          "h": "reference/core/entities~locomotion-water"
+         }
+        ]
+       },
+       {
+        "n": "kinematics",
+        "s": "partly",
+        "h": "reference/core/entities~kinematics",
+        "c": [
+         {
+          "n": "hinge",
+          "s": "built",
+          "h": "reference/core/entities~kinematics-hinge"
+         },
+         {
+          "n": "slider",
+          "s": "built",
+          "h": "reference/core/entities~kinematics-slider"
+         },
+         {
+          "n": "wheel",
+          "s": "partly",
+          "h": "reference/core/entities~kinematics-wheel"
+         },
+         {
+          "n": "ball",
+          "s": "planned",
+          "h": "reference/core/entities~kinematics-ball"
+         },
+         {
+          "n": "custom",
+          "s": "partly",
+          "h": "reference/core/entities~kinematics-custom"
+         }
+        ]
+       },
+       {
+        "n": "body",
+        "s": "partly",
+        "h": "reference/core/entities~body",
+        "c": [
+         {
+          "n": "skeleton",
+          "s": "built",
+          "h": "reference/core/entities~body-skeleton"
+         },
+         {
+          "n": "skin",
+          "s": "built",
+          "h": "reference/core/entities~body-skin"
+         },
+         {
+          "n": "morphs",
+          "s": "partly",
+          "h": "reference/core/entities~body-morphs"
+         }
+        ]
+       },
+       {
+        "n": "motion",
+        "s": "partly",
+        "h": "reference/core/entities~motion",
+        "c": [
+         {
+          "n": "states",
+          "s": "planned",
+          "h": "reference/core/entities~motion-states"
+         },
+         {
+          "n": "clips",
+          "s": "partly",
+          "h": "reference/core/entities~motion-clips"
+         },
+         {
+          "n": "poses",
+          "s": "planned",
+          "h": "reference/core/entities~motion-poses"
+         },
+         {
+          "n": "ik",
+          "s": "planned",
+          "h": "reference/core/entities~motion-ik"
+         },
+         {
+          "n": "gaits",
+          "s": "partly",
+          "h": "reference/core/entities~motion-gaits"
+         },
+         {
+          "n": "blending",
+          "s": "partly",
+          "h": "reference/core/entities~motion-blending"
+         },
+         {
+          "n": "look",
+          "s": "planned",
+          "h": "reference/core/entities~motion-look"
+         }
+        ]
+       },
+       {
+        "n": "drive",
+        "s": "partly",
+        "h": "reference/core/entities~drive",
+        "c": [
+         {
+          "n": "schedule",
+          "s": "planned",
+          "h": "reference/core/entities~drive-schedule"
+         },
+         {
+          "n": "simulation",
+          "s": "planned",
+          "h": "reference/core/entities~drive-simulation"
+         },
+         {
+          "n": "data",
+          "s": "built",
+          "h": "reference/core/entities~drive-data"
+         },
+         {
+          "n": "player",
+          "s": "built",
+          "h": "reference/core/entities~drive-player"
+         },
+         {
+          "n": "script",
+          "s": "planned",
+          "h": "reference/core/entities~drive-script"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "n": "simulation",
+      "s": "partly",
+      "h": "reference/core/simulation",
+      "c": [
+       {
+        "n": "agents",
+        "s": "planned",
+        "h": "reference/core/simulation~agents",
+        "c": [
+         {
+          "n": "behaviour",
+          "s": "planned",
+          "h": "reference/core/simulation~agents-behaviour"
+         },
+         {
+          "n": "rhythm",
+          "s": "planned",
+          "h": "reference/core/simulation~agents-rhythm"
+         },
+         {
+          "n": "habitat",
+          "s": "planned",
+          "h": "reference/core/simulation~agents-habitat"
+         },
+         {
+          "n": "senses",
+          "s": "planned",
+          "h": "reference/core/simulation~agents-senses"
+         },
+         {
+          "n": "populations",
+          "s": "planned",
+          "h": "reference/core/simulation~agents-populations"
+         },
+         {
+          "n": "tiers",
+          "s": "planned",
+          "h": "reference/core/simulation~agents-tiers"
+         }
+        ]
+       },
+       {
+        "n": "fields",
+        "s": "partly",
+        "h": "reference/core/simulation~fields",
+        "c": [
+         {
+          "n": "raster",
+          "s": "built",
+          "h": "reference/core/simulation~fields-raster"
+         },
+         {
+          "n": "surface",
+          "s": "planned",
+          "h": "reference/core/simulation~fields-surface"
+         },
+         {
+          "n": "graph",
+          "s": "planned",
+          "h": "reference/core/simulation~fields-graph"
+         },
+         {
+          "n": "volume",
+          "s": "planned",
+          "h": "reference/core/simulation~fields-volume"
+         },
+         {
+          "n": "kernels",
+          "s": "built",
+          "h": "reference/core/simulation~fields-kernels"
+         }
+        ]
+       },
+       {
+        "n": "rules",
+        "s": "partly",
+        "h": "reference/core/simulation~rules",
+        "c": [
+         {
+          "n": "presets",
+          "s": "built",
+          "h": "reference/core/simulation~rules-presets"
+         },
+         {
+          "n": "custom",
+          "s": "built",
+          "h": "reference/core/simulation~rules-custom"
+         },
+         {
+          "n": "coupling",
+          "s": "planned",
+          "h": "reference/core/simulation~rules-coupling"
+         },
+         {
+          "n": "regimes",
+          "s": "planned",
+          "h": "reference/core/simulation~rules-regimes"
+         }
+        ]
+       },
+       {
+        "n": "fidelity",
+        "s": "planned",
+        "h": "reference/core/simulation~fidelity",
+        "c": [
+         {
+          "n": "fixed",
+          "s": "planned",
+          "h": "reference/core/simulation~fidelity-fixed"
+         },
+         {
+          "n": "observed",
+          "s": "planned",
+          "h": "reference/core/simulation~fidelity-observed"
+         }
+        ]
+       },
+       {
+        "n": "measure",
+        "s": "partly",
+        "h": "reference/core/simulation~measure",
+        "c": [
+         {
+          "n": "probes",
+          "s": "built",
+          "h": "reference/core/simulation~measure-probes"
+         },
+         {
+          "n": "sensors",
+          "s": "planned",
+          "h": "reference/core/simulation~measure-sensors"
+         },
+         {
+          "n": "validation",
+          "s": "planned",
+          "h": "reference/core/simulation~measure-validation"
+         }
+        ]
+       },
+       {
+        "n": "constants",
+        "s": "built",
+        "h": "reference/core/simulation~constants"
+       },
+       {
+        "n": "phenomena",
+        "s": "partly",
+        "h": "reference/core/simulation~phenomena",
+        "c": [
+         {
+          "n": "heat",
+          "s": "built",
+          "h": "reference/core/simulation~phenomena-heat"
+         },
+         {
+          "n": "fluids",
+          "s": "planned",
+          "h": "reference/core/simulation~phenomena-fluids"
+         },
+         {
+          "n": "fire",
+          "s": "planned",
+          "h": "reference/core/simulation~phenomena-fire"
+         },
+         {
+          "n": "light",
+          "s": "planned",
+          "h": "reference/core/simulation~phenomena-light"
+         },
+         {
+          "n": "acoustics",
+          "s": "planned",
+          "h": "reference/core/simulation~phenomena-acoustics"
+         },
+         {
+          "n": "contacts",
+          "s": "planned",
+          "h": "reference/core/simulation~phenomena-contacts"
+         },
+         {
+          "n": "orbits",
+          "s": "planned",
+          "h": "reference/core/simulation~phenomena-orbits",
+          "c": [
+           {
+            "n": "ephemerides",
+            "s": "planned",
+            "h": "reference/core/simulation~phenomena-orbits-ephemerides"
+           },
+           {
+            "n": "tle",
+            "s": "planned",
+            "h": "reference/core/simulation~phenomena-orbits-tle"
+           },
+           {
+            "n": "n-body",
+            "s": "planned",
+            "h": "reference/core/simulation~phenomena-orbits-n-body"
+           },
+           {
+            "n": "transfers",
+            "s": "planned",
+            "h": "reference/core/simulation~phenomena-orbits-transfers"
+           }
+          ]
+         },
+         {
+          "n": "exchanges",
+          "s": "planned",
+          "h": "reference/core/simulation~phenomena-exchanges"
+         },
+         {
+          "n": "growth",
+          "s": "planned",
+          "h": "reference/core/simulation~phenomena-growth"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "n": "world",
+      "s": "partly",
+      "h": "reference/core/world",
+      "c": [
+       {
+        "n": "elements",
+        "s": "partly",
+        "h": "reference/core/world~elements",
+        "c": [
+         {
+          "n": "element",
+          "s": "built",
+          "h": "reference/core/world~elements-element"
+         },
+         {
+          "n": "props",
+          "s": "partly",
+          "h": "reference/core/world~elements-props"
+         },
+         {
+          "n": "order",
+          "s": "built",
+          "h": "reference/core/world~elements-order"
+         }
+        ]
+       },
+       {
+        "n": "settings",
+        "s": "built",
+        "h": "reference/core/world~settings",
+        "c": [
+         {
+          "n": "params",
+          "s": "built",
+          "h": "reference/core/world~settings-params"
+         },
+         {
+          "n": "readouts",
+          "s": "built",
+          "h": "reference/core/world~settings-readouts"
+         },
+         {
+          "n": "points",
+          "s": "built",
+          "h": "reference/core/world~settings-points"
+         }
+        ]
+       },
+       {
+        "n": "state",
+        "s": "partly",
+        "h": "reference/core/world~state",
+        "c": [
+         {
+          "n": "states",
+          "s": "built",
+          "h": "reference/core/world~state-states"
+         },
+         {
+          "n": "settled",
+          "s": "built",
+          "h": "reference/core/world~state-settled"
+         },
+         {
+          "n": "json",
+          "s": "planned",
+          "h": "reference/core/world~state-json"
+         }
+        ]
+       },
+       {
+        "n": "describe",
+        "s": "partly",
+        "h": "reference/core/world~describe",
+        "c": [
+         {
+          "n": "describe",
+          "s": "planned",
+          "h": "reference/core/world~describe-describe"
+         },
+         {
+          "n": "schemas",
+          "s": "partly",
+          "h": "reference/core/world~describe-schemas"
+         },
+         {
+          "n": "guide",
+          "s": "built",
+          "h": "reference/core/world~describe-guide"
+         }
+        ]
+       },
+       {
+        "n": "extend",
+        "s": "partly",
+        "h": "reference/core/world~extend",
+        "c": [
+         {
+          "n": "extend",
+          "s": "built",
+          "h": "reference/core/world~extend-extend"
+         },
+         {
+          "n": "provide",
+          "s": "planned",
+          "h": "reference/core/world~extend-provide"
+         },
+         {
+          "n": "hot-swap",
+          "s": "partly",
+          "h": "reference/core/world~extend-hot-swap"
+         }
+        ]
+       },
+       {
+        "n": "lifecycle",
+        "s": "built",
+        "h": "reference/core/world~lifecycle",
+        "c": [
+         {
+          "n": "world",
+          "s": "built",
+          "h": "reference/core/world~lifecycle-world"
+         },
+         {
+          "n": "errors",
+          "s": "built",
+          "h": "reference/core/world~lifecycle-errors"
+         },
+         {
+          "n": "dispose",
+          "s": "built",
+          "h": "reference/core/world~lifecycle-dispose"
+         }
+        ]
+       },
+       {
+        "n": "host",
+        "s": "partly",
+        "h": "reference/core/world~host",
+        "c": [
+         {
+          "n": "canvases",
+          "s": "planned",
+          "h": "reference/core/world~host-canvases"
+         },
+         {
+          "n": "plain",
+          "s": "built",
+          "h": "reference/core/world~host-plain"
+         },
+         {
+          "n": "react",
+          "s": "planned",
+          "h": "reference/core/world~host-react"
+         },
+         {
+          "n": "zebflow",
+          "s": "planned",
+          "h": "reference/core/world~host-zebflow"
+         },
+         {
+          "n": "server-safe",
+          "s": "built",
+          "h": "reference/core/world~host-server-safe"
+         },
+         {
+          "n": "package",
+          "s": "built",
+          "h": "reference/core/world~host-package"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "n": "runtime",
+      "s": "partly",
+      "h": "reference/core/runtime",
+      "c": [
+       {
+        "n": "frame",
+        "s": "built",
+        "h": "reference/core/runtime~frame"
+       },
+       {
+        "n": "detail",
+        "s": "built",
+        "h": "reference/core/runtime~detail",
+        "c": [
+         {
+          "n": "detail",
+          "s": "built",
+          "h": "reference/core/runtime~detail-detail"
+         },
+         {
+          "n": "priorities",
+          "s": "built",
+          "h": "reference/core/runtime~detail-priorities"
+         },
+         {
+          "n": "prefetch",
+          "s": "built",
+          "h": "reference/core/runtime~detail-prefetch"
+         }
+        ]
+       },
+       {
+        "n": "budget",
+        "s": "built",
+        "h": "reference/core/runtime~budget",
+        "c": [
+         {
+          "n": "budget",
+          "s": "built",
+          "h": "reference/core/runtime~budget-budget"
+         },
+         {
+          "n": "governor",
+          "s": "built",
+          "h": "reference/core/runtime~budget-governor"
+         },
+         {
+          "n": "memory",
+          "s": "built",
+          "h": "reference/core/runtime~budget-memory"
+         }
+        ]
+       },
+       {
+        "n": "workers",
+        "s": "partly",
+        "h": "reference/core/runtime~workers",
+        "c": [
+         {
+          "n": "workers",
+          "s": "built",
+          "h": "reference/core/runtime~workers-workers"
+         },
+         {
+          "n": "servers",
+          "s": "planned",
+          "h": "reference/core/runtime~workers-servers"
+         },
+         {
+          "n": "compile",
+          "s": "partly",
+          "h": "reference/core/runtime~workers-compile"
+         }
+        ]
+       },
+       {
+        "n": "partners",
+        "s": "planned",
+        "h": "reference/core/runtime~partners",
+        "c": [
+         {
+          "n": "external-engine",
+          "s": "planned",
+          "h": "reference/core/runtime~partners-external-engine"
+         },
+         {
+          "n": "fmi",
+          "s": "planned",
+          "h": "reference/core/runtime~partners-fmi"
+         },
+         {
+          "n": "experiment",
+          "s": "planned",
+          "h": "reference/core/runtime~partners-experiment"
+         }
+        ]
+       },
+       {
+        "n": "telemetry",
+        "s": "partly",
+        "h": "reference/core/runtime~telemetry",
+        "c": [
+         {
+          "n": "telemetry",
+          "s": "built",
+          "h": "reference/core/runtime~telemetry-telemetry"
+         },
+         {
+          "n": "remote-log",
+          "s": "built",
+          "h": "reference/core/runtime~telemetry-remote-log"
+         },
+         {
+          "n": "shots",
+          "s": "planned",
+          "h": "reference/core/runtime~telemetry-shots"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "n": "modules",
+    "s": "partly",
+    "h": "",
+    "c": [
+     {
+      "n": "shared",
+      "s": "planned",
+      "h": "reference/modules/world~shared"
+     },
+     {
+      "n": "world",
+      "s": "partly",
+      "h": "reference/modules/world",
+      "c": [
+       {
+        "n": "surface",
+        "s": "partly",
+        "h": "reference/modules/world~surface",
+        "c": [
+         {
+          "n": "tiles",
+          "s": "built",
+          "h": "reference/modules/world~surface-tiles"
+         },
+         {
+          "n": "imagery",
+          "s": "built",
+          "h": "reference/modules/world~surface-imagery"
+         },
+         {
+          "n": "terrain",
+          "s": "built",
+          "h": "reference/modules/world~surface-terrain"
+         },
+         {
+          "n": "street-detail",
+          "s": "built",
+          "h": "reference/modules/world~surface-street-detail"
+         },
+         {
+          "n": "provenance",
+          "s": "planned",
+          "h": "reference/modules/world~surface-provenance"
+         },
+         {
+          "n": "sky",
+          "s": "built",
+          "h": "reference/modules/world~surface-sky"
+         }
+        ]
+       },
+       {
+        "n": "plane",
+        "s": "built",
+        "h": "reference/modules/world~plane"
+       },
+       {
+        "n": "sun",
+        "s": "planned",
+        "h": "reference/modules/world~sun"
+       },
+       {
+        "n": "earth",
+        "s": "partly",
+        "h": "reference/modules/earth",
+        "c": [
+         {
+          "n": "shared",
+          "s": "partly",
+          "h": "reference/modules/earth~shared"
+         },
+         {
+          "n": "body",
+          "s": "partly",
+          "h": "reference/modules/earth~body",
+          "c": [
+           {
+            "n": "earth",
+            "s": "built",
+            "h": "reference/modules/earth~body-earth"
+           },
+           {
+            "n": "base",
+            "s": "partly",
+            "h": "reference/modules/earth~body-base",
+            "c": [
+             {
+              "n": "imagery",
+              "s": "partly",
+              "h": "reference/modules/earth~body-base-imagery",
+              "c": [
+               {
+                "n": "esri",
+                "s": "built",
+                "h": "reference/modules/earth~body-base-imagery-esri"
+               },
+               {
+                "n": "osm",
+                "s": "built",
+                "h": "reference/modules/earth~body-base-imagery-osm"
+               },
+               {
+                "n": "sentinel",
+                "s": "built",
+                "h": "reference/modules/earth~body-base-imagery-sentinel"
+               },
+               {
+                "n": "mapbox",
+                "s": "planned",
+                "h": "reference/modules/earth~body-base-imagery-mapbox"
+               },
+               {
+                "n": "custom",
+                "s": "built",
+                "h": "reference/modules/earth~body-base-imagery-custom"
+               }
+              ]
+             },
+             {
+              "n": "terrain",
+              "s": "partly",
+              "h": "reference/modules/earth~body-base-terrain",
+              "c": [
+               {
+                "n": "mapzen",
+                "s": "built",
+                "h": "reference/modules/earth~body-base-terrain-mapzen"
+               },
+               {
+                "n": "grid",
+                "s": "built",
+                "h": "reference/modules/earth~body-base-terrain-grid"
+               },
+               {
+                "n": "gebco",
+                "s": "planned",
+                "h": "reference/modules/earth~body-base-terrain-gebco"
+               },
+               {
+                "n": "etopo",
+                "s": "planned",
+                "h": "reference/modules/earth~body-base-terrain-etopo"
+               },
+               {
+                "n": "lidar",
+                "s": "proposed",
+                "h": "reference/modules/earth~body-base-terrain-lidar"
+               },
+               {
+                "n": "custom",
+                "s": "built",
+                "h": "reference/modules/earth~body-base-terrain-custom"
+               }
+              ]
+             },
+             {
+              "n": "basemap",
+              "s": "planned",
+              "h": "reference/modules/earth~body-base-basemap"
+             },
+             {
+              "n": "coast",
+              "s": "planned",
+              "h": "reference/modules/earth~body-base-coast"
+             },
+             {
+              "n": "offline",
+              "s": "built",
+              "h": "reference/modules/earth~body-base-offline"
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "n": "ground",
+          "s": "planned",
+          "h": "reference/modules/earth~ground",
+          "c": [
+           {
+            "n": "terrain",
+            "s": "planned",
+            "h": "reference/modules/earth~ground-terrain",
+            "c": [
+             {
+              "n": "terraform",
+              "s": "planned",
+              "h": "reference/modules/earth~ground-terrain-terraform"
+             },
+             {
+              "n": "looks",
+              "s": "planned",
+              "h": "reference/modules/earth~ground-terrain-looks"
+             }
+            ]
+           },
+           {
+            "n": "subsurface",
+            "s": "planned",
+            "h": "reference/modules/earth~ground-subsurface",
+            "c": [
+             {
+              "n": "strata",
+              "s": "planned",
+              "h": "reference/modules/earth~ground-subsurface-strata"
+             },
+             {
+              "n": "wells",
+              "s": "planned",
+              "h": "reference/modules/earth~ground-subsurface-wells"
+             },
+             {
+              "n": "aquifers",
+              "s": "planned",
+              "h": "reference/modules/earth~ground-subsurface-aquifers"
+             },
+             {
+              "n": "magma",
+              "s": "planned",
+              "h": "reference/modules/earth~ground-subsurface-magma"
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "n": "air",
+          "s": "partly",
+          "h": "reference/modules/earth~air",
+          "c": [
+           {
+            "n": "atmosphere",
+            "s": "built",
+            "h": "reference/modules/earth~air-atmosphere",
+            "c": [
+             {
+              "n": "scattering",
+              "s": "built",
+              "h": "reference/modules/earth~air-atmosphere-scattering"
+             },
+             {
+              "n": "haze",
+              "s": "built",
+              "h": "reference/modules/earth~air-atmosphere-haze"
+             },
+             {
+              "n": "clouds",
+              "s": "built",
+              "h": "reference/modules/earth~air-atmosphere-clouds"
+             }
+            ]
+           },
+           {
+            "n": "weather",
+            "s": "built",
+            "h": "reference/modules/earth~air-weather",
+            "c": [
+             {
+              "n": "presets",
+              "s": "built",
+              "h": "reference/modules/earth~air-weather-presets"
+             },
+             {
+              "n": "wind",
+              "s": "built",
+              "h": "reference/modules/earth~air-weather-wind"
+             },
+             {
+              "n": "rain",
+              "s": "built",
+              "h": "reference/modules/earth~air-weather-rain"
+             },
+             {
+              "n": "fog",
+              "s": "built",
+              "h": "reference/modules/earth~air-weather-fog"
+             }
+            ]
+           },
+           {
+            "n": "sky",
+            "s": "partly",
+            "h": "reference/modules/earth~air-sky",
+            "c": [
+             {
+              "n": "sun",
+              "s": "built",
+              "h": "reference/modules/earth~air-sky-sun"
+             },
+             {
+              "n": "moon",
+              "s": "built",
+              "h": "reference/modules/earth~air-sky-moon"
+             },
+             {
+              "n": "stars",
+              "s": "built",
+              "h": "reference/modules/earth~air-sky-stars"
+             },
+             {
+              "n": "cultures",
+              "s": "planned",
+              "h": "reference/modules/earth~air-sky-cultures"
+             },
+             {
+              "n": "locks",
+              "s": "planned",
+              "h": "reference/modules/earth~air-sky-locks"
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "n": "water",
+          "s": "partly",
+          "h": "reference/modules/earth~water",
+          "c": [
+           {
+            "n": "hydrology",
+            "s": "partly",
+            "h": "reference/modules/earth~water-hydrology",
+            "c": [
+             {
+              "n": "water",
+              "s": "built",
+              "h": "reference/modules/earth~water-hydrology-water"
+             },
+             {
+              "n": "flow",
+              "s": "planned",
+              "h": "reference/modules/earth~water-hydrology-flow"
+             },
+             {
+              "n": "channels",
+              "s": "planned",
+              "h": "reference/modules/earth~water-hydrology-channels"
+             }
+            ]
+           },
+           {
+            "n": "sea",
+            "s": "partly",
+            "h": "reference/modules/earth~water-sea",
+            "c": [
+             {
+              "n": "level",
+              "s": "planned",
+              "h": "reference/modules/earth~water-sea-level"
+             },
+             {
+              "n": "shore",
+              "s": "built",
+              "h": "reference/modules/earth~water-sea-shore"
+             },
+             {
+              "n": "look",
+              "s": "built",
+              "h": "reference/modules/earth~water-sea-look"
+             },
+             {
+              "n": "exposed",
+              "s": "planned",
+              "h": "reference/modules/earth~water-sea-exposed"
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "n": "climate",
+          "s": "partly",
+          "h": "reference/modules/earth~climate",
+          "c": [
+           {
+            "n": "heat",
+            "s": "built",
+            "h": "reference/modules/earth~climate-heat"
+           },
+           {
+            "n": "fire",
+            "s": "planned",
+            "h": "reference/modules/earth~climate-fire"
+           }
+          ]
+         },
+         {
+          "n": "life",
+          "s": "planned",
+          "h": "reference/modules/earth~life",
+          "c": [
+           {
+            "n": "society",
+            "s": "planned",
+            "h": "reference/modules/earth~life-society"
+           },
+           {
+            "n": "ecology",
+            "s": "planned",
+            "h": "reference/modules/earth~life-ecology"
+           },
+           {
+            "n": "places",
+            "s": "planned",
+            "h": "reference/modules/earth~life-places",
+            "c": [
+             {
+              "n": "lots",
+              "s": "planned",
+              "h": "reference/modules/earth~life-places-lots"
+             },
+             {
+              "n": "blocks",
+              "s": "planned",
+              "h": "reference/modules/earth~life-places-blocks"
+             }
+            ]
+           },
+           {
+            "n": "soundscape",
+            "s": "planned",
+            "h": "reference/modules/earth~life-soundscape"
+           }
+          ]
+         },
+         {
+          "n": "analysis",
+          "s": "planned",
+          "h": "reference/modules/earth~analysis",
+          "c": [
+           {
+            "n": "geo",
+            "s": "planned",
+            "h": "reference/modules/earth~analysis-geo"
+           },
+           {
+            "n": "learn",
+            "s": "planned",
+            "h": "reference/modules/earth~analysis-learn"
+           }
+          ]
+         },
+         {
+          "n": "presets",
+          "s": "partly",
+          "h": "reference/modules/earth~presets",
+          "c": [
+           {
+            "n": "built",
+            "s": "partly",
+            "h": "reference/modules/earth~presets-built",
+            "c": [
+             {
+              "n": "roads",
+              "s": "partly",
+              "h": "reference/modules/earth~presets-built-roads",
+              "c": [
+               {
+                "n": "sections",
+                "s": "built",
+                "h": "reference/modules/earth~presets-built-roads-sections"
+               },
+               {
+                "n": "junctions",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-built-roads-junctions"
+               },
+               {
+                "n": "markings",
+                "s": "built",
+                "h": "reference/modules/earth~presets-built-roads-markings"
+               },
+               {
+                "n": "decks",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-built-roads-decks"
+               },
+               {
+                "n": "sidewalks",
+                "s": "built",
+                "h": "reference/modules/earth~presets-built-roads-sidewalks"
+               },
+               {
+                "n": "elevated",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-built-roads-elevated"
+               }
+              ]
+             },
+             {
+              "n": "rail",
+              "s": "planned",
+              "h": "reference/modules/earth~presets-built-rail",
+              "c": [
+               {
+                "n": "track",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-built-rail-track"
+               },
+               {
+                "n": "crossings",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-built-rail-crossings"
+               },
+               {
+                "n": "viaducts",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-built-rail-viaducts"
+               },
+               {
+                "n": "stations",
+                "s": "proposed",
+                "h": "reference/modules/earth~presets-built-rail-stations"
+               }
+              ]
+             },
+             {
+              "n": "buildings",
+              "s": "partly",
+              "h": "reference/modules/earth~presets-built-buildings",
+              "c": [
+               {
+                "n": "footprints",
+                "s": "built",
+                "h": "reference/modules/earth~presets-built-buildings-footprints"
+               },
+               {
+                "n": "cityjson",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-built-buildings-cityjson"
+               },
+               {
+                "n": "typology",
+                "s": "built",
+                "h": "reference/modules/earth~presets-built-buildings-typology"
+               },
+               {
+                "n": "facades",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-built-buildings-facades"
+               },
+               {
+                "n": "roofs",
+                "s": "built",
+                "h": "reference/modules/earth~presets-built-buildings-roofs"
+               },
+               {
+                "n": "windows",
+                "s": "built",
+                "h": "reference/modules/earth~presets-built-buildings-windows"
+               },
+               {
+                "n": "frontage",
+                "s": "partly",
+                "h": "reference/modules/earth~presets-built-buildings-frontage"
+               },
+               {
+                "n": "landmarks",
+                "s": "proposed",
+                "h": "reference/modules/earth~presets-built-buildings-landmarks"
+               },
+               {
+                "n": "interiors",
+                "s": "proposed",
+                "h": "reference/modules/earth~presets-built-buildings-interiors"
+               }
+              ]
+             },
+             {
+              "n": "furniture",
+              "s": "proposed",
+              "h": "reference/modules/earth~presets-built-furniture",
+              "c": [
+               {
+                "n": "benches",
+                "s": "proposed",
+                "h": "reference/modules/earth~presets-built-furniture-benches"
+               },
+               {
+                "n": "bollards",
+                "s": "proposed",
+                "h": "reference/modules/earth~presets-built-furniture-bollards"
+               },
+               {
+                "n": "bins",
+                "s": "proposed",
+                "h": "reference/modules/earth~presets-built-furniture-bins"
+               },
+               {
+                "n": "umbrellas",
+                "s": "proposed",
+                "h": "reference/modules/earth~presets-built-furniture-umbrellas"
+               },
+               {
+                "n": "signs",
+                "s": "proposed",
+                "h": "reference/modules/earth~presets-built-furniture-signs"
+               },
+               {
+                "n": "planters",
+                "s": "proposed",
+                "h": "reference/modules/earth~presets-built-furniture-planters"
+               }
+              ]
+             },
+             {
+              "n": "infrastructure",
+              "s": "partly",
+              "h": "reference/modules/earth~presets-built-infrastructure",
+              "c": [
+               {
+                "n": "energy",
+                "s": "proposed",
+                "h": "reference/modules/earth~presets-built-infrastructure-energy",
+                "c": [
+                 {
+                  "n": "wind-turbine",
+                  "s": "proposed",
+                  "h": "reference/modules/earth~presets-built-infrastructure-energy-wind-turbine"
+                 },
+                 {
+                  "n": "solar-farm",
+                  "s": "proposed",
+                  "h": "reference/modules/earth~presets-built-infrastructure-energy-solar-farm"
+                 },
+                 {
+                  "n": "pylon",
+                  "s": "proposed",
+                  "h": "reference/modules/earth~presets-built-infrastructure-energy-pylon"
+                 },
+                 {
+                  "n": "substation",
+                  "s": "proposed",
+                  "h": "reference/modules/earth~presets-built-infrastructure-energy-substation"
+                 }
+                ]
+               },
+               {
+                "n": "mobility",
+                "s": "built",
+                "h": "reference/modules/earth~presets-built-infrastructure-mobility",
+                "c": [
+                 {
+                  "n": "charger",
+                  "s": "built",
+                  "h": "reference/modules/earth~presets-built-infrastructure-mobility-charger"
+                 }
+                ]
+               },
+               {
+                "n": "utilities",
+                "s": "proposed",
+                "h": "reference/modules/earth~presets-built-infrastructure-utilities",
+                "c": [
+                 {
+                  "n": "pole",
+                  "s": "proposed",
+                  "h": "reference/modules/earth~presets-built-infrastructure-utilities-pole"
+                 },
+                 {
+                  "n": "lines",
+                  "s": "proposed",
+                  "h": "reference/modules/earth~presets-built-infrastructure-utilities-lines"
+                 },
+                 {
+                  "n": "pipe",
+                  "s": "proposed",
+                  "h": "reference/modules/earth~presets-built-infrastructure-utilities-pipe"
+                 },
+                 {
+                  "n": "cabinet",
+                  "s": "proposed",
+                  "h": "reference/modules/earth~presets-built-infrastructure-utilities-cabinet"
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "n": "lights",
+              "s": "planned",
+              "h": "reference/modules/earth~presets-built-lights",
+              "c": [
+               {
+                "n": "street",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-built-lights-street"
+               },
+               {
+                "n": "vehicle",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-built-lights-vehicle"
+               },
+               {
+                "n": "windows",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-built-lights-windows"
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "n": "mobility",
+            "s": "planned",
+            "h": "reference/modules/earth~presets-mobility",
+            "c": [
+             {
+              "n": "traffic",
+              "s": "planned",
+              "h": "reference/modules/earth~presets-mobility-traffic"
+             },
+             {
+              "n": "signals",
+              "s": "planned",
+              "h": "reference/modules/earth~presets-mobility-signals"
+             },
+             {
+              "n": "transit",
+              "s": "planned",
+              "h": "reference/modules/earth~presets-mobility-transit"
+             }
+            ]
+           },
+           {
+            "n": "living",
+            "s": "partly",
+            "h": "reference/modules/earth~presets-living",
+            "c": [
+             {
+              "n": "plants",
+              "s": "partly",
+              "h": "reference/modules/earth~presets-living-plants",
+              "c": [
+               {
+                "n": "species",
+                "s": "built",
+                "h": "reference/modules/earth~presets-living-plants-species"
+               },
+               {
+                "n": "growth",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-living-plants-growth"
+               },
+               {
+                "n": "sway",
+                "s": "planned",
+                "h": "reference/modules/earth~presets-living-plants-sway"
+               },
+               {
+                "n": "canopy",
+                "s": "built",
+                "h": "reference/modules/earth~presets-living-plants-canopy"
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "n": "moon",
+        "s": "planned",
+        "h": "reference/modules/world~moon"
+       },
+       {
+        "n": "mars",
+        "s": "planned",
+        "h": "reference/modules/world~mars"
+       },
+       {
+        "n": "space",
+        "s": "planned",
+        "h": "reference/modules/space",
+        "c": [
+         {
+          "n": "satellites",
+          "s": "planned",
+          "h": "reference/modules/space~satellites",
+          "c": [
+           {
+            "n": "tle",
+            "s": "planned",
+            "h": "reference/modules/space~satellites-tle"
+           }
+          ]
+         },
+         {
+          "n": "asteroids",
+          "s": "planned",
+          "h": "reference/modules/space~asteroids"
+         },
+         {
+          "n": "stars",
+          "s": "planned",
+          "h": "reference/modules/space~stars"
+         },
+         {
+          "n": "constellations",
+          "s": "planned",
+          "h": "reference/modules/space~constellations"
+         },
+         {
+          "n": "galaxies",
+          "s": "planned",
+          "h": "reference/modules/space~galaxies"
+         },
+         {
+          "n": "exoplanets",
+          "s": "planned",
+          "h": "reference/modules/space~exoplanets"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "n": "presets",
+      "s": "partly",
+      "h": "reference/modules/presets",
+      "c": [
+       {
+        "n": "shared",
+        "s": "partly",
+        "h": "reference/modules/presets~shared",
+        "c": [
+         {
+          "n": "locomotion",
+          "s": "partly",
+          "h": "reference/modules/presets~shared-locomotion",
+          "c": [
+           {
+            "n": "lane-follower",
+            "s": "planned",
+            "h": "reference/modules/presets~shared-locomotion-lane-follower"
+           },
+           {
+            "n": "rail-follower",
+            "s": "planned",
+            "h": "reference/modules/presets~shared-locomotion-rail-follower"
+           },
+           {
+            "n": "walker",
+            "s": "built",
+            "h": "reference/modules/presets~shared-locomotion-walker"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "n": "humans",
+        "s": "partly",
+        "h": "reference/modules/human",
+        "c": [
+         {
+          "n": "body",
+          "s": "built",
+          "h": "reference/modules/human~body"
+         },
+         {
+          "n": "face",
+          "s": "built",
+          "h": "reference/modules/human~face"
+         },
+         {
+          "n": "expressions",
+          "s": "partly",
+          "h": "reference/modules/human~expressions",
+          "c": [
+           {
+            "n": "emotions",
+            "s": "partly",
+            "h": "reference/modules/human~expressions-emotions"
+           },
+           {
+            "n": "visemes",
+            "s": "planned",
+            "h": "reference/modules/human~expressions-visemes"
+           },
+           {
+            "n": "gestures",
+            "s": "planned",
+            "h": "reference/modules/human~expressions-gestures"
+           },
+           {
+            "n": "blink",
+            "s": "built",
+            "h": "reference/modules/human~expressions-blink"
+           }
+          ]
+         },
+         {
+          "n": "hair",
+          "s": "built",
+          "h": "reference/modules/human~hair"
+         },
+         {
+          "n": "clothing",
+          "s": "partly",
+          "h": "reference/modules/human~clothing"
+         },
+         {
+          "n": "poses",
+          "s": "built",
+          "h": "reference/modules/human~poses"
+         },
+         {
+          "n": "gaits",
+          "s": "built",
+          "h": "reference/modules/human~gaits"
+         },
+         {
+          "n": "people",
+          "s": "built",
+          "h": "reference/modules/human~people"
+         },
+         {
+          "n": "speech",
+          "s": "planned",
+          "h": "reference/modules/human~speech"
+         },
+         {
+          "n": "vrm",
+          "s": "planned",
+          "h": "reference/modules/human~vrm"
+         }
+        ]
+       },
+       {
+        "n": "animals",
+        "s": "planned",
+        "h": "reference/modules/presets~animals",
+        "c": [
+         {
+          "n": "quadruped",
+          "s": "planned",
+          "h": "reference/modules/presets~animals-quadruped"
+         },
+         {
+          "n": "bird",
+          "s": "planned",
+          "h": "reference/modules/presets~animals-bird"
+         },
+         {
+          "n": "fish",
+          "s": "planned",
+          "h": "reference/modules/presets~animals-fish"
+         },
+         {
+          "n": "reptile",
+          "s": "planned",
+          "h": "reference/modules/presets~animals-reptile"
+         }
+        ]
+       },
+       {
+        "n": "vehicles",
+        "s": "partly",
+        "h": "reference/modules/presets~vehicles",
+        "c": [
+         {
+          "n": "car",
+          "s": "built",
+          "h": "reference/modules/presets~vehicles-car"
+         },
+         {
+          "n": "motorbike",
+          "s": "planned",
+          "h": "reference/modules/presets~vehicles-motorbike"
+         },
+         {
+          "n": "bus",
+          "s": "planned",
+          "h": "reference/modules/presets~vehicles-bus"
+         },
+         {
+          "n": "minibus",
+          "s": "planned",
+          "h": "reference/modules/presets~vehicles-minibus"
+         },
+         {
+          "n": "train",
+          "s": "planned",
+          "h": "reference/modules/presets~vehicles-train"
+         }
+        ]
+       },
+       {
+        "n": "drones",
+        "s": "built",
+        "h": "reference/modules/presets~drones"
+       },
+       {
+        "n": "robots",
+        "s": "planned",
+        "h": "reference/modules/presets~robots",
+        "c": [
+         {
+          "n": "robot",
+          "s": "planned",
+          "h": "reference/modules/presets~robots-robot"
+         },
+         {
+          "n": "android",
+          "s": "planned",
+          "h": "reference/modules/presets~robots-android"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "n": "kits",
+    "s": "partly",
+    "h": "",
+    "c": [
+     {
+      "n": "dashboard",
+      "s": "built",
+      "h": "reference/kits/dashboard",
+      "c": [
+       {
+        "n": "legend",
+        "s": "built",
+        "h": "reference/kits/dashboard~legend"
+       },
+       {
+        "n": "cards",
+        "s": "built",
+        "h": "reference/kits/dashboard~cards"
+       },
+       {
+        "n": "stats",
+        "s": "built",
+        "h": "reference/kits/dashboard~stats"
+       },
+       {
+        "n": "layers",
+        "s": "built",
+        "h": "reference/kits/dashboard~layers"
+       }
+      ]
+     },
+     {
+      "n": "game",
+      "s": "built",
+      "h": "reference/kits/game",
+      "c": [
+       {
+        "n": "avatars",
+        "s": "built",
+        "h": "reference/kits/game~avatars"
+       },
+       {
+        "n": "collision",
+        "s": "built",
+        "h": "reference/kits/game~collision"
+       }
+      ]
+     },
+     {
+      "n": "authoring",
+      "s": "planned",
+      "h": "reference/kits/authoring",
+      "c": [
+       {
+        "n": "networks",
+        "s": "planned",
+        "h": "reference/kits/authoring~networks"
+       },
+       {
+        "n": "zones",
+        "s": "planned",
+        "h": "reference/kits/authoring~zones"
+       },
+       {
+        "n": "rules",
+        "s": "planned",
+        "h": "reference/kits/authoring~rules"
+       },
+       {
+        "n": "terraform",
+        "s": "planned",
+        "h": "reference/kits/authoring~terraform"
+       },
+       {
+        "n": "diffs",
+        "s": "planned",
+        "h": "reference/kits/authoring~diffs"
+       },
+       {
+        "n": "pieces",
+        "s": "proposed",
+        "h": "reference/kits/authoring~pieces"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "n": "tools",
+    "s": "partly",
+    "h": "reference/tools",
+    "c": [
+     {
+      "n": "geo",
+      "s": "planned",
+      "h": "reference/tools~geo"
+     },
+     {
+      "n": "scan",
+      "s": "proposed",
+      "h": "reference/tools~scan",
+      "c": [
+       {
+        "n": "classify",
+        "s": "proposed",
+        "h": "reference/tools~scan-classify"
+       },
+       {
+        "n": "align",
+        "s": "proposed",
+        "h": "reference/tools~scan-align"
+       },
+       {
+        "n": "fit",
+        "s": "proposed",
+        "h": "reference/tools~scan-fit"
+       },
+       {
+        "n": "clean",
+        "s": "proposed",
+        "h": "reference/tools~scan-clean"
+       },
+       {
+        "n": "grid",
+        "s": "proposed",
+        "h": "reference/tools~scan-grid"
+       }
+      ]
+     },
+     {
+      "n": "bake",
+      "s": "partly",
+      "h": "reference/tools~bake"
+     },
+     {
+      "n": "compile",
+      "s": "partly",
+      "h": "reference/tools~compile",
+      "c": [
+       {
+        "n": "run",
+        "s": "partly",
+        "h": "reference/tools~compile-run",
+        "c": [
+         {
+          "n": "on-save",
+          "s": "planned",
+          "h": "reference/tools~compile-run-on-save"
+         },
+         {
+          "n": "command",
+          "s": "built",
+          "h": "reference/tools~compile-run-command"
+         },
+         {
+          "n": "page",
+          "s": "planned",
+          "h": "reference/tools~compile-run-page"
+         }
+        ]
+       },
+       {
+        "n": "inputs",
+        "s": "partly",
+        "h": "reference/tools~compile-inputs"
+       },
+       {
+        "n": "steps",
+        "s": "partly",
+        "h": "reference/tools~compile-steps",
+        "c": [
+         {
+          "n": "solve",
+          "s": "partly",
+          "h": "reference/tools~compile-steps-solve"
+         },
+         {
+          "n": "resolve",
+          "s": "planned",
+          "h": "reference/tools~compile-steps-resolve"
+         },
+         {
+          "n": "mesh",
+          "s": "planned",
+          "h": "reference/tools~compile-steps-mesh"
+         },
+         {
+          "n": "assign",
+          "s": "planned",
+          "h": "reference/tools~compile-steps-assign"
+         },
+         {
+          "n": "solids",
+          "s": "planned",
+          "h": "reference/tools~compile-steps-solids"
+         },
+         {
+          "n": "logic",
+          "s": "planned",
+          "h": "reference/tools~compile-steps-logic"
+         },
+         {
+          "n": "manifest",
+          "s": "partly",
+          "h": "reference/tools~compile-steps-manifest"
+         }
+        ]
+       },
+       {
+        "n": "custom-steps",
+        "s": "planned",
+        "h": "reference/tools~compile-custom-steps"
+       },
+       {
+        "n": "options",
+        "s": "planned",
+        "h": "reference/tools~compile-options"
+       },
+       {
+        "n": "stale",
+        "s": "planned",
+        "h": "reference/tools~compile-stale"
+       },
+       {
+        "n": "outputs",
+        "s": "partly",
+        "h": "reference/tools~compile-outputs"
+       }
+      ]
+     },
+     {
+      "n": "convert",
+      "s": "planned",
+      "h": "reference/tools~convert",
+      "c": [
+       {
+        "n": "fbx",
+        "s": "planned",
+        "h": "reference/tools~convert-fbx"
+       },
+       {
+        "n": "ifc",
+        "s": "planned",
+        "h": "reference/tools~convert-ifc"
+       },
+       {
+        "n": "citygml",
+        "s": "planned",
+        "h": "reference/tools~convert-citygml"
+       },
+       {
+        "n": "las",
+        "s": "planned",
+        "h": "reference/tools~convert-las"
+       },
+       {
+        "n": "usd",
+        "s": "planned",
+        "h": "reference/tools~convert-usd"
+       },
+       {
+        "n": "i3s",
+        "s": "proposed",
+        "h": "reference/tools~convert-i3s"
+       }
+      ]
+     },
+     {
+      "n": "export",
+      "s": "planned",
+      "h": "reference/tools~export",
+      "c": [
+       {
+        "n": "usd",
+        "s": "planned",
+        "h": "reference/tools~export-usd"
+       }
+      ]
+     },
+     {
+      "n": "checks",
+      "s": "built",
+      "h": "reference/tools~checks",
+      "c": [
+       {
+        "n": "smoke",
+        "s": "built",
+        "h": "reference/tools~checks-smoke"
+       },
+       {
+        "n": "parity",
+        "s": "built",
+        "h": "reference/tools~checks-parity"
+       },
+       {
+        "n": "twins",
+        "s": "built",
+        "h": "reference/tools~checks-twins"
+       },
+       {
+        "n": "regressions",
+        "s": "built",
+        "h": "reference/tools~checks-regressions"
+       },
+       {
+        "n": "suite",
+        "s": "built",
+        "h": "reference/tools~checks-suite"
+       },
+       {
+        "n": "perf",
+        "s": "built",
+        "h": "reference/tools~checks-perf"
+       },
+       {
+        "n": "recipes",
+        "s": "built",
+        "h": "reference/tools~checks-recipes"
+       }
+      ]
+     },
+     {
+      "n": "catalog",
+      "s": "planned",
+      "h": "reference/tools~catalog"
+     },
+     {
+      "n": "cli",
+      "s": "planned",
+      "h": "reference/tools~cli"
+     },
+     {
+      "n": "mcp",
+      "s": "planned",
+      "h": "reference/tools~mcp"
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,94 @@
+{
+ "clayton": {
+  "grid": {
+   "lon": 145.1205,
+   "lat": -37.9245,
+   "zoom": 18.2,
+   "tilt": 58,
+   "bearing": 330,
+   "what": "the roads example's own view: T and X junctions of local streets"
+  },
+  "close": {
+   "lon": 145.1205,
+   "lat": -37.9245,
+   "zoom": 20.2,
+   "tilt": 55,
+   "bearing": 330,
+   "what": "the example's view, closer"
+  },
+  "t-junction": {
+   "lon": 145.12131,
+   "lat": -37.92416,
+   "zoom": 20.6,
+   "tilt": 55,
+   "bearing": 20,
+   "what": "a T junction of local streets, close"
+  },
+  "roundabout": {
+   "lon": 145.11556,
+   "lat": -37.91891,
+   "zoom": 20.2,
+   "tilt": 55,
+   "bearing": 0,
+   "what": "a roundabout"
+  },
+  "arterial": {
+   "lon": 145.1205,
+   "lat": -37.9102,
+   "zoom": 19.5,
+   "tilt": 58,
+   "bearing": 330,
+   "what": "the divided highway at a signalled junction"
+  },
+  "top": {
+   "lon": 145.1205,
+   "lat": -37.9245,
+   "zoom": 19.6,
+   "tilt": 0,
+   "bearing": 0,
+   "what": "from above"
+  },
+  "x-junction": {
+   "lon": 145.11905,
+   "lat": -37.92322,
+   "zoom": 20.3,
+   "tilt": 55,
+   "bearing": 340,
+   "what": "an X junction of a collector, close"
+  }
+ },
+ "street": {
+  "highway": {
+   "lon": 145.1213,
+   "lat": -37.9108,
+   "zoom": 19.4,
+   "tilt": 58,
+   "bearing": 330,
+   "what": "the divided highway at a signalled junction (Princes Highway)"
+  },
+  "highway-top": {
+   "lon": 145.1213,
+   "lat": -37.9108,
+   "zoom": 19.2,
+   "tilt": 0,
+   "bearing": 0,
+   "what": "the same from above"
+  },
+  "highway-close": {
+   "lon": 145.1222,
+   "lat": -37.9114,
+   "zoom": 20.4,
+   "tilt": 55,
+   "bearing": 300,
+   "what": "its kerb returns and medians, close"
+  },
+  "grid": {
+   "lon": 145.1215,
+   "lat": -37.9246,
+   "zoom": 19.6,
+   "tilt": 55,
+   "bearing": 20,
+   "what": "the street level's own view, closer"
+  }
+ }
+}

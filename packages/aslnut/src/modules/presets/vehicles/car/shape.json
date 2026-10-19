@@ -1,0 +1,9 @@
+{
+  "id": "car",
+  "name": "Road vehicle",
+  "version": "2.0.0",
+  "licence": "Apache-2.0",
+  "author": "aslnut",
+  "about": "A road vehicle from its silhouette (wheelbase, overhangs, bonnet, windscreen rake, roof height and line, tail, clearance, wheels and arches, belt, glass, cladding, lamps), each type a row of those numbers (hatch, sedan, wagon, pickup, van, bus, truck, suv, crossover, tractor, citybus): a smooth body swept from its side profile, its glass wrapping round, head and tail lamps, a bed, a box or a trailer on a hinge at its fifth wheel; its paint tinted (one build for a fleet of colours), its glass, cladding and load groups; wheels, front doors and a trailer as parts, seats, grips and entries as anchors.",
+  "tags": ["vehicle", "car", "road"]
+}

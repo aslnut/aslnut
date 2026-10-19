@@ -1,0 +1,16 @@
+{
+  "name": "@aslnut/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The reference host for aslnut's formats: serve or bake mesh tiles and PMTiles archives, with live edits",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "node main.ts",
+    "bake": "node bake.ts",
+    "check": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "earcut": "^3.2.4"
+  }
+}

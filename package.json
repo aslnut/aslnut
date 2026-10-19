@@ -1,0 +1,21 @@
+{
+  "name": "aslnut-workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm test -w packages/aslnut",
+    "check": "npm run check -w packages/aslnut && npm run check -w packages/server",
+    "dev": "npm run dev -w packages/aslnut",
+    "examples": "npm run examples -w packages/aslnut",
+    "server": "node packages/server/main.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@webgpu/types": "^0.1.74",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3"
+  }
+}

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- aslnut: a hazelnut (the seed of origin): round shell, small tip on top, pale rough scar at the base
+       carrying a faint cell grid — the atom the world grows from -->
+  <defs>
+    <radialGradient id="shell" cx="38%" cy="36%" r="72%">
+      <stop offset="0" stop-color="#d08f4e"/>
+      <stop offset="0.55" stop-color="#a0612c"/>
+      <stop offset="1" stop-color="#5a3216"/>
+    </radialGradient>
+    <linearGradient id="scar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dcc79a"/>
+      <stop offset="1" stop-color="#bfa06a"/>
+    </linearGradient>
+    <clipPath id="scarClip"><path d="M60 170 C78 158 102 152 128 152 C154 152 178 158 196 170 C188 206 162 230 128 230 C94 230 68 206 60 170 Z"/></clipPath>
+  </defs>
+  <!-- shell: round, gently pointed to the tip -->
+  <path d="M128 26 C140 40 160 52 178 66 C202 86 214 112 214 142 C214 194 176 232 128 232 C80 232 42 194 42 142 C42 112 54 86 78 66 C96 52 116 40 128 26 Z" fill="url(#shell)"/>
+  <!-- faint shell stripes -->
+  <g fill="none" stroke="#5a3216" stroke-opacity="0.22" stroke-width="3" stroke-linecap="round">
+    <path d="M128 34 C112 70 104 110 106 150"/><path d="M128 34 C146 70 154 110 152 150"/>
+    <path d="M124 36 C92 66 76 104 78 150"/><path d="M132 36 C164 66 180 104 178 150"/>
+  </g>
+  <!-- tip -->
+  <path d="M128 26 L128 12" stroke="#6b4422" stroke-width="6" stroke-linecap="round"/>
+  <!-- shine -->
+  <path d="M74 120 C78 96 92 80 110 72" fill="none" stroke="#f3c690" stroke-opacity="0.6" stroke-width="8" stroke-linecap="round"/>
+  <!-- pale base scar with the cell grid -->
+  <path d="M60 170 C78 158 102 152 128 152 C154 152 178 158 196 170 C188 206 162 230 128 230 C94 230 68 206 60 170 Z" fill="url(#scar)"/>
+  <g clip-path="url(#scarClip)" stroke="#9c7d48" stroke-opacity="0.6" stroke-width="2" fill="none">
+    <path d="M56 182 Q128 164 200 182"/><path d="M60 198 Q128 182 196 198"/><path d="M70 214 Q128 200 186 214"/>
+    <path d="M96 152 Q90 190 98 232"/><path d="M128 150 L128 232"/><path d="M160 152 Q166 190 158 232"/>
+  </g>
+  <path d="M60 170 C78 158 102 152 128 152 C154 152 178 158 196 170" fill="none" stroke="#7d5a2c" stroke-width="3"/>
+</svg>

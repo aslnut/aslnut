@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.vite/
+*.log
+.DS_Store
+/data
+/.misc/
+dist-examples/
+.out/
+__pycache__/
+.wt-before/
+
+# the road baker (Rust): build output and private packs
+/target/
+/packages/baker/out/
+
+# scripts a model wrote from the authoring guide (tools/smoke-recipes.mjs scores them)
+/packages/aslnut/examples/recipes/trials/

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>aslnut · GIS layers</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #070a10; color: #e6ebf0; font: 13px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+  #stage { position: fixed; inset: 0; }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #top { position: fixed; left: 0; top: 0; right: 0; z-index: 10; display: flex; gap: 6px; align-items: flex-start; padding: calc(8px + env(safe-area-inset-top)) 8px 0; pointer-events: none; }
+  #title { pointer-events: auto; max-width: calc(100vw - 150px); background: rgba(12,16,24,.82); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 7px 10px; backdrop-filter: blur(8px); }
+  #title b { display: block; font-size: 14px; }
+  #title span { display: block; color: #93a1af; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #views { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+  #views a { color: #cfe8ff; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 3px 8px; text-decoration: none; font-size: 12px; }
+  #views a.on { background: #2f81f7; border-color: #2f81f7; color: #fff; }
+  #identify { position: fixed; z-index: 15; display: none; left: 8px; bottom: calc(28px + env(safe-area-inset-bottom)); width: min(320px, calc(100vw - 16px)); max-height: 46vh; overflow: auto; background: rgba(12,16,24,.92); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; backdrop-filter: blur(8px); font-size: 12px; }
+  @media (max-width: 599px) { #identify { bottom: auto; top: calc(96px + env(safe-area-inset-top)); max-height: 40vh; } }
+  #identify header { position: sticky; top: 0; display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: rgba(12,16,24,.96); border-bottom: 1px solid rgba(255,255,255,.08); }
+  #identify header b { flex: 1; font-size: 13px; }
+  #identify header button { all: unset; cursor: pointer; color: #93a1af; padding: 4px 8px; border-radius: 6px; }
+  #identify section { padding: 6px 10px 8px; }
+  #identify h4 { margin: 2px 0 6px; font-size: 13px; color: #cfe8ff; }
+  #identify table { border-collapse: collapse; width: 100%; }
+  #identify th { text-align: left; color: #93a1af; font-weight: 400; padding: 2px 8px 2px 0; vertical-align: top; white-space: nowrap; }
+  #identify td { padding: 2px 0; word-break: break-word; }
+  #err { position: fixed; left: 8px; right: 8px; bottom: calc(28px + env(safe-area-inset-bottom)); z-index: 20; display: none; background: rgba(120,20,20,.9); border-radius: 10px; padding: 8px 10px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="view"></canvas></div>
+<div id="top"><div id="title"><b>GIS layers</b><span id="sub">Clayton, Melbourne</span><div id="views"></div></div></div>
+<div id="identify" role="dialog" aria-label="what is here"></div>
+<div id="err"></div>
+<script type="module" src="./main.ts"></script>
+</body>
+</html>
