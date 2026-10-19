@@ -3,7 +3,7 @@
 // With a canvas it draws (WebGPU or WebGL2, chosen once: 'auto' prefers WebGPU and always says why); with null it is
 // headless (views, flights, projection, params, readouts, `when`: the same results, no graphics).
 //   const w = await world(canvas, { body: earth({ terrain: [terrain.mapzen()] }), view: { lon: 107.6, lat: -6.9, zoom: 11 } });
-//   w.add(points({ id: 'cities', data, when: { zoom: [4, 22] } }));
+//   w.add(points({ id: 'cities', data, when: { level: { from: 'district' } } }));
 //   await w.fly({ lon: 107.6, lat: -6.9, zoom: 13, tilt: 60 }); await w.settled({ strict: true });
 //   w.dispose();
 import { Camera, type FlyOptions } from '../observation/observers/orbit/camera.ts';

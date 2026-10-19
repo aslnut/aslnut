@@ -149,13 +149,14 @@ export interface StreamOptions<P> extends RowOptions {
   retry?: number;
 }
 export class Stream<P = Props> extends Rows<P> {
-  private so: StreamOptions<P>; private stop: (() => void) | null = null; private ws: WebSocket | null = null; private closed = false;
+  private so: StreamOptions<P>; private stop: (() => void) | null = null; private ws: WebSocket | null = null; private closed = false; private retryTimer: ReturnType<typeof setTimeout> | null = null;
   messages = 0;
   constructor(o: StreamOptions<P>) {
     super([], o); this.so = o;
     if (!o.url && typeof o.connect !== 'function') throw new AslnutError('E-DATA-001', 'data.stream needs a url or connect(emit)', { where: this.id, fix: "data.stream('wss://…') or data.stream({ connect: emit => { … } })" });
   }
   protected override async load(ctx: SourceContext): Promise<void> {
+    if (this.closed) return;
     const emit = (m: StreamMessage<P>) => { if (this.closed) return; this.messages++; this.apply(m); };
     if (this.so.connect) { const s = this.so.connect(emit); this.stop = typeof s === 'function' ? s : null; return; }
     let wait = (this.so.retry ?? 2) * 1000;
@@ -164,7 +165,7 @@ export class Stream<P = Props> extends Rows<P> {
       const ws = new WebSocket(this.so.url!); this.ws = ws;
       ws.onmessage = (e) => { try { emit((this.so.parse ?? ((d) => JSON.parse(String(d))))(e.data) as StreamMessage<P>); } catch (err) { ctx.error(new AslnutError('E-DATA-002', `stream '${this.id}': a message could not be read: ${(err as Error).message}`, { where: this.id, fix: 'send JSON rows or { upsert, remove }; or give parse()' })); } };
       ws.onopen = () => { wait = (this.so.retry ?? 2) * 1000; };
-      ws.onclose = () => { if (!this.closed) { setTimeout(open, wait); wait = Math.min(30000, wait * 2); } };
+      ws.onclose = () => { if (!this.closed && this.ws === ws) { this.retryTimer = setTimeout(() => { this.retryTimer = null; open(); }, wait); wait = Math.min(30000, wait * 2); } };
     };
     open();
   }
@@ -175,7 +176,15 @@ export class Stream<P = Props> extends Rows<P> {
     if (m.patch && this.get(m.patch.id)) this.patch(m.patch.id, m.patch.change);
     if (m.remove?.length) this.remove(...m.remove);
   }
-  close(): void { this.closed = true; this.stop?.(); this.ws?.close(); this.ws = null; }
+  /** taken up again after close(): the next start connects again */
+  reopen(): void { if (!this.closed) return; this.closed = false; this.unstart(); }
+  close(): void {
+    if (this.closed) return;
+    this.closed = true;
+    if (this.retryTimer) clearTimeout(this.retryTimer); this.retryTimer = null;
+    const stop = this.stop; this.stop = null;
+    try { stop?.(); } finally { this.ws?.close(); this.ws = null; }
+  }
 }
 
 /** a GeoJSON file or object */

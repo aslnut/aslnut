@@ -1,3 +1,4 @@
+import { presetOf } from '../preset.ts';
 // The primitives check: every visual a city twin's five screens need (and the tree's wire-sphere hover), and a
 // low-level 3D checklist, built with the public API only, on WebGPU and WebGL2. Not a demo: a page the
 // smoke opens scene by scene (?go=region | studio | heatlab | clayton | access | wire | three | extend).
@@ -9,7 +10,7 @@ import {
 } from '../../src/index.ts';
 
 declare const __BUILD__: number;
-const q = new URLSearchParams(location.search), go = q.get('go') ?? 'region';
+const q = new URLSearchParams(location.search);
 const PACK = '/aslnut/data/packs';
 const CLAYTON: [number, number] = [145.1205, -37.9245];
 const KZ = 110574, kx = 111320 * Math.cos(CLAYTON[1] * Math.PI / 180);
@@ -53,7 +54,8 @@ async function main(): Promise<void> {
     three: { view: { lon: ll(0, 0)[0], lat: ll(0, 0)[1], zoom: 20.5, tilt: 58, bearing: 340 }, ground: '#3a4250', lit: true, note: 'your own geometry (positions, normals, uvs, colours, attributes, indexed), triangles / lines / points, your shader with uniforms, varyings and a canvas texture, blending, depth, sides, instances with their own attributes' },
     extend: { view: { lon: ll(0, 0)[0], lat: ll(0, 0)[1], zoom: 20.0, tilt: 50, bearing: 0 }, ground: '#3a4250', note: 'your own layer: a class extending Element with its own program (WGSL and GLSL), drawn each frame' },
   };
-  const sc = scenes[go] ?? scenes.region!;
+  const go = presetOf(q, Object.keys(scenes), 'region');
+  const sc = scenes[go]!;
   document.querySelector('#bar')!.innerHTML = Object.keys(scenes).map((k) => `<a href="?go=${k}${q.get('graphics') ? `&graphics=${q.get('graphics')}` : ''}" class="${k === go ? 'on' : ''}">${k}</a>`).join('');
   document.querySelector('#note')!.textContent = `${sc.note} · build ${typeof __BUILD__ === 'number' ? __BUILD__ : 0}`;
   const w = await world(canvas, {

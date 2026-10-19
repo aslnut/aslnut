@@ -48,6 +48,8 @@ export abstract class Source<P = Props> {
     this.started ??= this.track(this.load(ctx)).catch((e: unknown) => { this.failure = e instanceof Error ? e : new Error(String(e)); ctx.error(e); });
     return this.started;
   }
+  /** forget the load done, so the next start loads again (a closed stream taken up again) */
+  protected unstart(): void { this.started = null; }
   /** resolves when what it is doing now is done (and at once when nothing is) */
   get ready(): Promise<void> { return this.started ?? Promise.resolve(); }
   protected abstract load(ctx: SourceContext): Promise<void>;

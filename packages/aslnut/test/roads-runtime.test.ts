@@ -274,3 +274,13 @@ test('solids read their ground again a slice a frame, in view and nearest first;
   assert.ok(one.held >= 2, `probes held most at first (${one.held} left to read whole)`);
   assert.ok(one.grids.every((gr) => gr.some((h) => h === 13.5)), 'every grid read whole at the last terrain (the step between the probes in it)');
 });
+
+test('road chunk versions reject unknown layouts before interpreting numeric data', async () => {
+  const { decodeTile, encodeNumbers } = await import('../src/core/data/loading/chunks/numbers.ts');
+  const { AslnutError } = await import('../src/core/world/errors.ts');
+  for (const v of [undefined, 1, 2, 3]) {
+    const tile = decodeTile({ ...(v === undefined ? {} : { v }), numeric: encodeNumbers([[0, 1, 2]]) });
+    assert.deepEqual(tile.pieces, [[0, 1, 2]]);
+  }
+  for (const v of [0, 4, '3', null, 'future']) assert.throws(() => decodeTile({ v, numeric: ['invalid'] }), (e: unknown) => e instanceof AslnutError && e.code === 'E-DATA-004' && /road chunk version/.test(e.message));
+});

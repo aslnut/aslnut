@@ -91,7 +91,7 @@ function Panel() {
 // [data source] ─▶ (aslnut.world { body: earth() }) ─▶ [selection] ─▶ [panel]
 
 // 5 · on a server: imports are safe, worlds aren't
-import { describe } from 'aslnut';   // fine in Node
+import { describe } from 'aslnut/tools';   // fine in Node
 await world(canvas);                 // → AslnutError: "world() needs a browser canvas. Create it on the client (useEffect / onMount)."
 ```
 
@@ -132,3 +132,7 @@ await world(canvas);                 // → AslnutError: "world() needs a browse
 | server-safe imports | [built] |
 | `dispose` | [built] |
 | the package (subpaths, types, code only) | [built] |
+
+### Ranged files and CORS
+
+PMTiles servers must honour byte ranges with `206 Partial Content`. For cross-origin reads, expose the range header with `Access-Control-Expose-Headers: Content-Range` (and allow the `Range` request header). If CORS hides `Content-Range`, the loader accepts a 206 only when its byte length equals the requested length. A shorter or longer response fails with `E-LOAD-003`; expose the header so the loader can validate the offsets and a range shortened at the end of the file.

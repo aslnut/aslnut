@@ -216,7 +216,8 @@ await compile({
 const w = await world(canvas, {
   body: earth(),
   build: 'auto',                                   // compiled if current, else live
-  compiled: data.pack('https://…/compiled/manifest.json'),
+  // Planned: a compiled manifest loader. For baked roads today,
+  // add bakedRoads({ url: '/compiled/index.json' }) to the world.
   stream: { split: [900, 300], dropFar: 4000, fetches: 4 },
 });
 ```

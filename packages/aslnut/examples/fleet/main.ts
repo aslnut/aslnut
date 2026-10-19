@@ -1,3 +1,4 @@
+import { presetOf } from '../preset.ts';
 // fleet: many vehicles moving smoothly over the world, each with its trail, driven by data over time. An hour of a
 // mock fleet driving the street place's OpenStreetMap roads (tools/fleet-data.mjs: never in git), its charge level
 // colouring each one. The first scene (go=clayton): Esri imagery on Mapzen's terrain with the place's own ground grid,
@@ -68,7 +69,7 @@ const CHECKS: Record<string, { view: View; twin: boolean; charge?: boolean }> = 
   'parity-close': { view: VIEWS.close!, twin: true },
   'parity-charge': { view: VIEWS.charge!, twin: false, charge: true },
 };
-const go = q.get('go') ?? (q.get('twin') === '1' ? 'street' : 'clayton'), check = CHECKS[go] ?? null;
+const go = presetOf(q, [...Object.keys(VIEWS), ...Object.keys(CHECKS)], q.get('twin') === '1' ? 'street' : 'clayton'), check = CHECKS[go] ?? null;
 const TWIN = check ? check.twin : q.get('twin') === '1';
 /** the first scene: Esri's imagery on the place's ground, the roads drawn as lines (the twin draws its own roads) */
 const CHARGE = (!check && !TWIN && go === 'charge') || !!check?.charge, CLAYTON = !check && !TWIN && (go === 'clayton' || CHARGE);

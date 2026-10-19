@@ -169,6 +169,12 @@ What to know:
 - **Errors that happen later** (a tile that failed, a layer whose attach failed) go to `w.on('error', fn)` when one is set, else to the `onError` option, else to `console.error`. A wrapper sets one and shows it its own way.
 - **`GraphicsUnavailable`** carries what the device has (`found: { webgpu, webgl2, reason }`): enough to explain it plainly in your UI.
 
+| code | meaning | fix |
+|---|---|---|
+| `E-LOAD-003` | a response does not match the requested byte range | honour Range and expose `Content-Range` across origins |
+| `E-LOAD-006` | an image decode worker failed; its pending requests reject | retry the image load and check worker and canvas support |
+| `E-DATA-004` | an unsupported history log or road chunk version | use compatible saved data or regenerate it |
+
 ### State in and out
 
 - **`w.capture({ note })`** gives the state as plain JSON (`v: 1`): the view, the time, the level, each element shown or hidden with its params and filter, the selection, the toggles.
@@ -279,7 +285,7 @@ A pack is one cache scope in one file, answered before any cache or network (`sr
 PMTiles, packs of pieces and every ranged read go through the loader: `fetch` with `mode: 'cors'`, six requests a host, three retries on 5xx and 429.
 
 - A `206` must carry exactly `Content-Range: bytes a-b/total`; a `200` with the whole file is accepted and cut.
-- Cross-origin, allow the `Range` request header **and expose `Content-Range`** (`Access-Control-Expose-Headers`), or every ranged read fails with `E-LOAD-003`.
+- Cross-origin, allow the `Range` request header and expose it with `Access-Control-Expose-Headers: Content-Range`. With the response header hidden, a 206 is accepted only when its byte length exactly matches the requested length; otherwise it fails with `E-LOAD-003`.
 
 ### Tiles: PMTiles and the reference host
 

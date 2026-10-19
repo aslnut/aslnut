@@ -718,10 +718,10 @@ not there yet (planned, proposed or open; do not use):
 - core.data.loading.stores [built]: tiers: memory → packs → browser cache → network
   params: `memoryMB?: number = 256` · `cache?: boolean = true`
   e.g. `loader: { memoryMB: 128 }`
-- core.data.loading.packs [built]: `data.pack(url)` · `w.loader.record(name)` · `pack.save()`
-  params: `url: string` (a pack or a manifest)
-  returns: `Pack`
-  e.g. `loader: { packs: [data.pack('/packs/bandung')] }`
+- core.data.loading.packs [built]: `FilePack.read(blobOrBuffer, name?)` · `w.loader.export(scope?)` · `w.loader.import(blobOrBuffer, { as?, scope?, name? }?)` (from `aslnut/core/data/loading`)
+  params: `loader: { mode: 'record', scope, packs?: Pack[] }` · export uses the current scope by default
+  returns: `Promise<FilePack>` · `Promise<{ blob, items, refused }>` (export) · `Promise<{ scope, items }>` (import)
+  e.g. `loader: { packs: [await FilePack.read(await (await fetch('/packs/city.pack')).blob())] }`
 - core.data.loading.readiness [built]: `w.ready.plan(views)` · `w.ready.coverage(views)` · `w.ready.ensure(views, opts)` · `w.ready.rehearse(views)`
   params: `views: (View | name)[]` · coverage `scope?` · ensure `{ scope?, concurrency?, onProgress? }` · rehearse `{ timeout? }`
   returns: plan `{ needed: url[] }` · coverage `{ needed, have, missing, fraction }` (kept in packs and the scope's store) · ensure what was fetched and kept (where the terms allow keeping) · rehearse per view `{ settled, ms, frames, pending, missing }` (the camera put back)
@@ -733,7 +733,7 @@ not there yet (planned, proposed or open; do not use):
 - core.data.loading.chunks.format [partly]: `header · layers[positions, normals, colours, far-count] · solids`
   params: `quantize?: { xz: 'auto' | number, y: number = .02 }` · `layers?: string[] = ['solid', 'mark', 'water', 'buildings']`
   returns: 14 bytes per corner
-  what is there: baked road tiles, v2: JSON per 500 m tile of typed pieces with heights, `{ v, ix, iz, size, infos, pieces }`: areas (an outline and holes, each point's height), edges (a line with heights, ground and the kerb's inward offset), strips, walls, boxes; the binary format planned
+  what is there: baked road tiles, v1–v3 (missing v means v1): JSON per 500 m tile of typed pieces with heights, `{ v, ix, iz, size, infos, pieces }` (v3 may store the rows as quantized `numeric` strings): areas (an outline and holes, each point's height), edges (a line with heights, ground and the kerb's inward offset), strips, walls, boxes; the binary format planned
   e.g. `quantize: { y: .01 }`
 - core.data.features.features [built]: `Feature { id, props, geometry, cuts? }`
   params: `id` stable across loads (from the data, a prop, or your function; a repeat kept apart) · `geometry` GeoJSON's types in lon / lat · `cuts` (tile edges, not outlined)
@@ -1038,7 +1038,7 @@ not there yet (planned, proposed or open; do not use):
   returns: areas (Features: Polygon or MultiPolygon, holes where a block is out of reach)
   e.g. `net.isochrone(entrances, [400, 800])` · `net.isochrone(net.shortest(entrances), [400, 800])`
 - core.geometry.networks.analysis.nearest [built]: `net.nearest(point, opts?)`
-  params: `point: [lon, lat]` · `max?: number = 50`
+  params: `point: [lon, lat]` · `max?: metres = 300`
   returns: `{ a, b, at, distance, toA, toB }` (the piece, the point on it, the cost to its ends)
   e.g. `net.nearest([107.61, -6.9])`
 - core.geometry.networks.walkways [built]: `walkways(sections, junctions)` · `network.walkways(opts)`
@@ -1886,8 +1886,8 @@ not there yet (planned, proposed or open; do not use):
   e.g. (always)
 - tools.compile.outputs [partly]: the folder
   returns: `manifest.json` · `logic.bin` · `near/0_ix_iz.bin` · `far/1_ix_iz.bin` · `buildings/l0..l2`
-  what is there: roads: 500 m tiles of typed pieces with heights (v2), `clamp.json` (v2: the surfaces' cells and outlines), `index.json`
-  e.g. `data.pack('./compiled/manifest.json')`
+  what is there: roads: 500 m tiles of typed pieces with heights (v3), `clamp.json` (v3 index of v4 numeric cell and outline tiles), `index.json`
+  e.g. load road tiles with `bakedRoads({ url: './compiled/index.json' })`; the compiled manifest loader is planned
 - tools.checks.smoke [built]: `node tools/smoke.mjs`
   params: — (run `npm run examples` first)
   returns: exit 1 on a failure on either WebGPU or WebGL2

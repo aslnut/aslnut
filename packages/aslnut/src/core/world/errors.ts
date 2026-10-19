@@ -27,6 +27,8 @@ export type ErrorCode =
   | 'E-DATA-001'     // a source's options are wrong (a missing url, a bad bbox)
   | 'E-DATA-002'     // data could not be read (not GeoJSON, a bad CSV row, a broken tile)
   | 'E-DATA-003'     // data that would change by looking: a scale's 'auto' domain over a tiled source; a service layer too big to load once without an extent
+  | 'E-DATA-004'     // an unsupported saved data format version
+  | 'E-LOAD-006'     // an image decode worker failed
   | 'E-STATE-001'    // a saved state does not fit the state schema (its path and the fix given)
   | 'E-LANE-001'     // a worker lane cannot run (no workers, the module failed to load) and has no fallback
   | 'E-LANE-002';    // a call in a worker failed (its error given)

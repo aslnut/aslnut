@@ -1,3 +1,5 @@
+import { AslnutError } from '../../../world/errors.ts';
+
 /** Quantized numeric rows. Three interleaved delta channels, zigzag varints, base64.
  * Polygons stay polygons; no normals, colours or flat triangle meshes are stored. */
 export function encodeNumbers(rows: readonly (readonly number[])[], scale = 1000): string[] {
@@ -28,7 +30,8 @@ export function decodeNumbers(rows: readonly string[], scale = 1000): number[][]
     return result;
   });
 }
-export function decodeTile<T extends { pieces?: number[][]; numeric?: string[]; numericScale?:number; turnUnits?:number }>(tile: T): T & { pieces: number[][] } {
+export function decodeTile<T extends { v?: unknown; pieces?: number[][]; numeric?: string[]; numericScale?:number; turnUnits?:number }>(tile: T): T & { pieces: number[][] } {
+  if (tile.v !== undefined && tile.v !== 1 && tile.v !== 2 && tile.v !== 3) throw new AslnutError('E-DATA-004', `unsupported road chunk version '${tile.v}' (expected 1, 2 or 3)`, { fix: 'recompile the roads with a compatible version of aslnut' });
   if (tile.numeric) { tile.pieces = decodeNumbers(tile.numeric,tile.numericScale??1000);
     if(tile.turnUnits)for(const row of tile.pieces)if(row[0]===3)row[9]=row[9]!/tile.turnUnits;
     delete tile.numeric; }

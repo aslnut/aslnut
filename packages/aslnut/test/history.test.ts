@@ -177,3 +177,20 @@ test('drive.data: a live source recorded into a log, each changed row a sample (
   assert.equal(d.smooth, 250);
   d.stop();
 });
+
+test('saved log versions: v1 and missing are readable; unknown versions fail before columns are read', async () => {
+  const { AslnutError } = await import('../src/core/world/errors.ts');
+  const log = history.log(); log.append('a', T0, L, B);
+  const bytes = log.toBytes();
+  const header = (v: unknown) => {
+    const copy = bytes.slice(), view = new DataView(copy.buffer), n = view.getUint32(8, true);
+    const h = JSON.parse(new TextDecoder().decode(copy.subarray(12, 12 + n)));
+    if (v === undefined) delete h.v; else h.v = v;
+    const text = new TextEncoder().encode(JSON.stringify(h));
+    view.setUint32(8, text.length, true); copy.set(text, 12);
+    return copy;
+  };
+  assert.equal(history.fromBytes(bytes).at('a', T0)!.lon, L);
+  assert.equal(history.fromBytes(header(undefined)).at('a', T0)!.lon, L);
+  for (const v of [0, 2, '1', null, 'future']) assert.throws(() => history.fromBytes(header(v)), (e: unknown) => e instanceof AslnutError && e.code === 'E-DATA-004' && /history log version/.test(e.message));
+});

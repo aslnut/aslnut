@@ -1,3 +1,4 @@
+import { presetOf } from '../preset.ts';
 // Roads, alone: the ground's heights (a hillshade over a plain green, no imagery) and the roads baked by the compile
 // (tools › compile › steps › solve: carriageways, kerbs, junctions, medians, roundabouts, markings, decks, piers,
 // tunnels), the ground lowered under them. A test place per preset:
@@ -11,7 +12,7 @@ import { bakedPieces } from '../../src/modules/world/earth/presets/built/roads/b
 import { carriagewayVisibility } from '../../src/core/geometry/networks/facets.ts';
 
 declare const __BUILD__: number;
-const q = new URLSearchParams(location.search), go = q.get('go') ?? 'roads';
+const q = new URLSearchParams(location.search);
 // &bake=next: the new baker's packs (packages/baker; the final stage only, for the places it has baked: grid, street)
 const NEXT = q.get('bake') === 'next', PACK = NEXT ? '/aslnut/data/packs/roads-next' : '/aslnut/data/packs/roads';
 const LAST = 15, stage = NEXT ? String(LAST) : q.get('stage') === 'old' ? 'old' : String(Math.max(1,Math.min(LAST,Number(q.get('stage')??LAST)||LAST)));
@@ -28,7 +29,8 @@ const PLACES: Record<string, { place: string; title: string; view: View }> = {
   // the healthy city's street level (its whole area): the roads with their footpaths and nature strips
   'roads-street': { place: 'street', title: 'the street level: roads, footpaths, nature strips (Clayton)', view: { lon: 145.1215, lat: -37.9246, zoom: 18.6, tilt: 55, bearing: 20 } },
 };
-const P = PLACES[go] ?? PLACES.roads!;
+const go = presetOf(q, Object.keys(PLACES), 'roads');
+const P = PLACES[go]!;
 const STAGES_PACK='/aslnut/data/packs/roads-stages', N=Number(stage);
 // the roads: a stage's own snapshot up to 10, the final pack from 11; the ground: stage 11's (before the pads) for 11–12
 const stagePack=stage==='old'?`/aslnut/data/packs/roads-old/${P.place}`:N>=11?`${PACK}/${P.place}`:`${STAGES_PACK}/${P.place}/${stage}`;

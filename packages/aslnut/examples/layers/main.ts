@@ -1,3 +1,4 @@
+import { presetOf } from '../preset.ts';
 // layers: a GIS map in the world. A light basemap on the terrain, and over it layers from public map and feature
 // services: pictures from a WMS (planning zones, bushfire prone areas) and features from a WFS of every kind of shape
 // (suburbs with their names: polygons; sites such as reserves, schools and hospitals: multipolygons; councils: their
@@ -45,7 +46,7 @@ const VIEWS: Record<string, { title: string; view: View }> = {
   region: { title: 'the area', view: { lon: 145.125, lat: -37.925, zoom: 12.8, tilt: 20, bearing: 0 } },
   groups: { title: 'groups', view: { lon: 145.12, lat: -37.925, zoom: 12.9, tilt: 20, bearing: 0 } },
 };
-const go = VIEWS[q.get('go') ?? 'map'] ? q.get('go') ?? 'map' : 'map';
+const go = presetOf(q, Object.keys(VIEWS), 'map');
 /** the places counted per suburb at the coarse levels (go=groups, or &groups=1 with any view) */
 const GROUPS = go === 'groups' || q.get('groups') === '1';
 

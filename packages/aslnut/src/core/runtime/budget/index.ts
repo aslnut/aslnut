@@ -28,7 +28,7 @@ export interface GovernorOptions {
   stepDownAfter?: number;
   /** frames in a row with room before a step up (default 120) */
   stepUpAfter?: number;
-  /** the rungs, in order (default: the world's: resolution, shadows, detail, quality) */
+  /** the rungs, in order (default: the world's: detail, shadows, quality, resolution) */
   ladder?: GovernorRung[];
 }
 /** what the governor drops first and what never (core › runtime › detail › priorities): each a rung of the world's

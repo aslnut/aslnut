@@ -3,6 +3,7 @@
 // turns: `w.set('heat.gain', 2)`), readouts (live values) and named points (places others aim at); and its life:
 // attach (make graphics resources, load data) → frame (each frame: its draw calls) → detach (free everything).
 //   class Heat extends Element { kind = 'custom' as const; frame(ctx) { … return [draw]; } }
+import { Joined, Stream } from '../data/sources/index.ts';
 import type { Loader } from '../data/loading/loader.ts';
 import type { Camera } from '../observation/observers/orbit/camera.ts';
 import type { DrawCall, GBuffer, GTexture, Graphics, GroundDraw } from '../render/graphics/interface.ts';
@@ -99,6 +100,18 @@ export interface WorldLike {
 }
 export interface ElementStatus { ready: boolean; pending: string[]; failed: { what: string; error: string }[]; missing: string[] }
 
+// A source can feed several elements (or worlds). The last attached user closes its stream; the next one opens it again.
+const streamUsers = new WeakMap<Stream, Set<Element>>();
+function streamsOf(props: ElementProps): Set<Stream> {
+  const found = new Set<Stream>();
+  const take = (source: unknown): void => {
+    if (source instanceof Stream) found.add(source);
+    else if (source instanceof Joined) { take(source.shapes); take(source.rows); }
+  };
+  const p = props as ElementProps & { data?: unknown; drive?: { source?: unknown } };
+  take(p.data); take(p.drive?.source);
+  return found;
+}
 let seq = 0;
 export abstract class Element<P extends ElementProps = ElementProps> {
   abstract readonly kind: Kind;
@@ -126,6 +139,7 @@ export abstract class Element<P extends ElementProps = ElementProps> {
   /** the detail it draws at now (1: full; lower: coarser levels sooner, fewer copies over time) */
   detailOf(s: State): number { return (this.detailPinned ? 1 : s.render.detail ?? 1) * this.detailOwn; }
   protected attached: AttachContext | null = null;
+  private streams = new Set<Stream>();
 
   constructor(props: P) {
     this.props = props;
@@ -195,7 +209,7 @@ export abstract class Element<P extends ElementProps = ElementProps> {
   points(): Record<string, () => LonLatH> { return {}; }
 
   /** make graphics resources and load data (graphics is null in a headless world) */
-  async attach(ctx: AttachContext): Promise<void> { this.attached = ctx; }
+  async attach(ctx: AttachContext): Promise<void> { this.attached = ctx; this.keepStreams(streamsOf(this.props)); }
   /** while hidden, ahead of being shown (the orbit near a level it is shown at, a swap bringing it in, hidden by
    *  hand): load and build, a slice per call (the world gives it a few ms, in frames or between them); true when there
    *  is nothing (left) to do */
@@ -209,9 +223,22 @@ export abstract class Element<P extends ElementProps = ElementProps> {
   /** what is still loading or failed (settled reads it) */
   status(): ElementStatus { return { ready: true, pending: [], failed: this.failure ? [{ what: this.id, error: this.failure.message }] : [], missing: [] }; }
   /** free everything it made */
-  detach(): void { this.attached = null; }
+  private keepStreams(next: Set<Stream>): void {
+    for (const stream of next) {
+      let users = streamUsers.get(stream);
+      if (!users) streamUsers.set(stream, (users = new Set()));
+      if (!users.size) stream.reopen();
+      users.add(this);
+    }
+    const previous = this.streams; this.streams = next;
+    for (const stream of previous) if (!next.has(stream)) {
+      const users = streamUsers.get(stream); users?.delete(this);
+      if (!users?.size) stream.close();
+    }
+  }
+  detach(): void { this.attached = null; this.keepStreams(new Set()); }
   /** change props; what depends on them is rebuilt (showing, opacity and order: nothing is, the next frame shows them) */
-  setProps(p: Partial<P>): this { this.props = { ...this.props, ...p }; const w = this.attached?.world; (w as { invalidate?: () => void } | undefined)?.invalidate?.(); w?.elementChanged?.(this, Object.keys(p)); return this; }
+  setProps(p: Partial<P>): this { this.props = { ...this.props, ...p }; if (this.attached) this.keepStreams(streamsOf(this.props)); const w = this.attached?.world; (w as { invalidate?: () => void } | undefined)?.invalidate?.(); w?.elementChanged?.(this, Object.keys(p)); return this; }
   /** names for the attribution line, while shown */
   attribution(): string[] { return []; }
 }

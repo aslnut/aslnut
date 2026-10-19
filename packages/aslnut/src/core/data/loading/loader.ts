@@ -507,11 +507,15 @@ function checkRange(range: [number, number], url: string): void {
 function rangeOf(r: Response, data: ArrayBuffer, range: [number, number], url: string): ArrayBuffer {
   const [a, n] = range;
   if (r.status === 206) {
+    const header = r.headers.get('content-range');
+    // CORS hides Content-Range unless the server exposes it. An exact-sized partial response is usable.
+    const crossOrigin = r.type === 'cors' || (typeof location !== 'undefined' && new URL(url, location.href).origin !== location.origin);
+    if (header === null && crossOrigin && data.byteLength === n) return data;
     const m = /^bytes (\d+)-(\d+)\/(\d+|\*)$/.exec(r.headers.get('content-range') ?? '');
     const total = m && m[3] !== '*' ? Number(m[3]) : Infinity;
     const want = Math.min(a + n, total) - 1;
     if (!m || Number(m[1]) !== a || Number(m[2]) !== want || data.byteLength !== want - a + 1) {
-      throw Object.assign(new AslnutError('E-LOAD-003', `asked bytes ${a}-${a + n - 1}, got '${r.headers.get('content-range') ?? 'no Content-Range'}' and ${data.byteLength} bytes`, { where: url, fix: 'the server must answer Range requests exactly' }), { retry: false });
+      throw Object.assign(new AslnutError('E-LOAD-003', `asked bytes ${a}-${a + n - 1}, got '${r.headers.get('content-range') ?? 'no Content-Range'}' and ${data.byteLength} bytes`, { where: url, fix: 'answer Range requests exactly and expose the header with Access-Control-Expose-Headers: Content-Range' }), { retry: false });
     }
     return data;
   }

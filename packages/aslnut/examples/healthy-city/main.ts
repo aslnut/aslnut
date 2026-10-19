@@ -1,3 +1,4 @@
+import { presetOf } from '../preset.ts';
 // healthy-city: a city twin for walking, cycling, parks, trees and shade, built from aslnut alone.
 // Greater Melbourne: councils → suburbs → the street, statistics from open data draped on the terrain.
 //   ?go=region | council | suburb | parity-region      (short links for phones)
@@ -26,7 +27,6 @@ const PACK = '/aslnut/data/packs/city';
 // city tiles' area), drawn as they come; the ground goes under them (the clamp); its plots, buildings (each on its pad),
 // trees and furniture placed against them by the bake's gated stages 12–15 (roads/street/built): placement only, the
 // looks are this example's (LOOK, street-level.ts: the fleet example loads the same street level)
-const go = q.get('go') ?? 'region';
 const want = (q.get('graphics') ?? 'auto') as 'auto' | 'webgpu' | 'webgl2';
 const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector(s) as T;
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -82,7 +82,8 @@ const PRESETS: Record<string, Preset> = {
   // an analysis view (core › render › style › theme): park access in its one colour scale on a grey world
   'theme-grey': { title: 'park access on a grey world (a theme)', view: { ...CLAYTON, zoom: 17.2, tilt: 50 }, street: true, time: '2026-01-15T15:00', access: 'straight', theme: 'grey' },
 };
-const preset = PRESETS[go] ?? PRESETS.region!;
+const go = presetOf(q, Object.keys(PRESETS), 'region');
+const preset = PRESETS[go]!;
 /** the twin dashboard's interface (?ui=twin, or a twin preset; ?ui=plain the default one) */
 const TWIN = q.get('ui') === 'twin' || (preset.ui === 'twin' && q.get('ui') !== 'plain');
 if (TWIN) installTwin({ place: 'Greater Melbourne' });

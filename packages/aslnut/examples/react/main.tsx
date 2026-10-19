@@ -1,3 +1,4 @@
+import { presetOf } from '../preset.ts';
 // react: aslnut in a React app, written as an app writes it. <World> (aslnut/react) makes the world when it mounts and
 // disposes it when it unmounts; its elements are aslnut's own (layer, line, extrusion, entities) made in render and kept
 // in step by id. A town on a flat floor: its blocks a GIS layer coloured by kind or by rate (a React state: the button
@@ -15,6 +16,7 @@ import { BLOCKS, BUILDINGS, KINDS, STREETS, TOWN, VIEWS, fleetLog } from './town
 declare const __BUILD__: number;
 const BUILD = typeof __BUILD__ === 'number' ? __BUILD__ : 0;
 const q = new URLSearchParams(location.search);
+const go = presetOf(q, Object.keys(VIEWS), 'map');
 const GRAPHICS = (q.get('graphics') ?? 'auto') as WorldOptions['graphics'];
 const DPR = q.get('dpr') ? Number(q.get('dpr')) : undefined;
 type ViewName = keyof typeof VIEWS;
@@ -38,7 +40,7 @@ let worlds = 0;
 
 function App() {
   const [colour, setColour] = useState<'kind' | 'rate'>('kind');
-  const [view, setView] = useState<ViewName>(q.get('go') === 'twin' ? 'twin' : 'map');
+  const [view, setView] = useState<ViewName>(go === 'twin' ? 'twin' : 'map');
   const [error, setError] = useState<string | null>(null);
   // the map's view: the town fitted to this screen, once the world knows its size
   const [fitted, setFitted] = useState<View | null>(null);

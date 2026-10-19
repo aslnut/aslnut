@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2
+
+- **Streams close with their world:** `dispose()` (and removing the last layer that uses a stream) closes a `data.stream`, its socket and its reconnect timer; a layer that takes the stream up again opens it again.
+- **Format versions:** history logs and baked road chunks say their version; an unknown one is refused (`E-DATA-004`) instead of misread.
+- **Decode workers:** a worker that fails rejects its pending requests (`E-LOAD-006`) and leaves the pool; the others keep working.
+- **PMTiles across origins:** a partial answer without a readable `Content-Range` is accepted when it has exactly the bytes asked; otherwise the error names `Access-Control-Expose-Headers: Content-Range`.
+- **Examples:** an unknown `?go=` shows a message listing the presets, instead of the default scene.
+- **Docs:** packs, `when`, the governor's order, the nearest default (300 m) and the hosting imports match the code.
+- **Checks:** the everyFrame frame count is measured over its real window.
+
 ## 0.1.1
 
 - **Live data without blinks:** cards keep their room (a shown card yields only when mostly covered for a while, and comes back no sooner than a set time); card state is kept by item id; only changed cards are worked out again, on the world's clock; `w.settled()` resolves while data streams.

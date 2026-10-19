@@ -171,3 +171,75 @@ test('tiles at a URL: MVT and GeoJSON for the view, pieces of one id joined; TMS
   assert.equal(gj.size, 1); assert.equal(gj.get(7)?.props.name, 'tile');
   assert.throws(() => data.mvt('https://t.test/tiles.pbf'), /E-DATA-001/);
 });
+
+test('streams close when their last element or world is disposed, including joins and data drives', async () => {
+  const { world, points, entities, drive } = await import('../src/index.ts');
+  let opened = 0, stopped = 0;
+  const live = data.stream({ connect: emit => { opened++; emit([{ id: 'a', lon: 0, lat: 0 }]); return () => { stopped++; }; } });
+  const shapes = data.rows([{ id: 'a', lon: 0, lat: 0 }]);
+  const w = await world(null);
+  w.add(points({ id: 'one', data: live }), points({ id: 'two', data: shapes.join(live, { on: 'id' }) }));
+  await new Promise(resolve => setImmediate(resolve));
+  await live.start(ctx());
+  assert.equal(opened, 1);
+  w.remove('one');
+  assert.equal(stopped, 0, 'a joined layer still uses the stream');
+  w.dispose(); w.dispose(); live.close();
+  assert.equal(stopped, 1, 'closed exactly once');
+
+  const moving = data.stream({ connect: () => () => { stopped++; } });
+  const w3 = await world(null);
+  w3.add(entities({ id: 'moving', drive: drive.data(moving) }));
+  await moving.start(ctx());
+  w3.dispose();
+  assert.equal(stopped, 2, 'drive.data owns its stream too');
+});
+
+test('disposing a socket stream closes the socket and cancels reconnection', async (t) => {
+  const sockets: Socket[] = [];
+  class Socket {
+    onmessage: ((e: { data: string }) => void) | null = null;
+    onopen: (() => void) | null = null;
+    onclose: (() => void) | null = null;
+    closed = 0;
+    constructor(_url: string) { sockets.push(this); }
+    close() { this.closed++; this.onclose?.(); }
+  }
+  t.mock.method(globalThis, 'setTimeout', (() => { throw new Error('must not reconnect on disposal'); }) as never);
+  t.mock.property(globalThis, 'WebSocket', Socket as never);
+  const { world, points } = await import('../src/index.ts');
+  const s = data.stream('wss://example.test/live'), w = await world(null);
+  w.add(points({ id: 'socket', data: s }));
+  await s.start(ctx());
+  w.dispose(); s.close();
+  assert.equal(sockets[0]!.closed, 1);
+});
+
+
+test('a stream detached before its lazy load cannot open a connection afterwards', async () => {
+  const { world, entities, drive } = await import('../src/index.ts');
+  let opened = 0;
+  const live = data.stream({ connect: () => { opened++; } });
+  const w = await world(null);
+  w.add(entities({ id: 'late', drive: drive.data(live) }));
+  w.dispose();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(opened, 0);
+});
+
+test('a stream closed by its last layer opens again for the next one (remove then add)', async () => {
+  const { world, points } = await import('../src/index.ts');
+  let opened = 0, stopped = 0;
+  const live = data.stream({ connect: emit => { opened++; emit([{ id: 'a', lon: 0, lat: 0 }]); return () => { stopped++; }; } });
+  const w = await world(null);
+  w.add(points({ id: 'one', data: live }));
+  await live.start(ctx());
+  w.remove('one');
+  assert.equal(stopped, 1);
+  w.add(points({ id: 'again', data: live }));
+  await live.start(ctx());
+  assert.equal(opened, 2, 'connected again');
+  w.dispose();
+  assert.equal(stopped, 2);
+});
+

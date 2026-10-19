@@ -1,3 +1,4 @@
+import { presetOf } from '../preset.ts';
 // The lego page: the bricks of one interface for one thing, each in a scene the tools open (tools/lego.mjs), on
 // WebGPU and WebGL2. Not a demo: it uses the public API as an app would and reads a few counts back.
 //   ?go=size      the size rule: points, a line, an arc, quads and shapes in metres kept within a range of CSS px
@@ -16,7 +17,7 @@ import { arc, color, controllers, custom, drive, earth, entities, entity, entity
 import { cars } from '../../src/modules/presets/vehicles/index.ts';
 
 declare const __BUILD__: number;
-const q = new URLSearchParams(location.search), go = q.get('go') ?? 'size';
+const q = new URLSearchParams(location.search), go = presetOf(q, ['size', 'levels', 'joints', 'emit', 'measure', 'cars', 'hitch'], 'size');
 const graphics = (q.get('graphics') ?? 'auto') as 'auto' | 'webgpu' | 'webgl2';
 const AT: [number, number] = [145.13, -37.91];
 const KZ = 110574, kx = 111320 * Math.cos((AT[1] * Math.PI) / 180);

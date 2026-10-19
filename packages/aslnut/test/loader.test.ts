@@ -176,3 +176,17 @@ test('record mode never stops a fetch (the recording keeps every answer asked fo
   await new Promise((r) => setTimeout(r, 20));
   assert.equal(q.log.started, 1);
 });
+
+test('CORS ranges: a hidden Content-Range is accepted only for an exact-sized cross-origin 206', async () => {
+  const ranged = (length: number, cors: boolean, header?: string) => mk({ fetch: (async () => {
+    const r = new Response(new Uint8Array(length), { status: 206, headers: header ? { 'Content-Range': header } : {} });
+    Object.defineProperty(r, 'type', { value: cors ? 'cors' : 'basic' });
+    return r;
+  }) as typeof fetch });
+  assert.equal((await ranged(5, true).get<ArrayBuffer>({ url: 'https://example.test/tiles', range: [10, 5] }))!.byteLength, 5);
+  for (const length of [0, 4, 6, 100]) {
+    await assert.rejects(ranged(length, true).get({ url: 'https://example.test/tiles', range: [10, 5] }), (e: unknown) => e instanceof AslnutError && e.code === 'E-LOAD-003' && e.fix.includes('Access-Control-Expose-Headers: Content-Range'));
+  }
+  await assert.rejects(ranged(5, false).get({ url: 'https://example.test/tiles', range: [10, 5] }), AslnutError);
+  await assert.rejects(ranged(5, true, 'bytes 11-15/100').get({ url: 'https://example.test/tiles', range: [10, 5] }), AslnutError, 'an exposed but wrong header still fails');
+});

@@ -1,3 +1,4 @@
+import { presetOf } from '../preset.ts';
 // hello-earth: a world on the page, which graphics runs and why, and what it is doing (the observation panel).
 //   ?go=globe | bandung | flat | webgl2 | zoom | plane | vectors | crime | crime-pmtiles | answer | energy
 //       | parity | parity-globe | parity-flat | parity-plane | parity-vectors | parity-crime | parity-energy | parity-answer
@@ -12,8 +13,8 @@ declare const __BUILD__: number;
 declare const __LOG__: string;
 const BUILD = typeof __BUILD__ === 'number' ? __BUILD__ : 0;
 const q = new URLSearchParams(location.search);
-const go = q.get('go') ?? 'bandung';
-const preset = PRESETS[go] ?? PRESETS.bandung!;
+const go = presetOf(q, Object.keys(PRESETS), 'bandung');
+const preset = PRESETS[go]!;
 const want = (q.get('graphics') ?? preset.graphics ?? 'auto') as 'auto' | 'webgpu' | 'webgl2';
 const panel = document.getElementById('panel')!;
 const errors: string[] = [];

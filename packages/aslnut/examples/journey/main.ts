@@ -1,3 +1,4 @@
+import { presetOf } from '../preset.ts';
 // journey: a trip from Melbourne to Bali, followed by the camera. A car drives the city's roads to the airport at
 // Tullamarine (the quickest way, core › geometry › networks); two hours later a plane (this example's own airliner,
 // kept 22 px across at the least: its size in metres with a floor in pixels) taxis out and takes off; the flight goes
@@ -31,7 +32,7 @@ const BUILD = typeof __BUILD__ === 'number' ? __BUILD__ : 0;
 const q = new URLSearchParams(location.search);
 const SHOTS = ['melbourne', 'takeoff', 'flight', 'landing', 'kuta', 'all', 'reel'] as const;
 type ShotName = (typeof SHOTS)[number];
-const go = (q.get('go') ?? 'all') as ShotName | 'parity';
+const go = presetOf(q, [...SHOTS, 'parity'], 'all') as ShotName | 'parity';
 const PARITY = go === 'parity', REEL = go === 'reel';
 /** a recorder will take the frames (&record=1): after the first shot's hold the loop stops there, so the first frame
  *  recorded is the sequence's first moment on every run */

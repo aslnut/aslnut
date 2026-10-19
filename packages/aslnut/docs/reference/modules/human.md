@@ -30,7 +30,7 @@ humans/
 
 ## API
 
-Its own import: `aslnut/modules/presets/humans`. Built with the public API: `core › entities › body` (a skeleton, a skin blended by dual quaternions, motions baked into rows of skin transforms), drawn by an entity layer on WebGPU and WebGL2 alike. The template (faces, skin weights, bones, correctives, the face decal, the hair styles) is data from a pack (`tools/humans-pack.mjs`), never bundled.
+Its own import: `aslnut/modules/presets/humans`. Built with the public API: `core › entities › body` (a skeleton, a skin blended by dual quaternions, motions baked into rows of skin transforms), drawn by an entity layer on WebGPU and WebGL2 alike. The template URL is required by `loadTemplate(url, fetcher?)`; it has no default URL. The fetcher defaults to the global `fetch`. The template (faces, skin weights, bones, correctives, the face decal, the hair styles) is data from a pack (`tools/humans-pack.mjs`), never bundled.
 
 | item | signature | params (type = default) | returns | status | example |
 |---|---|---|---|---|---|
