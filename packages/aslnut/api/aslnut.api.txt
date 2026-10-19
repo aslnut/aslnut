@@ -1721,6 +1721,7 @@ export declare class Arc<D = unknown> extends FeatureMark<D, ArcProps<D>> {
     readouts(): {
         count: () => number;
         arcs: () => number;
+        waiting: () => number;
         segments: () => number;
     };
 }

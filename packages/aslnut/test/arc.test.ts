@@ -29,7 +29,8 @@ function driven(rows: unknown, heights: (lon: number, lat: number) => number, pr
   const ctx = { s: {}, graphics: g, world };
   // (as attach would: the source read from; as a frame would: the features by key)
   a.src = a.source;
-  const step = () => { a.entries = a.read(0); a.byKey = new Map(a.entries.map((e: { key: string }) => [e.key, e])); a.originFor(); a.records(ctx); };
+  // (as a frame does when a build is done: what is drawn is from the origin the build placed it from)
+  const step = () => { a.entries = a.read(0); a.byKey = new Map(a.entries.map((e: { key: string }) => [e.key, e])); a.originFor(); a.records(ctx); a.drawnOrigin = a.origin; };
   return { a, g, ctx, world, step, reads: () => reads };
 }
 
@@ -89,6 +90,60 @@ test('arc: new data keeps the records of the arcs that are as before; only the n
   h.a.setProps({ height: 30 });
   const r1 = h.reads(); h.a.records(h.ctx);
   assert.equal(h.reads() - r1, 110, 'every arc again');
+});
+
+test('arc: new data that moves the layer\'s origin: the kept arcs\' ends from the origin now (none drawn off its place); a ground not known keeps the ends where they were', () => {
+  let known = true;
+  const rows = data.rows(rowsOf(50), { id: 'id' }), h = driven(rows, () => (known ? 7 : NaN), { fromHeight: 4 });
+  h.step();
+  const o0 = h.a.origin;
+  // houses of a tile 2 km east: the box's middle (the origin) moves a kilometre
+  rows.upsert(rowsOf(5, 50).map((r) => ({ ...r, o: [r.o[0] + 0.025, r.o[1]], d: [r.d[0] + 0.025, r.d[1]] })) as never);
+  h.step();
+  assert.ok(Math.abs(h.a.origin.lon0 - o0.lon0) > 0.01, 'the origin moved');
+  const off = () => { let worst = 0; for (const b of h.a.buckets.values()) for (let j = 0; j < b.count; j++) { const q = b.of[j] * 4, r = j * ARC_STRIDE, ra = h.a.origin.rel(h.a.ends[q], h.a.ends[q + 1]), rb = h.a.origin.rel(h.a.ends[q + 2], h.a.ends[q + 3]); worst = Math.max(worst, Math.abs(b.data[r] - ra[0]), Math.abs(b.data[r + 1] - ra[1]), Math.abs(b.data[r + 2] - rb[0]), Math.abs(b.data[r + 3] - rb[1])); } return worst * 6371008.8; };
+  assert.ok(off() < 0.01, `every arc's ends from the origin now (worst ${off().toFixed(3)} m off)`);
+  assert.equal(h.a.readouts().arcs(), 55);
+  // the ground let go under them (a view moving away): the ends stay, never down to 0 and back
+  known = false; h.world.groundVersion++; h.a.ground(h.ctx);
+  let low = Infinity; for (const b of h.a.buckets.values()) for (let j = 0; j < b.count; j++) low = Math.min(low, b.data[j * ARC_STRIDE + 4], b.data[j * ARC_STRIDE + 5]);
+  assert.equal(low, 7, 'the heights as before (the ground 7, the start 4 over it)');
+});
+
+test('arc: a row is drawn where it says, whatever other rows come, go or move (rows A; rows B far away move the origin; B removed): A\'s drawn ends do not move', () => {
+  const A = rowsOf(20), rows = data.rows(A, { id: 'id' }), h = driven(rows, () => 30, { fromHeight: 5 });
+  // the place drawn: a record's ends plus the view's offset from the origin (the uniform), from a camera that stays
+  const cam = [145.121, -37.921] as const;
+  const drawn = () => {
+    const off = h.a.drawnOrigin.offset(cam[0], cam[1]), out = new Map<string, number[]>();
+    for (const b of h.a.buckets.values()) for (let j = 0; j < b.count; j++) {
+      const e = h.a.entries[b.of[j]], r = j * ARC_STRIDE;
+      out.set(e.key, [b.data[r] + off[0], b.data[r + 1] + off[1], b.data[r + 2] + off[0], b.data[r + 3] + off[1], b.data[r + 4], b.data[r + 5]]);
+    }
+    return out;
+  };
+  const worst = (x: Map<string, number[]>, y: Map<string, number[]>) => { let m = 0; for (const [k, v] of x) { const u = y.get(k); assert.ok(u, `arc ${k} still drawn`); for (let i = 0; i < 4; i++) m = Math.max(m, Math.abs(v[i]! - u[i]!) * 6371008.8); for (let i = 4; i < 6; i++) m = Math.max(m, Math.abs(v[i]! - u[i]!)); } return m; };
+  h.step(); const a0 = drawn();
+  const B = rowsOf(8, 100).map((r) => ({ ...r, o: [r.o[0] + 0.05, r.o[1] - 0.03], d: [r.d[0] + 0.05, r.d[1] - 0.03] }));
+  const o0 = h.a.origin.lon0; rows.upsert(B as never); h.step();
+  assert.ok(Math.abs(h.a.origin.lon0 - o0) > 0.02, 'B moved the origin');
+  const a1 = drawn(); assert.equal(a1.size, 28);
+  assert.ok(worst(a0, a1) < 0.005, `A drawn where it was with B in (worst ${worst(a0, a1).toFixed(4)} m)`);
+  rows.remove(...B.map((r) => r.id)); h.step();
+  const a2 = drawn(); assert.equal(a2.size, 20);
+  assert.ok(worst(a0, a2) < 0.005, `A drawn where it was with B gone (worst ${worst(a0, a2).toFixed(4)} m)`);
+});
+
+test('arc: an end whose ground is not known yet waits, drawn as nothing (never at a stand-in height), and is drawn where it says once the ground comes', () => {
+  let known = false;
+  const rows = data.rows(rowsOf(10), { id: 'id' }), h = driven(rows, (lon) => (known || lon < 145.1205 ? 40 : NaN), { fromHeight: 3 });
+  h.step();
+  const rec = () => { const out: number[][] = []; for (const b of h.a.buckets.values()) for (let j = 0; j < b.count; j++) out.push(Array.from(b.data.subarray(j * ARC_STRIDE, j * ARC_STRIDE + ARC_STRIDE))); return out; };
+  assert.equal(h.a.readouts().waiting(), 5, 'the 5 whose ground is not known wait');
+  for (const r of rec().filter((x) => x[4] !== 43)) assert.ok(r[0] === r[2] && r[1] === r[3] && r[6] === 0 && r[9] === 0, 'a waiting arc: no length, no rise (nothing drawn)');
+  known = true; h.world.groundVersion++; h.a.ground(h.ctx);
+  assert.equal(h.a.readouts().waiting(), 0);
+  for (const r of rec()) assert.ok(r[4] === 43 && r[5] === 40 && r[6]! > 0 && r[9]! > 0 && (r[0] !== r[2] || r[1] !== r[3]), 'every arc on its ground, its rise and length');
 });
 
 test('arc: drawn over the world by its own order; a still arc asks for no frames; its shaders are twins', () => {

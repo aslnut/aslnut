@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+
+- **A feature is drawn where its own row says, whatever other rows come, go or move:** new data that moved a layer's origin (the middle of its data's box) drew the arcs it kept that far off (arcs off their houses by hundreds of metres, shifting with each batch), and a line or area whose build ran over frames drew its old shapes from the new origin meanwhile (kilometres off for those frames); the view's offset is now from the origin of what is drawn, and kept arcs take their ends from the origin now. An arc whose end has no ground known yet waits (drawn as nothing; `readouts().waiting`) instead of standing at sea level and jumping up when the ground comes; an end whose ground goes unknown stays where it was.
+- **Park access (the healthy-city example):** a tile's arcs leave when the tile is let go and come back with it. If you copied `examples/healthy-city/park-access.ts`, take this version.
+
 ## 0.1.3
 
 - **Params by level:** any prop of any element can be given per observation level, `size: { level: { district: 6, street: 14 } }` (a rung not named takes the nearest named coarser one, else the nearest finer), applied once a level change through the element's own `setProps` (only what changed; `el.byLevel` keeps the specs, `E-LEVEL-002` for a rung not on the ladder); a raster field's `res` and `area` can now change after it is made (by level or `setProps`): a new grid, its state carried over, on WebGPU, WebGL2 and the CPU.

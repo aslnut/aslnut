@@ -154,7 +154,12 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
   protected join = new Join();
   /** what the last data change did: features new, changed, gone, stayed */
   get joined(): JoinCounts { return this.join.last; }
+  /** the origin its next build places its shapes from (the middle of its data's box: new data moves it) */
   protected origin = new Origin(0, 0);
+  /** the origin of what is drawn now (the last build done): the view's offset is from it, so a build going on over
+   *  frames never shows the shapes before it from the origin after (a feature is drawn where its own row says,
+   *  whatever other rows come, go or move) */
+  private drawnOrigin = this.origin;
   protected g: Graphics | null = null;
   protected feat: GTexture | null = null; protected featData = new Float32Array(0); protected rows = 0;
   protected L = new Float32Array(LFLOATS); protected lbuf: GBuffer | null = null; protected pbuf: GBuffer | null = null;
@@ -441,7 +446,7 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
     }
     // a build goes on over frames until done; what was built before keeps drawing meanwhile
     if (this.building && this.entries.length) {
-      if (this.build(ctx) !== false) { this.building = false; this.built = true; this.groundSeen = -1; this.join.built(); }
+      if (this.build(ctx) !== false) { this.building = false; this.built = true; this.groundSeen = -1; this.join.built(); this.drawnOrigin = this.origin; }
     }
     // (once its data was read, even empty: features that come later are new, revealed)
     if (readNow) this.born = true;
@@ -746,7 +751,7 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
   }
   private writeUniforms(ctx: FrameContext): void {
     const L = this.L, p = this.props, cam = ctx.camera, pl = this.plan!;
-    const off = this.origin.offset(cam.lon, cam.lat), on = p.on ?? 'ground';
+    const off = this.drawnOrigin.offset(cam.lon, cam.lat), on = p.on ?? 'ground';
     const hv = p.hover === false ? null : p.hover ?? (p.tooltip || p.onHover || p.hoverGroup ? HOVER : null), sl = p.selected === false ? null : p.selected ?? { color: '#ffd166', mix: 0.55, outline: 2 };
     const hc = hv ? rgba(hv.color ?? '#ffffff') : [1, 1, 1, 1], sc = sl ? rgba(sl.color ?? '#ffd166') : [1, 1, 1, 1];
     const spec = typeof p.reveal === 'object' ? p.reveal : {};

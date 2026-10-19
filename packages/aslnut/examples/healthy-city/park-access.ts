@@ -54,6 +54,9 @@ export class ParkAccess {
   private known = new Map<string, Known>(); private seenTiles = new Set<string>();
   /** the same by tile, then by the house's id there (what the tint asks for: no key made per house) */
   private byTile = new Map<string, Map<number, Known>>();
+  /** each tile's arcs as answered, and the tiles whose arcs are drawn: only those of the tiles built now (a tile let go
+   *  takes its arcs with it, built again it brings them back: never an arc from a house not drawn) */
+  private arcsOf = new Map<string, ArcRow[]>(); private arcTiles = new Set<string>();
   private queue: Batch[] = []; private flying = 0; private lastMs = 0;
   /** each mode's range (the colour scale is relative to the houses answered) */
   private range: Record<Mode, [number, number]> = { straight: [0, 1], roads: [0, 1] };
@@ -120,7 +123,9 @@ export class ParkAccess {
   /** the houses of tiles not seen yet: asked for (a batch a time) */
   private scan(): void {
     const keys: string[] = [], tiles: string[] = [], ids: number[] = [], at: number[] = [], top: number[] = [];
-    for (const b of this.street.built()) {
+    const built = this.street.built();
+    this.drawnArcs(new Set(built.map((b) => b.key)));
+    for (const b of built) {
       const e = b.extra; if (!e || this.seenTiles.has(b.key)) continue;
       this.seenTiles.add(b.key);
       for (const h of e.houses) {
@@ -130,6 +135,17 @@ export class ParkAccess {
       }
     }
     if (keys.length) { this.queue.push({ keys, tiles, ids, at, top }); void this.pump(); }
+  }
+  /** the arcs of the tiles built now drawn, those of the tiles let go taken away (their answers kept) */
+  private drawnArcs(built: Set<string>): void {
+    const add: ArcRow[] = [], gone: string[] = [];
+    for (const [t, rows] of this.arcsOf) {
+      const on = built.has(t), was = this.arcTiles.has(t);
+      if (on && !was) { this.arcTiles.add(t); for (const r of rows) add.push(r); }
+      else if (!on && was) { this.arcTiles.delete(t); for (const r of rows) gone.push(r.id); }
+    }
+    if (gone.length) this.arcRows.remove(...gone);
+    if (add.length) this.arcRows.upsert(add);
   }
   private async pump(): Promise<void> {
     if (this.flying) return;
@@ -151,12 +167,15 @@ export class ParkAccess {
       const s = a.straight[i]!, wk = a.walk[i]!, key = batch.keys[i]!;
       const kn = { s, w: wk }; this.known.set(key, kn);
       let bt = this.byTile.get(batch.tiles[i]!); if (!bt) this.byTile.set(batch.tiles[i]!, (bt = new Map())); bt.set(batch.ids[i]!, kn);
-      if (Number.isFinite(s)) rows.push({ id: key, from: [batch.at[i * 2]!, batch.at[i * 2 + 1]!], to: [a.at[i * 2]!, a.at[i * 2 + 1]!], top: batch.top[i]!, dist: s });
+      if (Number.isFinite(s)) { const row: ArcRow = { id: key, from: [batch.at[i * 2]!, batch.at[i * 2 + 1]!], to: [a.at[i * 2]!, a.at[i * 2 + 1]!], top: batch.top[i]!, dist: s }, t = batch.tiles[i]!; let l = this.arcsOf.get(t); if (!l) this.arcsOf.set(t, (l = [])); l.push(row); if (this.arcTiles.has(t)) rows.push(row); }
       const v0 = a.offs[i]!, v1 = a.offs[i + 1]!;
       if (v1 - v0 >= 2) { routes++; for (let v = v0; v + 1 < v1; v++) for (let k = 0; k < 6; k++) ways.push(a.verts[v * 3 + k]!); }
     }
     this.rescale();
+    // (the arcs of the tiles drawn now: those of the tiles answered here drawn at once, a tile let go meanwhile keeps
+    // its arcs for when it is built again)
     if (rows.length) this.arcRows.upsert(rows);
+    this.drawnArcs(new Set(this.street.built().map((b) => b.key)));
     this.routes.append(Float64Array.from(ways), routes);
     this.tint(); this.stats();
     this.lastMs = a.ms;

@@ -7,8 +7,9 @@
 // What it keeps is data, not geometry: each arc is one small record (its ends, their heights, the rise, its feature, its
 // segments: 40 bytes), drawn as an instance of one strip shared by every arc; the graphics chip makes its points
 // (shaders arc.wgsl / arc.glsl). Its colour, width and state are the feature's (the features texture), so a restyle
-// writes no record; new data writes the records only; a change of the ground reads two heights an arc and writes
-// only the records whose ends moved.
+// writes no record; new data works out the new records only (the kept ones take their ends from the layer's origin
+// now); a change of the ground reads two heights an arc and writes only the records whose ends moved (an end where
+// the ground is not known now stays).
 import { AslnutError } from '../../world/errors.ts';
 import type { FrameContext } from '../../world/element.ts';
 import type { State } from '../../world/state.ts';
@@ -91,7 +92,11 @@ export const arcProgram = (g: Graphics, label: string, code: ShaderCode, params:
 };
 const val = <T, D>(v: PerFeature<T, D> | undefined, d: D, s: State, def: T): T => (v === undefined ? def : typeof v === 'function' ? (v as (d: D, s: State) => T)(d, s) : v);
 /** the arcs of one size class: their records, on the chip in one buffer, drawn in one call */
-interface Bucket { n: number; count: number; data: Float32Array; of: Int32Array; own: Float32Array; buf: GBuffer | null; cap: number }
+interface Bucket { n: number; count: number; data: Float32Array; of: Int32Array;
+  /** per arc: its own heights over the ground at its ends, its rise, the angle between its ends (4 floats) */
+  own: Float32Array;
+  /** per arc: 1 while the ground under an end is not known (drawn as nothing until it is: never at a stand-in height) */
+  wait: Uint8Array; buf: GBuffer | null; cap: number }
 
 export class Arc<D = unknown> extends FeatureMark<D, ArcProps<D>> {
   readonly kind = 'line' as const;
@@ -180,25 +185,26 @@ export class Arc<D = unknown> extends FeatureMark<D, ArcProps<D>> {
     }
     // the classes: new arrays for the arcs in them (the chip's buffers kept while they are big enough)
     const next = new Map<number, Bucket>();
-    for (const [N, c] of counts) { const ob = old.get(N); next.set(N, { n: N, count: 0, data: new Float32Array(c * S), of: new Int32Array(c), own: new Float32Array(c * 2), buf: ob?.buf ?? null, cap: ob?.cap ?? 0 }); }
+    for (const [N, c] of counts) { const ob = old.get(N); next.set(N, { n: N, count: 0, data: new Float32Array(c * S), of: new Int32Array(c), own: new Float32Array(c * 4), wait: new Uint8Array(c), buf: ob?.buf ?? null, cap: ob?.cap ?? 0 }); }
     for (const [N, ob] of old) if (!counts.has(N)) ob.buf?.destroy();
     this.buckets = next;
     const slotN = new Int32Array(es.length), slotJ = new Int32Array(es.length).fill(-1);
-    const H = (lon: number, lat: number) => { const h = ctx.world.heightAt(lon, lat); return Number.isNaN(h) ? 0 : h; };
     for (let i = 0; i < es.length; i++) {
       const n = nOf[i]!; if (!n) continue;
       const q = i * 4, e = es[i]!, N = keep[i]! >= 0 ? keepN[i]! : arcClass(n, p.points), k = next.get(N)!, j = k.count++, r = j * S, d = k.data;
       if (keep[i]! >= 0) {
         const ob = old.get(N)!, oj = keep[i]!;
-        d.set(ob.data.subarray(oj * S, oj * S + S), r); d[r + 7] = e.index; k.own[j * 2] = ob.own[oj * 2]!; k.own[j * 2 + 1] = ob.own[oj * 2 + 1]!;
+        d.set(ob.data.subarray(oj * S, oj * S + S), r); d[r + 7] = e.index; k.own.set(ob.own.subarray(oj * 4, oj * 4 + 4), j * 4); k.wait[j] = ob.wait[oj]!;
+        // its ends from the origin now (new data moves the layer's origin: the middle of its box): a record kept with
+        // the ends from the origin before was drawn that far off, every arc kept shifted by each move of it
+        this.ends4(d, r, q, !!k.wait[j]);
       } else {
-        const len = lenOf[i]!, ra = o.rel(E[q]!, E[q + 1]!), rb = o.rel(E[q + 2]!, E[q + 3]!), o0 = val(p.fromHeight, e.d, st, 0), o1 = val(p.toHeight, e.d, st, 0);
+        const len = lenOf[i]!, own = k.own, w = j * 4;
+        own[w] = val(p.fromHeight, e.d, st, 0); own[w + 1] = val(p.toHeight, e.d, st, 0); own[w + 2] = val(p.height, e.d, st, Math.min(1.5e6, len * 0.25)); own[w + 3] = len / R;
         // the trace from the end nearest a place: along runs from b
         const rev = !!rv && (E[q + 2]! - rv[0]) ** 2 + (E[q + 3]! - rv[1]) ** 2 < (E[q]! - rv[0]) ** 2 + (E[q + 1]! - rv[1]) ** 2;
-        d[r] = ra[0]; d[r + 1] = ra[1]; d[r + 2] = unwrapNear(rb[0], ra[0]); d[r + 3] = rb[1];
-        d[r + 4] = H(E[q]!, E[q + 1]!) + o0; d[r + 5] = H(E[q + 2]!, E[q + 3]!) + o1; d[r + 6] = val(p.height, e.d, st, Math.min(1.5e6, len * 0.25)); d[r + 7] = e.index;
-        d[r + 8] = rev ? -n : n; d[r + 9] = len / R;
-        k.own[j * 2] = o0; k.own[j * 2 + 1] = o1;
+        d[r + 7] = e.index; d[r + 8] = rev ? -n : n;
+        k.wait[j] = this.place(d, r, q, own, j, ctx.world.heightAt(E[q]!, E[q + 1]!), ctx.world.heightAt(E[q + 2]!, E[q + 3]!)) ? 0 : 1;
       }
       k.of[j] = i; slotN[i] = N; slotJ[i] = j;
     }
@@ -218,6 +224,23 @@ export class Arc<D = unknown> extends FeatureMark<D, ArcProps<D>> {
     }
     if (most > this.stripN || !this.strip) this.makeStrip(g, Math.max(most, 8));
   }
+  /** an arc's ends from the origin now (one waiting for its ground: both at its start, nothing drawn) */
+  private ends4(d: Float32Array, r: number, q: number, waiting: boolean): void {
+    const E = this.ends, o = this.origin, ra = o.rel(E[q]!, E[q + 1]!);
+    d[r] = ra[0]; d[r + 1] = ra[1];
+    if (waiting) { d[r + 2] = ra[0]; d[r + 3] = ra[1]; return; }
+    const rb = o.rel(E[q + 2]!, E[q + 3]!); d[r + 2] = unwrapNear(rb[0], ra[0]); d[r + 3] = rb[1];
+  }
+  /** an arc placed on the ground under its ends (g0, g1: true m): its ends, heights, rise and angle. Where the ground
+   *  under an end is not known (yet, or no more) it is written as nothing (no length, no rise) and waits: drawn at a
+   *  stand-in height (sea level) it showed far from its place, then jumped there when the ground came. False: waiting */
+  private place(d: Float32Array, r: number, q: number, own: Float32Array, j: number, g0: number, g1: number): boolean {
+    const known = !Number.isNaN(g0) && !Number.isNaN(g1), w = j * 4;
+    this.ends4(d, r, q, !known);
+    if (!known) { d[r + 4] = 0; d[r + 5] = 0; d[r + 6] = 0; d[r + 9] = 0; return false; }
+    d[r + 4] = Math.fround(g0 + own[w]!); d[r + 5] = Math.fround(g1 + own[w + 1]!); d[r + 6] = own[w + 2]!; d[r + 9] = own[w + 3]!;
+    return true;
+  }
   /** the strip: point k's two vertices are 2k and 2k + 1; segment k's triangles (2k, 2k + 1, 2k + 2) (2k + 2, 2k + 1,
    *  2k + 3) */
   private makeStrip(g: Graphics, n: number): void {
@@ -235,7 +258,11 @@ export class Arc<D = unknown> extends FeatureMark<D, ArcProps<D>> {
       for (let j = 0; j < b.count; j++) {
         const q = b.of[j]! * 4;
         const g0 = ctx.world.heightAt(E[q]!, E[q + 1]!), g1 = ctx.world.heightAt(E[q + 2]!, E[q + 3]!);
-        const h0 = Math.fround((Number.isNaN(g0) ? 0 : g0) + b.own[j * 2]!), h1 = Math.fround((Number.isNaN(g1) ? 0 : g1) + b.own[j * 2 + 1]!);
+        // one waiting for the ground under its ends: drawn once both are known, where they say
+        if (b.wait[j]) { if (this.place(d, j * S, q, b.own, j, g0, g1)) { b.wait[j] = 0; if (lo < 0) lo = j; hi = j; } continue; }
+        // (a ground not known there now, a tile let go while the view moves: the end stays where it was, as the
+        // solids' ground does; never down to sea level and back)
+        const h0 = Number.isNaN(g0) ? d[j * S + 4]! : Math.fround(g0 + b.own[j * 4]!), h1 = Number.isNaN(g1) ? d[j * S + 5]! : Math.fround(g1 + b.own[j * 4 + 1]!);
         if (h0 !== d[j * S + 4] || h1 !== d[j * S + 5]) { d[j * S + 4] = h0; d[j * S + 5] = h1; if (lo < 0) lo = j; hi = j; }
       }
       if (lo >= 0 && b.buf) b.buf.write(d.subarray(lo * S, (hi + 1) * S), lo * S * 4);
@@ -263,6 +290,8 @@ export class Arc<D = unknown> extends FeatureMark<D, ArcProps<D>> {
     return {
       count: () => this.size,
       arcs: () => { let n = 0; for (const b of this.buckets.values()) n += b.count; return n; },
+      /** arcs waiting for the ground under an end (drawn once it is known) */
+      waiting: () => { let n = 0; for (const b of this.buckets.values()) for (let j = 0; j < b.count; j++) n += b.wait[j]!; return n; },
       segments: () => { let n = 0; for (const b of this.buckets.values()) for (let j = 0; j < b.count; j++) n += Math.abs(b.data[j * ARC_STRIDE + 8]!); return n; },
     };
   }
