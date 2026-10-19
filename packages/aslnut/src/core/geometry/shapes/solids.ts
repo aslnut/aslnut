@@ -57,6 +57,8 @@ export interface SolidsChunk {
   free?: boolean;
   /** its square's side, m (default 500; at most 500: its ground grid covers that) */
   side?: number;
+  /** false: shown at once, not dissolved in (a live source's rows that come and go; default true for a new chunk) */
+  fade?: boolean;
 }
 /** an instance set of a chunk: one shape (or its levels), each clone only its record (core › geometry › shapes ›
  *  instances): INSTANCE_FLOATS numbers each (`data`), or records of `stride` texels (`records`: RECORD_FLOATS a texel;
@@ -211,6 +213,9 @@ interface Chunk {
 
 export class Solids extends Element<SolidsProps> {
   readonly kind = 'shape' as const;
+  /** what it holds stands on the ground (buildings, trees, benches, bodies): a mark draped on the ground never paints
+   *  it; what lies on the ground (roads, paths, water) says false */
+  readonly stands: boolean = true;
   private g: Graphics | null = null;
   private prog: Program | null = null; private progI: Program | null = null; private progImp: Program | null = null;
   /** impostors baked here (shared by every chunk) */
@@ -313,7 +318,7 @@ export class Solids extends Element<SolidsProps> {
     const n = whole && !lazy ? whole.length / MESH_FLOATS : 0;
     const kx = kxOf(spec.origin[1]);
     const c: Chunk = {
-      key, slot, spec, born: old ? old.born : this.nowMs, n,
+      key, slot, spec, born: old ? old.born : spec.fade === false ? -1e9 : this.nowMs, n,
       vbuf: n ? g.buffer('vertex', whole!, `${this.id} ${key}`) : null, lazy, lazyPending: false, parts: sp ? this.partsOf(sp, `${key}`) : null,
       fn: spec.far ? spec.far.length / MESH_FLOATS : 0, fbuf: spec.far && spec.far.length >= MESH_FLOATS ? g.buffer('vertex', spec.far, `${this.id} ${key} far`) : null,
       inst: [], rdata: new Float32Array(0), rbase: 0, rn: 0, square: [0, 0, 0, 0, 0, 0], tintRow: -1, tintRows: 0,

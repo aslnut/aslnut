@@ -506,7 +506,7 @@ async function main(): Promise<void> {
   const hint = $('#hint');
   hint.textContent = 'tap a council to go in';
   setTimeout(() => { hint.style.opacity = '0'; }, 5000);
-  (window as unknown as { aslnutDemo: unknown }).aslnutDemo = { w, go, preset, errors, build: BUILD, presets: Object.keys(PRESETS), sky: skyL, stats: { councils: statC, suburbs: statS }, street, av, heat, access, flood, cars, furn, people, lib: { controllers, field, rules, kernel, vegetation, trees: MELBOURNE_TREES, preview, house, tileLane, arc } };
+  (window as unknown as { aslnutDemo: unknown }).aslnutDemo = { w, go, preset, errors, build: BUILD, log: LOG?.url ?? null, presets: Object.keys(PRESETS), sky: skyL, stats: { councils: statC, suburbs: statS }, street, av, heat, access, flood, cars, furn, people, lib: { controllers, field, rules, kernel, vegetation, trees: MELBOURNE_TREES, preview, house, tileLane, arc } };
 }
 void main();
 export type { Source };

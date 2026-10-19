@@ -62,7 +62,7 @@ test('the car: every type and preset within its budget, wheels and front doors a
 test('the car\'s rows: each type one row of the silhouette\'s numbers; a type given brings its row, what is given besides stands over it', async () => {
   const { cars, CAR_TYPES } = await import('../src/modules/presets/vehicles/index.ts');
   const rows = JSON.parse(readFileSync(join(import.meta.dirname, '../src/modules/presets/vehicles/car/presets.json'), 'utf8')) as Record<string, Record<string, unknown>>;
-  const silhouette = ['length', 'width', 'height', 'wheel', 'wheelbase', 'front', 'rear', 'bonnet', 'rake', 'roofline', 'tail', 'clearance', 'arch', 'belt', 'glass', 'windows', 'cladding', 'lights', 'load', 'axles', 'doors', 'pods', 'paint'];
+  const silhouette = ['length', 'width', 'height', 'wheel', 'wheelbase', 'front', 'rear', 'bonnet', 'rake', 'roofline', 'tail', 'tailRake', 'clearance', 'arch', 'belt', 'glass', 'windows', 'cladding', 'lights', 'load', 'axles', 'doors', 'pods', 'paint'];
   assert.deepEqual(Object.keys(rows), [...CAR_TYPES]);
   for (const [name, row] of Object.entries(rows)) {
     for (const k of silhouette) assert.ok(k in row, `${name}: ${k}`);

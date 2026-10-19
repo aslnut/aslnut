@@ -9,7 +9,7 @@
 import { serve } from './serve.mjs';
 import { launch, openDemo, settledFrame, bytesOf, browserGone } from './browser.mjs';
 import { png } from './png.mjs';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // (each part's name said as it starts, with the time: a part that hangs shows which)
@@ -569,7 +569,9 @@ for (const api of want('budget')) {
     check(api, 'budget: the governor steps detail down while frames go over, gives it back with no budget', st.steps.length >= 2 && st.during.dropped.length >= 2 && (st.during.shadows.size < st.before.shadows || !st.during.shadows.on) && st.after.gov === null && st.after.detail === 1 && st.after.shadows === st.before.shadows && st.after.quality === st.before.quality, JSON.stringify(st));
     await page.waitForTimeout(2500);
     const evs = [...new Set(lines.map((l) => l.ev))], gov = lines.find((l) => l.ev === 'governor'), hb = lines.find((l) => l.ev === 'hb');
-    check(api, 'remote log: the heartbeat and the governor\'s steps reach the endpoint, with the page\'s fields', !!gov && !!hb && gov.page === 'aslnut-city' && typeof hb.fps === 'number' && gov.dropped?.length > 0, JSON.stringify({ evs, gov, hb }).slice(0, 600));
+    // (the page's log is on by its &log=, whatever the build's ASLNUT_EXAMPLES_LOG: off here, the build is older)
+    const logTo = await page.evaluate(() => window.aslnutDemo.log ?? null);
+    check(api, 'remote log: the heartbeat and the governor\'s steps reach the endpoint, with the page\'s fields', logTo === '/api/log' && !!gov && !!hb && gov.page === 'aslnut-city' && typeof hb.fps === 'number' && gov.dropped?.length > 0, logTo !== '/api/log' ? `the page's log goes to ${JSON.stringify(logTo)}, not its &log=/api/log (a build older than the runtime switch? rebuild it)` : JSON.stringify({ evs, gov, hb }).slice(0, 600));
     check(api, 'no page errors (budget)', errors.length === 0, errors.slice(0, 3).join(' | '));
   } catch (e) { check(api, 'budget', false, e.message.slice(0, 300)); }
   await page.close();
@@ -611,6 +613,9 @@ for (const api of want('rest')) for (const go of ['go=parity-street', 'go=parity
 // the library's parts this twin shows, each in its preset: the tree species down a street, the trees counted when
 // small, the real stars, buildings from open footprints, lakes, creeks and the sea, streets from OSM ways, the
 // materials, the car and drone packages; the clocks in the place's zone
+// (every row of the car and drone packages, as many as the library has)
+const rows = (f) => Object.keys(JSON.parse(readFileSync(join(import.meta.dirname, '..', 'src', 'modules', 'presets', f, 'presets.json'), 'utf8'))).length;
+const CAR_ROWS = rows('vehicles/car'), DRONE_ROWS = rows('drones');
 const LIBRARY = {
   trees: ["(()=>{try{return window.aslnutDemo.w.element('species').keys().length>0}catch{return false}})()", "(() => { const { w } = window.aslnutDemo, l = w.element('species'); return { ok: l.keys().length > 0 && w.timeZone === 'Australia/Melbourne', chunks: l.keys().length, zone: w.timeZone }; })()"],
   'trees-counted': ["(()=>{try{return window.aslnutDemo.street.tiles().length>4}catch{return false}})()", "(() => { const { w, street } = window.aslnutDemo, cells = street.cells(); return { ok: street.countedAt(w.state) && cells.length > 50 && w.element('streets-counted').target > 0, cells: cells.length, trees: cells.reduce((n, c) => n + c.count, 0) }; })()"],
@@ -619,7 +624,7 @@ const LIBRARY = {
   water: ["(()=>{try{return window.aslnutDemo.w.element('water').keys().length>0}catch{return false}})()", "(() => { const { w } = window.aslnutDemo, l = w.element('water'); return { ok: l.keys().length > 0 && l.sea(w.state)?.level === 0, chunks: l.keys().length }; })()"],
   'osm-roads': ["(()=>{try{return window.aslnutDemo.w.element('osm-roads').keys().length>0}catch{return false}})()", "(() => { const l = window.aslnutDemo.w.element('osm-roads'); return { ok: l.sections().length > 1000 && l.junctions().length > 100, sections: l.sections().length, junctions: l.junctions().length }; })()"],
   materials: ["(()=>{try{return window.aslnutDemo.w.element('materials').keys().length>0}catch{return false}})()", "(async () => { const { w } = window.aslnutDemo, l = w.element('materials'); for (let i = 0; i < 100 && ![...l.pics.values()].some((p) => typeof p === 'object'); i++) await new Promise((ok) => setTimeout(ok, 100)); return { ok: [...l.pics.values()].some((p) => typeof p === 'object'), pictures: [...l.pics.values()].map((p) => (typeof p === 'object' ? 'made' : p)) }; })()"],
-  vehicles: ["(()=>{try{return window.aslnutDemo.w.element('car-presets').keys().length>0}catch{return false}})()", "(() => { const { w } = window.aslnutDemo, n = (id) => w.element(id).counts().instances; return { ok: n('car-presets') === 7 && n('car-fleet') === 8 && n('drones') === 4, presets: n('car-presets'), fleet: n('car-fleet'), drones: n('drones') }; })()"],
+  vehicles: ["(()=>{try{return window.aslnutDemo.w.element('car-presets').keys().length>0}catch{return false}})()", `(() => { const { w } = window.aslnutDemo, n = (id) => w.element(id).counts().instances; return { ok: n('car-presets') === ${CAR_ROWS} && n('car-fleet') === 8 && n('drones') === ${DRONE_ROWS}, presets: n('car-presets'), fleet: n('car-fleet'), drones: n('drones') }; })()`],
 };
 for (const api of want('library')) for (const [go, [ready, probe]] of Object.entries(LIBRARY)) {
   const { page, errors } = await openDemo(browser, `${base}?go=${go}&graphics=${api}&quality=realistic&dpr=1&clock=30&log=0`, { width: 390, height: 640 });

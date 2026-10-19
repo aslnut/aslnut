@@ -5,11 +5,29 @@ import { setsTrackGLSL } from '../../core/render/graphics/shaders/sets.glsl.ts';
 import type { SetsVariant } from '../../core/render/graphics/shaders/sets.wgsl.ts';
 import { CARD_TEXTURES } from './cards.wgsl.ts';
 
-const STRUCT = 'vec4 place; vec4 size; vec4 lay; vec4 clock; vec4 look; vec4 background; vec4 text; vec4 muted; vec4 bar; vec4 dark; vec4 light; vec4 badge; vec4 fill; vec4 badgeOn; vec4 glyph; vec4 claim; vec4 hold; vec4 header; vec4 channels; vec4 rows[6]; vec4 rowsBar[6]; vec4 labels[6]; vec4 labelSize[6];';
+const STRUCT = 'vec4 place; vec4 size; vec4 lay; vec4 clock; vec4 look; vec4 background; vec4 room; vec4 more; vec4 bar; vec4 dark; vec4 light; vec4 badge; vec4 fill; vec4 badgeOn; vec4 glyph; vec4 claim; vec4 hold; vec4 header; vec4 channels; vec4 rows[6]; vec4 rowsBar[6]; vec4 labels[6]; vec4 labelSize[6];';
 const COMMON = /* glsl */ `
 vec4 cardItem(int e, int k) {
-  int i = e * 3 + k;
+  int i = e * int(u.more.x) + k;
   return texelFetch(items, ivec2(i % 4096, i / 4096), 0);
+}
+float cardWide(int e) {
+  float w = cardItem(e, 2).w;
+  return w > 0.5 ? w : 120.0;
+}
+float stateFade(vec4 s) {
+  float r = round(s.x * 255.0);
+  return mod(r, 128.0) / 127.0;
+}
+bool stateShown(vec4 s) {
+  return round(s.x * 255.0) >= 128.0;
+}
+bool cardLater(int e) {
+  vec4 s = texelFetch(state, ivec2(e % 4096, e / 4096), 0);
+  return !(stateShown(s) && s.w < 0.99);
+}
+float cardOrder(int e) {
+  return u.glyph.w + cardItem(e, 0).w + (cardLater(e) ? 262144.0 : 0.0);
 }
 float cardTime(int sl) {
   return texelFetch(times, ivec2(sl % 4096, sl / 4096), 0).x;
@@ -82,7 +100,7 @@ Room cardRoom(int e) {
   float w = sizePx(u.size.w, vec4(u.size.xyz, 0.0), a.xyz);
   float k = w / 120.0;
   float dpr = frame.size.z;
-  float W = round(w * dpr);
+  float W = round(cardWide(e) * k * dpr);
   float H = round(cardHeight() * k * dpr);
   float y1 = px.y - round((u.look.y + 2.0) * k * dpr);
   float x0 = px.x - round(W * 0.5);
@@ -120,7 +138,7 @@ float cardShown(int e) {
   if (u.claim.w < 0.5) {
     return 1.0;
   }
-  return texelFetch(state, ivec2(e % 4096, e / 4096), 0).y;
+  return stateFade(texelFetch(state, ivec2(e % 4096, e / 4096), 0));
 }
 void main() {
   int e = gl_InstanceID;
@@ -376,7 +394,15 @@ void main() {
       float ly = y0 + (u.lay.z - (hasBar ? 4.0 : 0.0) - lh) * 0.5;
       float lc = pictureCover(q, u.labels[k], pad, ly, u.labelSize[k].x, lh);
       float gh = 10.0;
-      float vc = numberCover(q, W - pad, y0 + (u.lay.z - (hasBar ? 4.0 : 0.0) - gh) * 0.5, gh, rv.x, rv.y, rw.y > -0.5, int(rw.z));
+      float vc = 0.0;
+      if (rw.x < -1.5) {
+        int e = int(vId + 0.5);
+        int slot = int(rw.y + 0.5);
+        vec4 sz = cardItem(e, 4 + 2 * slot);
+        vc = pictureCover(q, cardItem(e, 3 + 2 * slot), W - pad - sz.x, y0 + (u.lay.z - (hasBar ? 4.0 : 0.0) - sz.y) * 0.5, sz.x, sz.y);
+      } else {
+        vc = numberCover(q, W - pad, y0 + (u.lay.z - (hasBar ? 4.0 : 0.0) - gh) * 0.5, gh, rv.x, rv.y, rw.y > -0.5, int(rw.z));
+      }
       cov = max(lc, vc);
       tint = lc > vc ? mix(ink.rgb, bg.rgb, 0.38) : ink.rgb;
       if (hasBar) {
@@ -400,7 +426,7 @@ flat out float vId;
 void main() {
   int e = gl_InstanceID;
   gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-  vId = u.glyph.w + cardItem(e, 0).w;
+  vId = 0.0;
   Room r = cardRoom(e);
   if (r.ok < 0.5 || u.clock.y > 1.5) {
     return;
@@ -411,7 +437,9 @@ void main() {
   float b = u.badgeOn.z > 0.5 ? 6.0 * r.k * frame.size.z : 0.0;
   vec2 p = mix(r.box.xy - vec2(m, m + b), r.box.zw + vec2(m + b, m), corner) / (u.claim.z * frame.size.z);
   float rank = cardItem(e, 0).w;
-  gl_Position = vec4(p.x / u.claim.x * 2.0 - 1.0, 1.0 - p.y / u.claim.y * 2.0, (u.channels.z + (rank + 1.0) / (u.clock.w + 2.0)) / u.channels.w * 2.0 - 1.0, 1.0);
+  vId = cardOrder(e);
+  float band = cardLater(e) ? 0.5 : 0.0;
+  gl_Position = vec4(p.x / u.claim.x * 2.0 - 1.0, 1.0 - p.y / u.claim.y * 2.0, ((u.channels.z + band + 0.5 * (rank + 1.0) / (u.clock.w + 2.0)) / u.channels.w) * 2.0 - 1.0, 1.0);
 }
 `;
 const CLAIM_FS = /* glsl */ `
@@ -438,30 +466,35 @@ int claimOf(int x, int y) {
 void main() {
   ivec2 q = ivec2(gl_FragCoord.xy);
   int e = q.y * 4096 + q.x;
+  vec4 prev = texelFetch(state, ivec2(e % 4096, e / 4096), 0);
   if (e >= int(u.clock.w)) {
-    outColor = vec4(0.0);
+    outColor = prev;
     return;
   }
-  vec4 prev = texelFetch(state, ivec2(e % 4096, e / 4096), 0);
-  bool shown = prev.x > 0.5;
-  float fade = prev.y;
-  vec2 b = round(prev.zw * 255.0);
+  bool fresh = prev.w > 0.99 || u.hold.w > 0.5;
+  bool shown = stateShown(prev) && !fresh;
+  float fade = stateFade(prev);
+  vec2 b = round(prev.yz * 255.0);
   float at = b.x * 256.0 + b.y;
+  float cov = round(prev.w * 255.0);
+  float now = u.hold.x;
   Room r = cardRoom(e);
+  bool placed = r.ok > 0.5 && u.clock.y < 1.5;
   bool want = shown;
-  if (r.ok < 0.5 || u.clock.y > 1.5) {
-    want = false;
-  } else {
+  bool looked = false;
+  if (placed) {
     float s = u.claim.z * frame.size.z;
     bool off = r.box.z < 0.0 || r.box.x > frame.size.x || r.box.w < 0.0 || r.box.y > frame.size.y;
     if (!off) {
-      int mine = int(u.glyph.w + cardItem(e, 0).w);
+      looked = true;
+      int mine = int(cardOrder(e));
       ivec2 c0 = ivec2(ceil(r.box.xy / s - vec2(0.5)));
       ivec2 c1 = ivec2(floor(r.box.zw / s - vec2(0.5)));
-      want = true;
+      float cells = 0.0;
+      float covered = 0.0;
       for (int y = 0; y < 48; y++) {
         int cy = c0.y + y;
-        if (cy > c1.y || !want) {
+        if (cy > c1.y || (!shown && covered > 0.0)) {
           break;
         }
         for (int x = 0; x < 64; x++) {
@@ -470,27 +503,76 @@ void main() {
             break;
           }
           if (cx >= 0 && cy >= 0 && cx < int(u.claim.x) && cy < int(u.claim.y)) {
+            cells = cells + 1.0;
             int c = claimOf(cx, int(u.claim.y) - 1 - cy);
             if (c > 0 && c < mine) {
-              want = false;
-              break;
+              covered = covered + 1.0;
             }
           }
         }
       }
+      if (shown) {
+        if (covered > u.room.x * max(cells, 1.0)) {
+          float t10 = mod(floor(now / 10.0), 254.0) + 1.0;
+          if (cov < 0.5 || cov > 254.5) {
+            cov = t10;
+          } else if (mod(t10 - cov + 254.0, 254.0) * 10.0 >= u.room.y * 1000.0) {
+            want = false;
+          }
+        } else {
+          cov = 0.0;
+        }
+      } else {
+        want = covered < 0.5;
+      }
     }
   }
-  float since = mod(u.hold.x - at + 65536.0, 65536.0);
-  if (want != shown && (u.hold.w > 0.5 || since >= u.hold.z * 1000.0)) {
+  float since = mod(now - at + 63500.0, 63500.0);
+  if (fresh && looked) {
     shown = want;
-    at = u.hold.x;
+    at = now;
+    cov = 0.0;
+  } else if (fresh) {
+    shown = false;
+    cov = 255.0;
+  } else if (want != shown && placed) {
+    if (!want) {
+      shown = false;
+      at = now;
+      cov = 0.0;
+    } else if (since >= u.room.z * 1000.0) {
+      shown = true;
+      at = now;
+      cov = 0.0;
+    }
   }
-  fade = clamp(fade + (shown ? 1.0 : -1.0) * u.hold.y / 0.2, 0.0, 1.0);
-  outColor = vec4(shown ? 1.0 : 0.0, fade, floor(at / 256.0) / 255.0, mod(at, 256.0) / 255.0);
+  if (!placed) {
+    shown = false;
+    cov = 255.0;
+  }
+  fade = clamp(fade + (shown ? 1.0 : -1.0) * u.hold.y / max(u.room.w, 0.001), 0.0, 1.0);
+  outColor = vec4(((shown ? 128.0 : 0.0) + round(fade * 127.0)) / 255.0, floor(at / 256.0) / 255.0, mod(at, 256.0) / 255.0, cov / 255.0);
+}
+`;
+const CARRY_FS = /* glsl */ `
+out vec4 outColor;
+void main() {
+  ivec2 q = ivec2(gl_FragCoord.xy);
+  int e = q.y * 4096 + q.x;
+  if (e >= int(u.more.y)) {
+    outColor = vec4(0.0, 0.0, 0.0, 1.0);
+    return;
+  }
+  int old = int(cardItem(e, 2).z + 0.5) - 1;
+  if (old < 0) {
+    outColor = vec4(0.0, 0.0, 0.0, 1.0);
+    return;
+  }
+  outColor = texelFetch(state, ivec2(old % 4096, old / 4096), 0);
 }
 `;
 /** the cards' programs on WebGL2 (the twin of cardsWGSL) */
-export function cardsGLSL(kind: 'cards' | 'claim' | 'decide', follow: SetsVariant | null): { vertex: string; fragment: string } {
+export function cardsGLSL(kind: 'cards' | 'claim' | 'decide' | 'carry', follow: SetsVariant | null): { vertex: string; fragment: string } {
   const head = `${follow ? setsTrackGLSL(follow) : FRAME_GLSL}
 layout(std140) uniform U { ${STRUCT} } u;
 ${follow ? '' : 'uniform highp sampler2D places;'}
@@ -498,5 +580,5 @@ ${CARD_TEXTURES.map((n) => `uniform highp sampler2D ${n};`).join('\n')}
 ${follow ? ANCHOR_FOLLOW_GLSL : ANCHOR_STILL_GLSL}${COMMON}`;
   if (kind === 'cards') return { vertex: head + CARDS_VS, fragment: head + CARDS_FS };
   if (kind === 'claim') return { vertex: head + CLAIM_VS, fragment: head + CLAIM_FS };
-  return { vertex: head + DECIDE_VS, fragment: head + DECIDE_FS };
+  return { vertex: head + DECIDE_VS, fragment: head + (kind === 'decide' ? DECIDE_FS : CARRY_FS) };
 }

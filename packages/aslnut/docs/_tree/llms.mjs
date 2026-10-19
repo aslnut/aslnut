@@ -76,15 +76,29 @@ function exportsOf(file, seen = new Set()) {
   for (const m of src.matchAll(/export\s+(?:declare\s+)?(interface|type)\s+(\w+)/g)) out.types.add(m[2]);
   return out;
 }
+/** the file that defines an exported value, following `export { a as b } from` and `export * from` (null: not found) */
+function origin(file, name, seen = new Set()) {
+  if (seen.has(file) || !existsSync(file)) return null;
+  seen.add(file);
+  const src = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  if (new RegExp(`export\\s+(?:declare\\s+)?(?:async\\s+)?(?:function\\*?|const|let|class|enum)\\s+${name}\\b`).test(src)) return file;
+  for (const m of src.matchAll(/export\s+\{([^}]*)\}\s*from\s*'([^']+)'/g)) for (const spec of m[1].split(',').map((x) => x.trim().replace(/^type\s+/, ''))) {
+    const [from, as = from] = spec.split(/\s+as\s+/).map((x) => x.trim());
+    if (as === name) return origin(resolve(dirname(file), m[2]), from, seen);
+  }
+  for (const m of src.matchAll(/export\s+\*\s+from\s+'([^']+)'/g)) { const f = origin(resolve(dirname(file), m[1]), name, seen); if (f) return f; }
+  return null;
+}
 function imports() {
   const pkg = JSON.parse(readFileSync(join(PKG, 'package.json'), 'utf8')), srcOf = (d) => join(PKG, d.default.replace(/^\.\/dist\//, 'src/').replace(/\.js$/, '.ts'));
   const main = exportsOf(srcOf(pkg.exports['.'])), lines = [];
   const list = (s) => wrap([...s].sort((a, b) => a.localeCompare(b)));
   lines.push(`from 'aslnut':\n${list(main.values)}`, '', `types from 'aslnut' (import type { … }):\n${list(main.types)}`);
-  // the subpaths that bring names the main entry has not (the ready-made people, vehicles, drones; the tools)
+  // the subpaths that bring names the main entry has not (the ready-made people, vehicles, drones; the tools), or a
+  // name of their own that the main entry has for something else (aslnut/react's World: the component)
   for (const [sub, d] of Object.entries(pkg.exports)) {
     if (sub === '.' || typeof d !== 'object' || !d.default) continue;
-    const e = exportsOf(srcOf(d)), extra = [...e.values].filter((v) => !main.values.has(v));
+    const e = exportsOf(srcOf(d)), extra = [...e.values].filter((v) => !main.values.has(v) || origin(srcOf(d), v) !== origin(srcOf(pkg.exports['.']), v));
     if (extra.length) lines.push('', `from 'aslnut${sub.slice(1)}':\n${list(new Set(extra))}`);
   }
   return lines.join('\n');

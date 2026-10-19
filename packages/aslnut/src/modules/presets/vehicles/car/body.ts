@@ -12,7 +12,7 @@ import { triangulate, type V2, type V3 } from '../../../../core/geometry/shapes/
 /** the params the body is made from (the car's: shape.ts) */
 export interface BodyParams {
   length: number; width: number; height: number; wheel: number; wheelbase: number; front: number; rear: number;
-  bonnet: number; rake: number; roofline: string; tail: string; clearance: number; arch: number; belt: number; glass: number;
+  bonnet: number; rake: number; roofline: string; tail: string; tailRake: number; clearance: number; arch: number; belt: number; glass: number;
   windows: number; cladding: boolean; load: string; cab: number; axles: number; doors: number;
 }
 /** a line in the side view: [z, y] points, rear to front (each z once) */
@@ -39,8 +39,11 @@ export interface Silhouette {
    *  (from the glass's top to the roof), the pillars round the side glass (its front and back edges behind the
    *  windscreen's and the tail's lines) */
   lean: number; ledge: number; rr: number; crown: number; sr: number; tuck: number; cladW: number; cladH: number; railH: number; pillar: number;
-  /** the stretches of the top that are glass (the windscreen, the rear glass), the side glass's (z from, to) */
-  topGlass: [number, number][]; band: [number, number];
+  /** the side's shape: the sill tucked in under it (m), the shoulder line under the belt (m), the glass bowed out (m) */
+  tuckIn: number; line: number; bow: number;
+  /** the stretches of the top that are glass (the windscreen, the rear glass), the side glass's (z from, to): its back
+   *  edge a slanted pillar, the glass's top coming down to its foot over `slant` m (none: it runs to the tail) */
+  topGlass: [number, number][]; band: [number, number]; slant: number;
   /** a pickup's bed: the stretch of the top that is its floor */
   bed: [number, number] | null;
   /** the stations a loft must share (the shoulder's line curves there) */
@@ -93,8 +96,8 @@ export function silhouette(p: BodyParams, level = 0): Silhouette {
   const load = p.load, cab = clamp(p.cab, 1, L - 0.5), z0 = load === 'box' || load === 'trailer' ? zf - cab : zr, zEnd = load === 'none' ? zr : zf - cab;
   const ra = r * p.arch, tw = clamp(0.12 + r * 0.32, 0.16, 0.34), archIn = Math.min(tw + 0.1, hw * 0.45);
   // the section's measures, rounder on a car than on a bus
-  const lean = Math.tan(((19 - 16 * u) * Math.PI) / 180), ledge = 0.03 - 0.018 * u, rr = 0.1 - 0.065 * u, crown = W * (0.022 - 0.016 * u), sr = 0.06 - 0.035 * u;
-  const tuck = 0.05, cladW = 0.055, cladH = p.cladding ? 0.1 : 0.06;
+  const lean = Math.tan(((24 - 21 * u) * Math.PI) / 180), ledge = 0.03 - 0.018 * u, rr = 0.12 - 0.085 * u, crown = W * (0.03 - 0.024 * u), sr = 0.075 - 0.05 * u;
+  const tuck = 0.05, cladW = 0.055, cladH = p.cladding ? 0.1 : 0.06, tuckIn = 0.012 + 0.055 * (1 - u), line = 0.03 + 0.08 * (1 - u), bow = 0.004 + 0.016 * (1 - u);
   // the belt, rising a little to the rear on a car; the cowl at it; the front's face below a bonnet
   const belt0 = clamp(p.belt * H, p.clearance + 0.25, H - 0.2), bonnet = clamp(p.bonnet, 0, L * 0.45), hasBonnet = bonnet >= 0.25;
   const zC = zf - bonnet, rise = (1 - u) * 0.012, yCowl = belt0 - 0.02 * (1 - u);
@@ -103,7 +106,8 @@ export function silhouette(p: BodyParams, level = 0): Silhouette {
   const beltAt = (z: number) => belt0 + (z < zC ? (zC - z) * rise : 0);
   // ── the top: the front's face, the bonnet, the windscreen, the roof, the tail ──
   const cp: [number, number, number][] = [[zf, yN, 0]];
-  if (hasBonnet) { const lead = 0.08 + 0.07 * bonnet; cp.push([zf - lead, yN + 0.035 + 0.025 * bonnet, 0.1]); }
+  // (the bonnet's leading edge curving down into the front's face: rounder on a car)
+  if (hasBonnet) { const lead = 0.1 + 0.1 * bonnet * (1 - u); cp.push([zf - lead, yN + 0.045 + 0.03 * bonnet, 0.09 + 0.08 * (1 - u)]); }
   const rake = (clamp(p.rake, 0, 80) * Math.PI) / 180, fast = p.roofline === 'fastback', Hf = fast ? H - 0.012 : H;
   const zRF = zC - (Hf - yCowl) * Math.tan(rake);
   cp.push([zC, yCowl, hasBonnet ? 0.05 + 0.08 * (1 - u) : 0.02]);
@@ -112,7 +116,8 @@ export function silhouette(p: BodyParams, level = 0): Silhouette {
   // where the roof ends and the tail begins, by the tail's kind
   const yLip = beltAt(rear) + (tail === 'fastback' ? 0.1 : 0.05), deck = Math.min(0.9, L * 0.19);
   const zDeck = rear + deck, yDeck = beltAt(zDeck) + 0.05;
-  let zRR = tail === 'hatch' ? rear + 0.06 + (H - yLip) * Math.tan((30 * Math.PI) / 180) : tail === 'notch' ? zDeck + (H - yDeck) * Math.tan((57 * Math.PI) / 180) : tail === 'fastback' ? rear + 0.12 + (H - yLip) * Math.tan((64 * Math.PI) / 180) : rear + 0.03;
+  const tr = Math.tan((clamp(p.tailRake, 0, 80) * Math.PI) / 180);
+  let zRR = tail === 'hatch' ? rear + 0.06 + (H - yLip) * tr : tail === 'notch' ? zDeck + (H - yDeck) * tr : tail === 'fastback' ? rear + 0.12 + (H - yLip) * tr : rear + 0.03;
   if (fast) zRR = Math.max(zRR, zRF - (zRF - rear) * 0.32);
   zRR = Math.min(zRR, zRF - 0.3);
   const Hr = p.roofline === 'falling' ? H - 0.012 - 0.045 * (zRF - zRR) : fast ? H - 0.006 : H;
@@ -155,7 +160,7 @@ export function silhouette(p: BodyParams, level = 0): Silhouette {
   }
   return {
     L, W, H, r, hw, zf, zr, z0, zEnd, axles, ra, tw, archIn, u, zC, yCowl, yN, zRF, zRR, Hf, Hr, top, bottom, plan: planLine, belt0, rise,
-    lean, ledge, rr, crown, sr, tuck, cladW, cladH, railH, pillar: 0.07 + 0.03 * (1 - u), topGlass, band: [zWin, zC], bed: load === 'tray' ? [zr, rear + 0.015] : null,
+    lean, ledge, rr, crown, sr, tuck, cladW, cladH, railH, pillar: 0.07 + 0.03 * (1 - u), tuckIn, line, bow, topGlass, band: [zWin, zC], slant: p.windows < 0.99 ? 0.3 * (1 - u) : 0, bed: load === 'tray' ? [zr, rear + 0.015] : null,
     shared: shared.filter((z) => z >= z0 - 1e-6 && z <= zf + 1e-6), level,
   };
 }
@@ -168,31 +173,34 @@ export function archAt(S: Silhouette, z: number, R = S.ra): number {
   for (const za of S.axles) { const d = Math.abs(z - za); if (d <= R) y = Math.max(y, S.r + Math.sqrt(R * R - d * d)); }
   return y;
 }
-/** half a section at z (its +x side, the car's left): 13 points from the floor's middle up the side, over the
- *  shoulder, up the glass and the rail to the roof's middle */
+/** half a section at z (its +x side, the car's left): 16 points from the floor's middle: the well, the sill tucked in,
+ *  the side bulging out to its widest, the shoulder line (a step of a few millimetres: a line in the light), the
+ *  shoulder rounded over to the belt, the glass leaning in and bowed out, the rail rounded into the roof, its crown,
+ *  its middle */
 export function half(S: Silhouette, z: number): V2[] {
   const t = at(S.top, z), yb = at(S.bottom, z), w = at(S.plan, z), be = beltAt(S, z);
   // the side glass: up to the rail under the roof, its front and back edges a pillar behind the windscreen and the tail
   const roof = z >= S.zRF ? S.Hf : z <= S.zRR ? S.Hr : t, sh = Math.min(be, t - S.crown), gh = Math.max(0, t - S.crown - sh);
-  const band = Math.max(0, Math.min(roof - S.crown - S.railH, t - S.crown - S.pillar) - sh), rail = gh - band, f = Math.min(1, rail / S.railH);
-  const yIn = Math.max(yb, archAt(S, z)), yLow = Math.max(yb + S.tuck, archAt(S, z)), top = sh - S.sr - 0.005;
+  // (behind the side glass's back edge, a slanted pillar: the glass's top comes down to its foot over `slant`)
+  const cut = S.slant > 0 ? Math.max(0, Math.min(1, (z - S.band[0]) / S.slant)) : 1;
+  const band = cut * Math.max(0, Math.min(roof - S.crown - S.railH, t - S.crown - S.pillar) - sh), rail = gh - band, f = Math.min(1, rail / S.railH);
+  const yIn = Math.max(yb, archAt(S, z)), yLow = Math.max(yb + S.tuck, archAt(S, z)), top = sh - S.sr - S.line - 0.01;
   const yClad = Math.min(top, Math.max(yLow + S.cladH, archAt(S, z, S.ra + S.cladW)));
-  const x7 = w - S.sr - S.ledge * Math.min(1, gh / 0.03), xg = (y: number) => Math.max(0.05, x7 - (y - sh) * S.lean);
-  const x10 = Math.max(0.04, xg(sh + gh) - S.rr * f);
-  // (the simple level: the shoulder, the rail and the crown each one corner, not two)
-  if (S.level > 0) return [
-    [0, yb], [w - S.archIn, yb], [w - S.archIn, Math.min(yIn, top)], [w, Math.min(yLow, top)], [w, yClad], [w, Math.max(yClad, sh - S.sr)],
-    [w, Math.max(yClad, sh - S.sr)], [x7, sh], [xg(sh + band), sh + band], [xg(sh + band), sh + band], [x10, t - S.crown], [x10, t - S.crown], [0, t],
-  ];
-  return [
-    [0, yb], [w - S.archIn, yb], [w - S.archIn, Math.min(yIn, top)], [w, Math.min(yLow, top)], [w, yClad], [w, Math.max(yClad, sh - S.sr)],
-    [w - S.sr * 0.3, sh - S.sr * 0.3], [x7, sh], [xg(sh + band), sh + band],
-    [xg(sh + band + rail * 0.6) - S.rr * 0.28 * f, sh + band + rail * 0.82], [x10, t - S.crown], [x10 * 0.55, t - S.crown * 0.3], [0, t],
-  ];
+  // the side: in at the sill, widest a little under its middle, in a little to the shoulder line, the shoulder over it
+  const yWide = Math.min(top, yClad + (sh - yClad) * 0.4), yS = Math.max(yWide + 0.01, sh - S.line), xS = w - 0.004 - S.tuckIn * 0.2, step = S.line > 0.05 ? 0.007 : 0;
+  const x9 = xS - step - S.sr - S.ledge * Math.min(1, gh / 0.03), xg = (y: number) => Math.max(0.05, x9 - (y - sh) * S.lean);
+  // the rail: a curve from the glass's line into the roof's (their corner its middle's pull)
+  const g11: V2 = [xg(sh + band), sh + band], corner: V2 = [xg(sh + gh), t - S.crown], g13: V2 = [Math.max(0.04, corner[0] - S.rr * f), t - S.crown];
+  const g12: V2 = [0.25 * g11[0] + 0.5 * corner[0] + 0.25 * g13[0], 0.25 * g11[1] + 0.5 * corner[1] + 0.25 * g13[1]], bow = S.bow * Math.min(1, band / 0.35);
+  const lo: V2[] = [[0, yb], [w - S.archIn, yb], [w - S.archIn, Math.min(yIn, top)], [w - S.tuckIn, Math.min(yLow, top)], [w - S.tuckIn * 0.35, yClad], [w, yWide], [xS, yS]];
+  const sh8: V2 = [xS - step - S.sr * 0.62, sh - S.sr * 0.38], g9: V2 = [x9, sh], crown: V2 = [g13[0] * 0.55, t - S.crown * 0.3];
+  // (the simple level: the side, the shoulder, the glass and the rail each one face, not two; no line, no crown)
+  if (S.level > 0) return [...lo.slice(0, 5), lo[4]!, lo[6]!, lo[6]!, g9, g9, g11, g11, g13, g13, g13, [0, t]];
+  return [...lo, [xS - step, yS + step * 0.8], sh8, g9, [xg(sh + band * 0.5) + bow, sh + band * 0.5], g11, g12, g13, crown, [0, t]];
 }
-/** what each of half a section's segments is: the floor, the well, the sill, the cladding, the side, the shoulder
- *  (two), the glass, the rail (two), the top (two) */
-const SEG = ['floor', 'well', 'sill', 'clad', 'side', 'shoulder', 'shoulder', 'band', 'rail', 'rail', 'top', 'top'] as const;
+/** what each of half a section's segments is: the floor, the well, the sill, the cladding, the side (two), its line,
+ *  the shoulder (two), the glass (two), the rail (two), the top (two) */
+const SEG = ['floor', 'well', 'sill', 'clad', 'side', 'side', 'line', 'shoulder', 'shoulder', 'band', 'band', 'rail', 'rail', 'top', 'top'] as const;
 const inAny = (z: number, spans: readonly [number, number][]) => spans.some(([a, b]) => z > a && z < b);
 /** what a segment is made of at z */
 function pieceOf(S: Silhouette, seg: number, z: number, cladding: boolean): Piece {
@@ -209,9 +217,10 @@ function stationsOf(S: Silhouette, own: number[]): number[] {
   for (const z of own) { if (z < S.z0 || z > S.zf) continue; if (out.every((q) => Math.abs(q - z) > 0.006)) out.push(z); }
   return out.sort((a, b) => a - b);
 }
-/** the body's panels for a level: triangles by piece (each three points a face, facing out) */
-export function shell(S: Silhouette, level: number, cladding: boolean): Record<Piece | 'caps', V3[]> {
-  const out: Record<Piece | 'caps', V3[]> = { paint: [], glass: [], clad: [], under: [], bed: [], caps: [] };
+/** the body's panels for a level: triangles by piece (each three points a face, facing out); a front door's span
+ *  (z from, to) cut out of its sides as the doors' own (from the cladding's top to the belt: each its side's) */
+export function shell(S: Silhouette, level: number, cladding: boolean, door: [number, number] | null = null): Record<Piece | 'caps' | 'doorL' | 'doorR', V3[]> {
+  const out: Record<Piece | 'caps' | 'doorL' | 'doorR', V3[]> = { paint: [], glass: [], clad: [], under: [], bed: [], caps: [], doorL: [], doorR: [] };
   // the lower loft's own stations: the floor's points, each arch round (its ends sharp: the well's front and back
   // walls), the cladding round it; the upper's: where the glass begins and ends
   const segs = level === 0 ? 6 : level === 1 ? 3 : 2, low: number[] = [...S.bottom.map((q) => q[0])];
@@ -219,27 +228,30 @@ export function shell(S: Silhouette, level: number, cladding: boolean): Record<P
     for (let i = 0; i <= segs; i++) low.push(za + S.ra * Math.cos((i / segs) * Math.PI));
     low.push(za - S.ra - 0.012, za + S.ra + 0.012); if (cladding) low.push(za - S.ra - S.cladW, za + S.ra + S.cladW);
   }
-  const up = [...S.top.map((q) => q[0]), ...S.topGlass.flat(), ...S.band, ...(S.bed ?? [])];
+  if (door) low.push(...door);
+  const up = [...S.top.map((q) => q[0]), ...S.topGlass.flat(), ...S.band, S.band[0] + S.slant * 0.5, S.band[0] + S.slant, ...(S.bed ?? [])];
   const lower = stationsOf(S, low), upper = stationsOf(S, up);
   const mir = (q: V2): V2 => [-q[0], q[1]];
   // each loft's sections as open lines: the lower from the right shoulder down, across the floor, up to the left; the
   // upper from the left shoulder over the roof to the right (each point its half's segment number)
-  const lowerLine = (h: V2[]) => [...h.slice(1, 8).reverse().map(mir), ...h.slice(1, 8)];
-  const upperLine = (h: V2[]) => [...h.slice(7), ...h.slice(7, 12).reverse().map(mir)];
-  const lowerSeg = (m: number) => (m < 6 ? 6 - m : m - 6), upperSeg = (m: number) => (m < 5 ? 7 + m : 7 + (9 - m));
-  const loft = (zs: number[], line: (h: V2[]) => V2[], seg: (m: number) => number) => {
+  const lowerLine = (h: V2[]) => [...h.slice(1, 10).reverse().map(mir), ...h.slice(1, 10)];
+  const upperLine = (h: V2[]) => [...h.slice(9), ...h.slice(9, 15).reverse().map(mir)];
+  const lowerSeg = (m: number) => (m < 8 ? 8 - m : m - 8), upperSeg = (m: number) => (m < 6 ? 9 + m : 9 + (11 - m));
+  const loft = (zs: number[], line: (h: V2[]) => V2[], seg: (m: number) => number, lower = false) => {
     const rings = zs.map((z) => line(half(S, z)));
     for (let i = 0; i + 1 < zs.length; i++) {
       const za = zs[i]!, zb = zs[i + 1]!, ra = rings[i]!, rb = rings[i + 1]!, zm = (za + zb) / 2;
       for (let j = 0; j + 1 < ra.length; j++) {
         const A: V3 = [ra[j]![0], ra[j]![1], za], B: V3 = [ra[j + 1]![0], ra[j + 1]![1], za], C: V3 = [rb[j + 1]![0], rb[j + 1]![1], zb], D: V3 = [rb[j]![0], rb[j]![1], zb];
-        const pc = out[pieceOf(S, seg(j), zm, cladding)];
+        // (a front door's span of the side: its own; the lower loft's first half its right side)
+        const sj = seg(j), inDoor = lower && door && sj >= 4 && sj <= 8 && zm > door[0] && zm < door[1];
+        const pc = inDoor ? out[j < 8 ? 'doorR' : 'doorL'] : out[pieceOf(S, sj, zm, cladding)];
         if (Math.hypot(B[0] - A[0], B[1] - A[1]) + Math.hypot(C[0] - D[0], C[1] - D[1]) < 1e-5) continue;
         pc.push(A, B, C, A, C, D);
       }
     }
   };
-  loft(lower, lowerLine, lowerSeg);
+  loft(lower, lowerLine, lowerSeg, true);
   loft(upper, upperLine, upperSeg);
   // its ends: the whole section at the front and at the back, closed
   for (const [z, s] of [[S.zf, 1], [S.z0, -1]] as const) {

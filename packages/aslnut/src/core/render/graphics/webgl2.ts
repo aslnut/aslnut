@@ -1,7 +1,7 @@
 // core › render › graphics › webgl2: the interface on WebGL2. Same programs (the GLSL twin), same textures (2D
 // arrays, float data textures read with texelFetch in the vertex stage), same draws, same pixels.
 import { AslnutError } from '../../world/errors.ts';
-import { Held, tally } from './live.ts';
+import { Held, tally, unreadable } from './live.ts';
 import type { BufferKind, Caps, DrawCall, FrameOptions, GBuffer, GTarget, GTexture, Graphics, Program, ProgramDesc, TextureDesc } from './interface.ts';
 import { FXAA_GLSL } from './shaders/fxaa.glsl.ts';
 
@@ -213,6 +213,9 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
     });
   };
   const owned = new Set<{ destroy(): void }>();
+  // (a frame being made: what is destroyed meanwhile is deleted once it is drawn, its draws may hold it)
+  let holding = false; const later: (() => void)[] = [];
+  const gone = (f: () => void): void => { if (holding) later.push(f); else f(); };
   // vertex arrays per (program, instances, vertices): the attribute pointers set once, not each draw
   let vids = 0; const progs = new Set<PProg>();
   const vaoOf = (p: PProg, inst: PBuf | undefined, vert: PBuf | undefined): WebGLVertexArrayObject | null => {
@@ -278,7 +281,7 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
           if (off === 0 && d.byteLength >= size) gl.bufferData(target, size, gl.DYNAMIC_DRAW);
           gl.bufferSubData(target, off, d); gl.bindBuffer(target, null); nUp++; uploads += d.byteLength;
         },
-        destroy() { if (owned.delete(b)) { gl.deleteBuffer(buf); bytes -= size; held.remove(lab, size); tally.remove('buffers', size); forgetVaos(b.vid); } },
+        destroy() { if (owned.delete(b)) { bytes -= size; held.remove(lab, size); tally.remove('buffers', size); gone(() => { gl.deleteBuffer(buf); forgetVaos(b.vid); }); } },
       };
       owned.add(b); tally.add('buffers', size);
       if (data) b.write(data);
@@ -336,7 +339,7 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
           if (o.premultiplied) gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
           nUp++; uploads += src.width * src.height * 4;
         },
-        destroy() { if (owned.delete(t)) { gl.deleteTexture(tex); bytes -= size; held.remove(lab, size); tally.remove('textures', size); } },
+        destroy() { if (owned.delete(t)) { bytes -= size; held.remove(lab, size); tally.remove('textures', size); gone(() => gl.deleteTexture(tex)); } },
       };
       owned.add(t); tally.add('textures', size);
       return t;
@@ -357,7 +360,7 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
       if (tx.target === gl.TEXTURE_2D) gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tx.tex, 0); else gl.framebufferTextureLayer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, tx.tex, 0, layer);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      const t: PTarget = { width: tx.desc.width, height: tx.desc.height, scene: null, layerFb: fb, destroy() { if (owned.delete(t)) { gl.deleteFramebuffer(fb); tally.remove('targets'); } } };
+      const t: PTarget = { width: tx.desc.width, height: tx.desc.height, scene: null, layerFb: fb, destroy() { if (owned.delete(t)) { tally.remove('targets'); gone(() => gl.deleteFramebuffer(fb)); } } };
       owned.add(t); tally.add('targets');
       return t;
     },
@@ -365,7 +368,7 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
       const W = Math.max(1, Math.round(w)), H = Math.max(1, Math.round(h)), scene = makeScene(W, H, !!o.sampled);
       bytes += W * H * 8; const lab = o.label ?? 'target'; held.add(lab, W * H * 8);
       const texture: PTex | undefined = scene.colorTex ? { desc: { label: 'target', width: W, height: H, format: 'rgba8', filter: 'nearest' }, tex: scene.colorTex, target: gl.TEXTURE_2D, write() { throw new AslnutError('E-GPU-003', 'a target is drawn into, not written', { fix: 'draw into it with frame({ target })' }); }, writeImage() { throw new AslnutError('E-GPU-003', 'a target is drawn into, not written', { fix: 'draw into it with frame({ target })' }); }, destroy() {} } : undefined;
-      const t: PTarget = { width: W, height: H, scene, texture, destroy() { if (owned.delete(t)) { freeScene(scene); bytes -= W * H * 8; held.remove(lab, W * H * 8); tally.remove('targets', W * H * 8); } } };
+      const t: PTarget = { width: W, height: H, scene, texture, destroy() { if (owned.delete(t)) { bytes -= W * H * 8; held.remove(lab, W * H * 8); tally.remove('targets', W * H * 8); gone(() => freeScene(scene)); } } };
       owned.add(t); tally.add('targets', W * H * 8);
       return t;
     },
@@ -410,6 +413,8 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
     readTexture(texture: GTexture) {
       if (dead || gl.isContextLost()) return Promise.reject(new AslnutError('E-GPU-004', 'the WebGL2 context was lost', { fix: 'reload the page' }));
       const tx = texture as PTex, d = tx.desc, w = d.width, h = d.height, float = d.format !== 'rgba8';
+      // (read back only what was made to be: as WebGPU, where another texture cannot be copied out)
+      if (!d.renderable && !d.growable) return Promise.reject(unreadable(d));
       const fb = gl.createFramebuffer()!;
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
       if (tx.target === gl.TEXTURE_2D) gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tx.tex, 0); else gl.framebufferTextureLayer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, tx.tex, 0, 0);
@@ -533,10 +538,15 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
       if (!tg) { timerEnd(); stats.draws = n; stats.passes = passes; stats.uploadBytes = uploads; uploads = 0; stats.uploads = nUp; nUp = 0; stats.uploadMaxMs = +upMax.toFixed(2); upMax = 0; }
       return out;
     },
+    hold(on: boolean) {
+      holding = on;
+      if (!on && later.length) for (const f of later.splice(0)) f();
+    },
     destroy() {
       if (closed) return;
-      closed = true;
+      closed = true; holding = false;
       for (const r of [...owned]) r.destroy();
+      for (const f of later.splice(0)) f();
       if (main) { freeScene(main); main = null; }
       if (aaScene) { freeScene(aaScene); aaScene = null; } if (aaProg) { gl.deleteProgram(aaProg); aaProg = null; }
       if (staging) { gl.deleteTexture(staging.tex); staging = null; }

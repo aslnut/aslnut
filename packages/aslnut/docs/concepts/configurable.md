@@ -58,8 +58,8 @@ line({ data: grid, color: d => (d.props.kv >= 150 ? '#ffcc00' : '#ff8800'), widt
 // 3 · override a provider's defaults
 imagery.esri({ layer: 'World_Imagery', maxZoom: 19, attribution: 'Esri, Maxar' })
 
-// 4 · React: the same objects and props
-<Earth imagery={[esri()]} terrain={[mapzen(), grid({ url, when: { level: { from: 'city' } } })]} />
+// 4 · React (aslnut/react): the same objects, as props
+<World options={{ body: earth({ imagery: [esri()], terrain: [mapzen(), grid({ url, when: { level: { from: 'city' } } })] }) }} />
 ```
 
 ## The four levels of customising, lightest first

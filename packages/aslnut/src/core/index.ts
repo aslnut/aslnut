@@ -1,6 +1,8 @@
 // aslnut/core: space, time, data, observation, geometry, encoding, render, interaction, entities, simulation, world, runtime
 export { world, World, isMiss, type FrameProfile, type RecordOptions, type RecordedFrame } from './world/world.ts';
-export type { Body, WorldOptions, SettleOptions, SettleReport, PointerInfo, PickOptions, FitOptions, Telemetry, ElementChange } from './world/world.ts';
+export type { Body, WorldOptions, SettleOptions, SettleReport, PointerInfo, PickOptions, FitOptions, Telemetry, ElementChange, WorldEvents } from './world/world.ts';
+export { shell } from './world/host/shell.ts';
+export type { Shell, ShellOptions, ViewChange } from './world/host/shell.ts';
 export { motionFrames, sunFrames } from './runtime/frame.ts';
 export type { FramesOptions, FrameWant } from './runtime/frame.ts';
 export { Element } from './world/element.ts';

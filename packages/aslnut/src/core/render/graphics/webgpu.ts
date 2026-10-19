@@ -1,6 +1,6 @@
 // core › render › graphics › webgpu: the interface on WebGPU.
 import { AslnutError } from '../../world/errors.ts';
-import { Held, tally } from './live.ts';
+import { Held, tally, unreadable } from './live.ts';
 import { FXAA_WGSL } from './shaders/fxaa.wgsl.ts';
 import type { Attribute, BufferKind, Caps, DrawCall, FrameOptions, GBuffer, GTarget, GTexture, Graphics, Program, ProgramDesc, TextureDesc } from './interface.ts';
 
@@ -61,15 +61,17 @@ export async function createWebGPU(canvas: HTMLCanvasElement | OffscreenCanvas, 
   // follows, in one submit (one submit per tile cost a phone's main thread and its GPU process tens of ms a frame
   // when a look changed and every tile was drawn again); what is destroyed meanwhile waits for that submit
   let pending: GPUCommandEncoder | null = null;
+  // (a frame being made: what is destroyed meanwhile waits for its submit too, its draws may hold it)
+  let holding = false;
   const later: (() => void)[] = [];
   const submit = (enc: GPUCommandEncoder | null): void => {
     const list: GPUCommandBuffer[] = [];
     if (pending) { list.push(pending.finish()); pending = null; }
     if (enc) list.push(enc.finish());
     if (list.length) device.queue.submit(list);
-    if (later.length) for (const f of later.splice(0)) f();
+    if (later.length && !holding) for (const f of later.splice(0)) f();
   };
-  const gone = (f: () => void): void => { if (pending) later.push(f); else f(); };
+  const gone = (f: () => void): void => { if (pending || holding) later.push(f); else f(); };
   /** a bind group's cache key: the program and its resources' ids (no arrays made per draw) */
   const keyOf = (pid: number, kind: string, xs: readonly { id: number }[]): string => { let k = `${pid}${kind}`; for (let i = 0; i < xs.length; i++) k += `${xs[i]!.id},`; return k; };
   const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
@@ -237,6 +239,8 @@ export async function createWebGPU(canvas: HTMLCanvasElement | OffscreenCanvas, 
     readTexture(texture: GTexture) {
       if (dead) return Promise.reject(new AslnutError('E-GPU-004', 'the WebGPU device was lost', { fix: 'reload the page' }));
       const tx = texture as PTex, d = tx.desc, bpp = BPP[d.format], w = d.width, h = d.height, row = Math.ceil((w * bpp) / 256) * 256;
+      // (a texture not made to be read back cannot be copied out: said, never zeros in its place)
+      if (!(tx.tex.usage & GPUTextureUsage.COPY_SRC)) return Promise.reject(unreadable(d));
       // what was drawn into it is still in the encoder being recorded: sent first
       if (pending) submit(null);
       const out = device.createBuffer({ size: row * h, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ }), enc = device.createCommandEncoder();
@@ -356,9 +360,13 @@ export async function createWebGPU(canvas: HTMLCanvasElement | OffscreenCanvas, 
         return px;
       });
     },
+    hold(on: boolean) {
+      holding = on;
+      if (!on && !pending && later.length) for (const f of later.splice(0)) f();
+    },
     destroy() {
       if (closed) return;
-      closed = true;
+      closed = true; holding = false;
       if (pending && !dead) submit(null);
       for (const r of [...owned]) r.destroy();
       depth?.destroy(); depth = null; aaTex?.destroy(); aaTex = null; kept?.destroy(); kept = null; groups.clear(); later.length = 0;

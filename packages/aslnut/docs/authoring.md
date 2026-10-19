@@ -1,6 +1,6 @@
 # Authoring aslnut
 
-**In one line:** aslnut makes **worlds** in the browser on WebGPU and WebGL2: the Earth (or a flat floor), what stands on it, what moves on it, and your data drawn over it. This page is enough to write one. The [recipes](../examples/recipes) are six complete scripts, one per kind of app; [llms.txt](llms.txt) carries this page, the recipes, every import and every part's signature (generated: it never drifts).
+**In one line:** aslnut makes **worlds** in the browser on WebGPU and WebGL2: the Earth (or a flat floor), what stands on it, what moves on it, and your data drawn over it. This page is enough to write one. The [recipes](../examples/recipes) are six complete scripts, one per kind of app; [llms.txt](llms.txt) carries this page, the recipes, every import and every part's signature (generated: it never drifts). Wrapping aslnut into a platform of your own (components, a flow runtime, a server): the [implementers' guide](implementers.md).
 
 ```ts
 import { data, earth, imagery, layer, legend, scale, terrain, world } from 'aslnut';
@@ -72,17 +72,54 @@ set.joint('m7', 'wheel', { rate: 0 });                             // one clone 
 | copies over time | `b.copy(fn, { emit: { count: [whole, simple, far], life, rise, spread, grow, fade, drift } })` | smoke, steam, sparks: born again every `life` seconds, moved and faded on the chip; two a shape, up to 1,023 copies each |
 | anchors and attach | `b.anchor(name, at, { kind })` · `entities({ attach: [{ shape: smoke, at: 'stack' }] })` | a shape at every anchor of that name or kind of every clone (still things; on moving ones planned) |
 | bodies from a profile | `b.mesh(triangles, { smooth: true, crease: 50 })` · `shape({ defaults: (given) => row })` | your own loft (sections station by station) drawn as smooth panels, edges past the crease kept sharp; a type given brings its row of numbers, what is given besides stands over it |
-| vehicles | `cars.make({ type: 'suv' })` · `cars.suv` · `entities({ shape: cars.shape, params: (d) => ({ type: d.props.kind }) })` | each type one row of its silhouette (`presets.json`: wheelbase, overhangs, bonnet, rake, roofline, tail, clearance, wheel, arch, belt, glass, windows, cladding, lights, load): a new body is a row, not code; `tints: { glass, cladding, load }`; a tractor's trailer turns at its fifth wheel by its track: `log.appendMany(cars.hitch(rows, tractor))` with `joints: { trailer: { value: 'hitch' } }` |
+| vehicles | `cars.make({ type: 'suv' })` · `cars.suv` · `entities({ shape: cars.shape, params: (d) => ({ type: d.props.kind }) })` | each type one row of its silhouette (`presets.json`: wheelbase, overhangs, bonnet, rake, roofline, tail and its rake, clearance, wheel, arch, belt, glass, windows, cladding, lights, load): a new body is a row, not code; `tints: { glass, cladding, load }`; a tractor's trailer turns at its fifth wheel by its track: `log.appendMany(cars.hitch(rows, tractor))` with `joints: { trailer: { value: 'hitch' } }` |
 | clones with variety | `tint`, `tints: { group }` (four groups), `stretch`, `scale`, `heading`, `variation: { seed, color, scale, builds }` | a clone is a record on the chip, no geometry of its own: vary the record, build only what changes the geometry (each distinct params × builds is one more draw) |
 | size | marks: `size: { m: 40, min: 4, max: 32 }` (metres kept within CSS px) or `{ px: 8 }` · a shape: `size: { min, max }` (px) | one rule for points, lines, arcs, text and shapes: zoom writes nothing |
 | priorities | `w.setPriorities({ drop: ['parked'], keep: ['cars'] })` | on a slow device, what loses detail first and what never does |
+
+## React
+
+`aslnut/react` is the same API in a React app (React 18 or 19, an optional peer). `<World>` makes the world on mount and disposes it on unmount; its `elements` are aslnut's own objects, made in render:
+
+```tsx
+import { useState } from 'react';
+import { layer, plane, scale, type Feature, type Picked } from 'aslnut';
+import { World, useWorldEvent } from 'aslnut/react';
+
+const BODY = plane();                                                       // made once, outside the component
+const BY_KIND = scale.category((d: Feature) => String(d.props.kind), { range: 'set2' });
+const BY_RATE = scale.quantile((d: Feature) => Number(d.props.rate), { range: 'blues' });
+
+function Map({ blocks }: { blocks: Feature[] }) {
+  const [byRate, setByRate] = useState(false);
+  return (
+    <World options={{ body: BODY, view: { lon: 0, lat: 0, zoom: 16 } }} style={{ height: '100dvh' }}
+      elements={[layer({ id: 'blocks', data: blocks, area: { color: byRate ? BY_RATE : BY_KIND } })]}  // a change: setProps
+      onReady={(w) => console.log(w.api)}>
+      <button onClick={() => setByRate((x) => !x)}>colour</button>
+      <Panel />
+    </World>
+  );
+}
+function Panel() {                                                           // inside <World>: the hooks
+  const [picked, setPicked] = useState<Picked | null>(null);
+  useWorldEvent('tap', (p) => setPicked(p));
+  return picked && <aside>{String(picked.props.name)}</aside>;
+}
+```
+
+- **Elements are matched by `id`** from one render to the next: a new id is added, a gone one removed, a changed prop set on the element already in the world (`setProps`: a restyle, never a rebuild). Give every element an `id`.
+- **Make sources, logs, scales and functions once** (outside the component or with `useMemo`): one made again in render is a new prop each render (a restyle, or for a source a load). Plain values and objects are compared by value.
+- **`options`** are what the world is made with. Later, `views`, `time`, `timeZone`, `quality`, `render.shadows`, `theme`, `budget`, `priorities` and `observation` follow their changes; the rest stay (a new world: a new `key`). A changed `view` moves the camera only with `viewChange="go"` or `viewChange={{ seconds: 1.5 }}`.
+- **Hooks:** `useWorld()` (null until ready), `useElement(id)`, `useWorldEvent(name, fn)`. The world in `onReady` is the plain one: `w.fly`, `replay(w, …)`, `w.on`.
+- **Give `<World>` a size** (`style` or a class); the canvas fills it, the children are drawn over it. On a server it renders an empty box.
 
 ## The rules
 
 1. **Pay only for what you set.** Every option is optional, and an unset one costs nothing. Start with a few props.
 2. **Everything is configurable** through provider factories with defaults: `imagery.esri({ layer: 'light' })`, `imagery.osm()`, `imagery.custom({ url })`; `terrain.mapzen()`, `terrain.custom({ heights })`; `terrain: []` is flat. Any value can be your function.
 3. **WebGPU and WebGL2, both.** `world()` picks one (`graphics: 'auto'`). The API and the picture are the same on both: never write for one only.
-4. **One import:** everything comes from `'aslnut'`, except the ready-made people, vehicles and drones: `'aslnut/modules/presets/humans'`, `'…/vehicles'` (`cars`), `'…/drones'`.
+4. **One import:** everything comes from `'aslnut'`, except the ready-made people, vehicles and drones: `'aslnut/modules/presets/humans'`, `'…/vehicles'` (`cars`), `'…/drones'`; and the React shell: `'aslnut/react'`.
 5. **Errors say the fix:** an `AslnutError` has a `code`, a `message` and a `fix`.
 
 ## Pick a recipe

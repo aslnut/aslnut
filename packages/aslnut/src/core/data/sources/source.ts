@@ -7,6 +7,7 @@ import type { Loader } from '../loading/loader.ts';
 import { AslnutError } from '../../world/errors.ts';
 import type { State } from '../../world/state.ts';
 import type { Feature, Props } from '../features.ts';
+import { whenDrawn } from '../../runtime/frame.ts';
 
 export interface SourceContext { loader: Loader; error(e: unknown): void }
 export interface SourceStatus { pending: string[]; failed: { what: string; error: string }[] }
@@ -29,7 +30,7 @@ export abstract class Source<P = Props> {
   failure: Error | null = null;
   protected list: Feature<P>[] = [];
   protected byId = new Map<string | number, Feature<P>>();
-  private watchers = new Set<() => void>();
+  private watchers = new Set<() => void>(); private recorders = new Set<() => void>();
   private started: Promise<void> | null = null;
   private busy = 0;
   constructor(o: { id?: string; attribution?: string } = {}) { this.id = o.id ?? `${this.constructor.name.toLowerCase()}-${++seq}`; this.attribution = o.attribution ?? ''; }
@@ -57,8 +58,10 @@ export abstract class Source<P = Props> {
   }
   /** count work in flight (settled waits for it) */
   protected track<T>(p: Promise<T>): Promise<T> { this.busy++; return p.finally(() => { this.busy--; }); }
-  /** call fn whenever the features change; returns the function that stops it */
-  watch(fn: () => void): () => void { this.watchers.add(fn); return () => this.watchers.delete(fn); }
+  /** call fn whenever the features change; returns the function that stops it. Changed while a frame is being made
+   *  (your everyFrame work): told once that frame is drawn, once however often it changed (a layer draws what it was
+   *  made of); `now`: told at once, each change (a recorder of every row: drive.data) */
+  watch(fn: () => void, o: { now?: boolean } = {}): () => void { const s = o.now ? this.recorders : this.watchers; s.add(fn); return () => s.delete(fn); }
   /** replace every feature */
   protected replace(list: Feature<P>[], shapes = true): void {
     this.list = list; this.byId = new Map(list.map((f) => [f.id, f]));
@@ -66,7 +69,9 @@ export abstract class Source<P = Props> {
   }
   protected changed(shapes: boolean): void {
     this.version++; if (shapes) this.shapeVersion++;
-    for (const f of [...this.watchers]) { try { f(); } catch (e) { console.error(e); } }
+    for (const f of [...this.recorders]) { try { f(); } catch (e) { console.error(e); } }
+    // (changed while a frame is being made, in your everyFrame work: its layers told once that frame is drawn)
+    whenDrawn(this, () => { for (const f of [...this.watchers]) { try { f(); } catch (e) { console.error(e); } } });
   }
   /** these shapes with the props of matching rows (a query's numbers on boundaries that load once) */
   join<R = Props>(rows: Source<R>, o: JoinOptions<P>): Joined<P, R> { return new Joined(this, rows, o); }
@@ -84,7 +89,8 @@ export class Joined<P = Props, R = Props> extends Source<P & Partial<R>> {
     const k = (on: string | ((f: never) => unknown)) => (typeof on === 'function' ? on : (f: Feature<Props>) => (on === 'id' ? f.id : f.props[on]));
     this.keyOf = k(o.on as never) as (f: Feature<P>) => unknown;
     this.rowKeyOf = k((o.rowsOn ?? o.on) as never) as (f: Feature<R>) => unknown;
-    shapes.watch(() => this.sync()); rows.watch(() => this.sync());
+    // (joined at once, each change: what records its rows sees every one; its layers told as any source's)
+    shapes.watch(() => this.sync(), { now: true }); rows.watch(() => this.sync(), { now: true });
     this.sync();
   }
   protected async load(ctx: SourceContext): Promise<void> { await Promise.all([this.shapes.start(ctx), this.rows.start(ctx)]); this.sync(); }

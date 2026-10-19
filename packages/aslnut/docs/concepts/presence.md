@@ -54,11 +54,12 @@ points({
 area({ data: zones, when: { level: ['city', 'district'], hour: [18, 6], year: [2024, Infinity] } })
 ```
 
-**React** uses the identical prop, closing over React state:
+**React** (`aslnut/react`) uses the identical prop. A React state reaches `when` through the state `s` (a toggle), or decides what is in the list:
 
 ```tsx
 const [showLidar, setShowLidar] = useState(false);
-<Earth terrain={[mapzen(), custom({ heights: myLidar, when: s => showLidar })]} />
+useEffect(() => { w?.toggle('lidar', showLidar); }, [w, showLidar]);                // when: s => s.user.toggles.lidar
+<World options={{ body }} elements={[...(showLidar ? [lidarPoints] : [])]} />    // or: in the list, added; out, removed
 ```
 
 **Exists** is set with data words, not `when`:

@@ -103,6 +103,11 @@ export async function openDemo(browser, url, { width = 480, height = 320 } = {})
   const close = page.close.bind(page); page.close = (...a) => close(...a).catch((e) => { if (!gone) throw e; });
   await page.goto(url);
   await page.waitForFunction(() => window.aslnutDemo?.w || /GraphicsUnavailable|E-GPU/.test(document.getElementById('panel')?.textContent ?? ''), null, { timeout: 60000 });
+  // a preset the page does not have opens its default scene: said at once (a build older than the tools, a name
+  // gone), never a check failing later on the wrong scene
+  const asked = new URL(url).searchParams.get('go');
+  const missing = asked && await page.evaluate((go) => { const p = window.aslnutDemo?.presets; return Array.isArray(p) && !p.includes(go) ? p : null; }, asked);
+  if (missing) { await page.close(); throw new Error(`the page has no preset '${asked}' (a build older than the tools? rebuild it). Its presets: ${missing.join(', ')}`); }
   return { page, errors };
 }
 /** the frame as RGBA bytes, after the world settled (strict) */

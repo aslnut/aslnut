@@ -68,7 +68,8 @@ export class DataDrive {
     this.started ??= (async () => {
       await this.log.start(ctx);
       const src = this.source; if (!src) return;
-      this.off = src.watch(() => this.take(src));
+      // (every row a sample: told of each change at once)
+      this.off = src.watch(() => this.take(src), { now: true });
       await src.start(ctx);
       this.take(src);
     })();
@@ -298,7 +299,7 @@ export class EntitySet extends Element<EntitySetProps> {
     this.pitchCol = pk; this.bankCol = bk;
     const pitch = pk >= 0 ? log.values[pk]!.type : at?.pitch === true && ak >= 0 ? 'climb' as const : 'none' as const, bank = bk >= 0 ? log.values[bk]!.type : at?.bank === true ? 'turn' as const : 'none' as const;
     const pose = this.props.shape && (pitch !== 'none' || bank !== 'none') ? { pose: { pitch, bank } } : {};
-    return { ...(fm ? { formula: fm } : {}), ...(jk >= 0 ? { joint: 'f32' as const } : {}), time: log.timeType, place: log.placeType, ...(this.props.fold ? { fold: true } : {}), value: vi < 0 ? 'none' : log.values[vi]!.type, color: isValueColor(c) && vi >= 0 ? 'ramp' : typeof c === 'function' ? 'thing' : 'one', size: isValueSize(z) && vi >= 0 ? 'value' : typeof z === 'function' ? 'thing' : 'one', row: this.row, grid: GRID, ...(label ? { label } : {}), ...(ak >= 0 ? { alt: log.values[ak]!.type, over: log.altitude!.over } : {}), ...pose };
+    return { ...(fm ? { formula: fm } : {}), ...(jk >= 0 ? { joint: 'f32' as const } : {}), time: log.timeType, place: log.placeType, ...(this.props.fold ? { fold: true } : {}), value: vi < 0 ? 'none' : log.values[vi]!.type, ...(vi >= 0 && log.values[vi]!.step ? { step: true } : {}), color: isValueColor(c) && vi >= 0 ? 'ramp' : typeof c === 'function' ? 'thing' : 'one', size: isValueSize(z) && vi >= 0 ? 'value' : typeof z === 'function' ? 'thing' : 'one', row: this.row, grid: GRID, ...(label ? { label } : {}), ...(ak >= 0 ? { alt: log.values[ak]!.type, over: log.altitude!.over } : {}), ...pose };
   }
   private programs(v: SetsVariant): void {
     const key = JSON.stringify(v) + (this.props.shape ? 'm' : '') + (this.props.gauge ? 'g' : '') + (this.props.shape && this.props.near?.shadow ? 's' : '') + (this.props.links ? 'l' : '');
@@ -460,8 +461,8 @@ export class EntitySet extends Element<EntitySetProps> {
     this.foldTex.write(d);
     this.foundKey = '';
   }
-  /** a thing held by another at `sec` (s from the log's epoch): the near set gives it no shape */
-  private foldedNow(i: number, sec: number): boolean { const w = this.foldWin[i]; if (!w) return false; for (let k = 0; k < w.length; k += 2) if (sec >= w[k]! && sec < w[k + 1]!) return true; return false; }
+  /** a thing held by another at `sec` (s from the log's epoch): hidden on the chip then (the tools' check) */
+  foldedNow(i: number, sec: number): boolean { const w = this.foldWin[i]; if (!w) return false; for (let k = 0; k < w.length; k += 2) if (sec >= w[k]! && sec < w[k + 1]!) return true; return false; }
   /** the things focused (hovered, selected): a flag in their look (w), written when it changes */
   private hoverIndex = -1; private focusKey = ''; private focused = new Set<number>();
   override hovered(ids: Set<string> | null): void { const id = ids && ids.size ? [...ids][0]! : null; this.hoverIndex = id === null ? -1 : this.log.ids.indexOf(id); (this.attached?.world as { invalidate?: () => void } | undefined)?.invalidate?.(); }
@@ -640,7 +641,9 @@ export class EntitySet extends Element<EntitySetProps> {
     if (this.lvOf.length < N) { const a = new Uint8Array(Math.max(64, N * 2)).fill(255); a.set(this.lvOf); this.lvOf = a; }
     const lvs = this.lvOf, near: number[] = [], dist = new Float32Array(N), ids: number[][] = [[], [], []];
     for (let i = 0; i < N; i++) {
-      if (!log.relOf(i, this.sec, p, hold, ak) || (this.props.fold && this.foldedNow(i, this.sec))) { lvs[i] = 255; continue; }
+      // (a thing folded into another now stays in it: the chip hides it while it is held, and it stands up drawn the
+      // moment its window ends, never waiting for the next choice)
+      if (!log.relOf(i, this.sec, p, hold, ak)) { lvs[i] = 255; continue; }
       const y = ak < 0 ? cam.groundY : sea ? Math.max(cam.groundY, p[2]) : cam.groundY + Math.max(0, p[2]);
       const x = (p[0] - c[0]) * kx, z = -(p[1] - c[1]) * kx, d = Math.hypot(x - eye[0]!, y - eye[1]!, z - eye[2]!), px = pxAt(d), prev = lvs[i]!;
       dist[i] = d;
@@ -771,7 +774,8 @@ export class EntitySet extends Element<EntitySetProps> {
     if (variant.pose) {
       if (!this.poseTex || rows !== this.poseRows) {
         this.poseTarget?.destroy(); this.poseTex?.destroy();
-        this.poseTex = ctx.graphics.texture({ label: `${this.id} pose`, width: 4096, height: rows, format: 'rgba8', filter: 'nearest' });
+        // (renderable: drawn into, and read back: a check holds the chip's pose against the set's own)
+        this.poseTex = ctx.graphics.texture({ label: `${this.id} pose`, width: 4096, height: rows, format: 'rgba8', filter: 'nearest', renderable: true });
         // (level until it is found: each angle's middle, 32768)
         const lv = new Uint8Array(4096 * rows * 4); for (let i = 1; i < lv.length; i += 2) lv[i] = 128; this.poseTex.write(lv);
         this.poseTarget = ctx.graphics.layerTarget(this.poseTex, 0); this.poseRows = rows; this.poseKey = '';

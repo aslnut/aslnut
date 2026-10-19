@@ -13,17 +13,20 @@
 // theme (core › render › style › theme: it keeps its colours).
 //   U: place (anchors) · size (the width's units, least, most CSS px; its value) · lay (the layout: pad, header, row height, rows)
 //   · clock (s from the cards' epoch, the governor's step: 0 whole, 1 its header, 2 a dot; the pick number, items)
-//   · look (opacity, the pointer's height, a dot's px (0: none), the corner's radius) · background · text · muted · bar
+//   · look (opacity, the pointer's height, a dot's px (0: none), the corner's radius) · background · room (the
+//   collision's: the share of a shown card covered, for how long (s), before it loses its room; the least time away
+//   (s) before it comes back; its fade (s)) · more (texels an item: 3, and 2 a text row; the places its decisions are kept in: its items', those of items gone a moment) · bar
 //   · dark, light (the ink on a light or a dark fill) · badge · fill (its channel, the ramp's domain lo, hi, on)
 //   · badgeOn (its value's channel, its gate's channel, on) · glyph (a digit's advance and a cell's width in glyph
-//   heights, the cells; the set's place in the room's one order: its cards' claims are it + their rank) · claim (the claims' picture w, h
-//   (cells), a cell's CSS px, on) · hold (now ms mod 65536, dt s, the hold s, the first decision) · header (an icon, a
+//   heights, the cells; the set's place in the room's one order: its cards' claims are it + their rank, + 2^18 one not shown) · claim (the claims' picture w, h
+//   (cells), a cell's CSS px, on) · hold (now ms mod 63500: 254 steps of 10 ms whole, dt s, 0, the first decision) · header (an icon, a
 //   text, the icons' columns, rows) · channels (texels a slot, channels, the set's place in the room (0: the top), sets)
-//   · rows (each: its value's channel, its of's (−1 none), decimals, a bar) · rowsBar (the bar's domain) · labels (each
+//   · rows (each: its value's channel (−2: a text row, its of's place its slot), its of's (−1 none), decimals, a bar) · rowsBar (the bar's domain) · labels (each
 //   row's label picture: uv rect) · labelSize (its CSS px)
 //   (CSS px at a card 120 px wide: the layout scales with the width)
 //   items: 3 texels an item (its first slot, samples, icon cell (−1 none), its rank in priority · its header picture's
-//   uv rect · its CSS px width, height) · times (a slot a texel, s from the cards' epoch) · values (Q texels a slot,
+//   uv rect · its CSS px width, height, its old place + 1 (a re-make's carry), its own width (0: the set's)), then 2 a
+//   text row (its picture's uv rect · its width, height) · times (a slot a texel, s from the cards' epoch) · values (Q texels a slot,
 //   4 channels a texel) · texts (the pictures: white, their alpha the text) · glyphs (0–9 . − / % +: a cell each) ·
 //   icons (the app's atlas) · fills (the fill's colours: a ramp) · state (the collision's: shown, fade, its change's time ms
 //   two bytes)
@@ -32,14 +35,38 @@ import { FRAME_WGSL } from '../../core/render/graphics/shaders/frame.wgsl.ts';
 import { ANCHOR_FOLLOW_WGSL, ANCHOR_STILL_WGSL } from '../../core/render/graphics/shaders/anchors.wgsl.ts';
 import { SET_TEXTURES, setsTrackWGSL, type SetsVariant } from '../../core/render/graphics/shaders/sets.wgsl.ts';
 
-export const CARD_STRUCT = 'place: vec4f, size: vec4f, lay: vec4f, clock: vec4f, look: vec4f, background: vec4f, text: vec4f, muted: vec4f, bar: vec4f, dark: vec4f, light: vec4f, badge: vec4f, fill: vec4f, badgeOn: vec4f, glyph: vec4f, claim: vec4f, hold: vec4f, header: vec4f, channels: vec4f, rows: array<vec4f, 6>, rowsBar: array<vec4f, 6>, labels: array<vec4f, 6>, labelSize: array<vec4f, 6>';
+export const CARD_STRUCT = 'place: vec4f, size: vec4f, lay: vec4f, clock: vec4f, look: vec4f, background: vec4f, room: vec4f, more: vec4f, bar: vec4f, dark: vec4f, light: vec4f, badge: vec4f, fill: vec4f, badgeOn: vec4f, glyph: vec4f, claim: vec4f, hold: vec4f, header: vec4f, channels: vec4f, rows: array<vec4f, 6>, rowsBar: array<vec4f, 6>, labels: array<vec4f, 6>, labelSize: array<vec4f, 6>';
 /** floats in the cards' block */
 export const CARD_FLOATS = (19 + 24) * 4;
 
 const COMMON = /* wgsl */ `
 fn cardItem(e: i32, k: i32) -> vec4f {
-  let i = e * 3 + k;
+  let i = e * i32(u.more.x) + k;
   return textureLoad(items, vec2i(i % 4096, i / 4096), 0);
+}
+// its width in the layout's units (CSS px at 120 wide): its own when it fits what it holds, else the set's
+fn cardWide(e: i32) -> f32 {
+  let w = cardItem(e, 2).w;
+  return select(120.0, w, w > 0.5);
+}
+// a decision as kept (a texel a card, rgba8): shown (128) and its fade (0..127); when it last changed (ms, two
+// bytes); since when its room is covered (10 ms steps + 1; 0: it is not; 255: not decided yet)
+fn stateFade(s: vec4f) -> f32 {
+  let r = round(s.x * 255.0);
+  return (r % 128.0) / 127.0;
+}
+fn stateShown(s: vec4f) -> bool {
+  return round(s.x * 255.0) >= 128.0;
+}
+// not shown now (or not decided yet): after its set's cards shown in the room's order
+fn cardLater(e: i32) -> bool {
+  let s = textureLoad(state, vec2i(e % 4096, e / 4096), 0);
+  return !(stateShown(s) && s.w < 0.99);
+}
+// its place in the room's one order: the top set first; in a set its cards shown first (a winner keeps its room),
+// then its priority, then its id
+fn cardOrder(e: i32) -> f32 {
+  return u.glyph.w + cardItem(e, 0).w + select(0.0, 262144.0, cardLater(e));
 }
 fn cardTime(sl: i32) -> f32 {
   return textureLoad(times, vec2i(sl % 4096, sl / 4096), 0).x;
@@ -117,7 +144,7 @@ fn cardRoom(e: i32) -> Room {
   let w = sizePx(u.size.w, vec4f(u.size.xyz, 0.0), a.xyz);
   let k = w / 120.0;
   let dpr = frame.size.z;
-  let W = round(w * dpr);
+  let W = round(cardWide(e) * k * dpr);
   let H = round(cardHeight() * k * dpr);
   let y1 = px.y - round((u.look.y + 2.0) * k * dpr);
   let x0 = px.x - round(W * 0.5);
@@ -150,7 +177,7 @@ fn cardShown(e: i32) -> f32 {
   if (u.claim.w < 0.5) {
     return 1.0;
   }
-  return textureLoad(state, vec2i(e % 4096, e / 4096), 0).y;
+  return stateFade(textureLoad(state, vec2i(e % 4096, e / 4096), 0));
 }
 @vertex fn vs(@builtin(vertex_index) vid: u32, @builtin(instance_index) iid: u32) -> O {
   let e = i32(iid);
@@ -405,7 +432,16 @@ fn rowValue(i: O, k: i32) -> vec2f {
       let ly = y0 + (u.lay.z - select(0.0, 4.0, hasBar) - lh) * 0.5;
       let lc = pictureCover(q, u.labels[k], pad, ly, u.labelSize[k].x, lh);
       let gh = 10.0;
-      let vc = numberCover(q, W - pad, y0 + (u.lay.z - select(0.0, 4.0, hasBar) - gh) * 0.5, gh, rv.x, rv.y, rw.y > -0.5, i32(rw.z));
+      var vc = 0.0;
+      if (rw.x < -1.5) {
+        // a text row: its item's own picture, right of its label
+        let e = i32(i.id + 0.5);
+        let slot = i32(rw.y + 0.5);
+        let sz = cardItem(e, 4 + 2 * slot);
+        vc = pictureCover(q, cardItem(e, 3 + 2 * slot), W - pad - sz.x, y0 + (u.lay.z - select(0.0, 4.0, hasBar) - sz.y) * 0.5, sz.x, sz.y);
+      } else {
+        vc = numberCover(q, W - pad, y0 + (u.lay.z - select(0.0, 4.0, hasBar) - gh) * 0.5, gh, rv.x, rv.y, rw.y > -0.5, i32(rw.z));
+      }
       cov = max(lc, vc);
       tint = select(ink.rgb, mix(ink.rgb, bg.rgb, 0.38), lc > vc);
       if (hasBar) {
@@ -432,7 +468,7 @@ struct O { @builtin(position) pos: vec4f, @location(0) @interpolate(flat) id: f3
   let e = i32(iid);
   var o: O;
   o.pos = vec4f(2.0, 2.0, 2.0, 1.0);
-  o.id = u.glyph.w + cardItem(e, 0).w;
+  o.id = 0.0;
   let r = cardRoom(e);
   if (r.ok < 0.5 || u.clock.y > 1.5) {
     return o;
@@ -444,7 +480,10 @@ struct O { @builtin(position) pos: vec4f, @location(0) @interpolate(flat) id: f3
   let b = select(0.0, 6.0 * r.k * frame.size.z, u.badgeOn.z > 0.5);
   let p = mix(r.box.xy - vec2f(m, m + b), r.box.zw + vec2f(m + b, m), corner) / (u.claim.z * frame.size.z);
   let rank = cardItem(e, 0).w;
-  o.pos = vec4f(p.x / u.claim.x * 2.0 - 1.0, 1.0 - p.y / u.claim.y * 2.0, (u.channels.z + (rank + 1.0) / (u.clock.w + 2.0)) / u.channels.w, 1.0);
+  // (in its set's part of the depth, the cards shown nearer: a winner keeps its room; then the one order)
+  o.id = cardOrder(e);
+  let band = select(0.0, 0.5, cardLater(e));
+  o.pos = vec4f(p.x / u.claim.x * 2.0 - 1.0, 1.0 - p.y / u.claim.y * 2.0, (u.channels.z + band + 0.5 * (rank + 1.0) / (u.clock.w + 2.0)) / u.channels.w, 1.0);
   return o;
 }
 @fragment fn fs(i: O) -> @location(0) vec4f {
@@ -452,8 +491,10 @@ struct O { @builtin(position) pos: vec4f, @location(0) @interpolate(flat) id: f3
   return vec4f(f32(n & 255u), f32((n >> 8u) & 255u), f32((n >> 16u) & 255u), 255.0) / 255.0;
 }
 `;
-// ── collision: each card's decision (a texel a card): it wins when every cell its room covers is its own; held 0.25 s
-// after a change; faded 0.2 s; off the screen it keeps what it had ──
+// ── collision: each card's decision (a texel a card). A shown card keeps its room until more than room.x of it has
+// been covered by cards before it for room.y s; a card that lost its room comes back once nothing before it covers
+// any of it, and room.z s after it went at the soonest; a card not decided yet (new, or its thing not placed a while)
+// decides at once; its fade room.w s; off the screen it keeps what it had ──
 const DECIDE = /* wgsl */ `
 fn claimOf(x: i32, y: i32) -> i32 {
   let b = round(textureLoad(claims, vec2i(x, y), 0) * 255.0);
@@ -466,32 +507,37 @@ fn claimOf(x: i32, y: i32) -> i32 {
 @fragment fn fs(@builtin(position) pos: vec4f) -> @location(0) vec4f {
   let q = vec2i(pos.xy);
   let e = q.y * 4096 + q.x;
-  if (e >= i32(u.clock.w)) {
-    return vec4f(0.0);
-  }
   let prev = textureLoad(state, vec2i(e % 4096, e / 4096), 0);
-  var shown = prev.x > 0.5;
-  var fade = prev.y;
-  let b = round(prev.zw * 255.0);
+  // (past its items: the decisions of items gone a moment, kept as they are)
+  if (e >= i32(u.clock.w)) {
+    return prev;
+  }
+  let fresh = prev.w > 0.99 || u.hold.w > 0.5;
+  var shown = stateShown(prev) && !fresh;
+  var fade = stateFade(prev);
+  let b = round(prev.yz * 255.0);
   var at = b.x * 256.0 + b.y;
+  var cov = round(prev.w * 255.0);
+  let now = u.hold.x;
   let r = cardRoom(e);
+  let placed = r.ok > 0.5 && u.clock.y < 1.5;
   var want = shown;
-  if (r.ok < 0.5 || u.clock.y > 1.5) {
-    want = false;
-  } else {
+  var looked = false;
+  if (placed) {
     let s = u.claim.z * frame.size.z;
     let off = r.box.z < 0.0 || r.box.x > frame.size.x || r.box.w < 0.0 || r.box.y > frame.size.y;
     if (!off) {
-      // the cells whose middles are inside its room: none claimed by a card before it (the claims are each card's place
-      // in the one order: the top set first, then each set's own; last frame's: a cell it moved into is empty, or a
-      // later card's, and it still wins)
-      let mine = i32(u.glyph.w + cardItem(e, 0).w);
+      looked = true;
+      // the cells whose middles are inside its room, and those claimed by a card before it in the one order (last
+      // frame's: a cell it moved into is empty, or a later card's, and still its)
+      let mine = i32(cardOrder(e));
       let c0 = vec2i(ceil(r.box.xy / s - vec2f(0.5)));
       let c1 = vec2i(floor(r.box.zw / s - vec2f(0.5)));
-      want = true;
+      var cells = 0.0;
+      var covered = 0.0;
       for (var y = 0; y < 48; y++) {
         let cy = c0.y + y;
-        if (cy > c1.y || !want) {
+        if (cy > c1.y || (!shown && covered > 0.0)) {
           break;
         }
         for (var x = 0; x < 64; x++) {
@@ -500,28 +546,82 @@ fn claimOf(x: i32, y: i32) -> i32 {
             break;
           }
           if (cx >= 0 && cy >= 0 && cx < i32(u.claim.x) && cy < i32(u.claim.y)) {
+            cells = cells + 1.0;
             let c = claimOf(cx, cy);
             if (c > 0 && c < mine) {
-              want = false;
-              break;
+              covered = covered + 1.0;
             }
           }
         }
       }
+      if (shown) {
+        if (covered > u.room.x * max(cells, 1.0)) {
+          let t10 = floor(now / 10.0) % 254.0 + 1.0;
+          if (cov < 0.5 || cov > 254.5) {
+            cov = t10;
+          } else if (((t10 - cov + 254.0) % 254.0) * 10.0 >= u.room.y * 1000.0) {
+            want = false;
+          }
+        } else {
+          cov = 0.0;
+        }
+      } else {
+        want = covered < 0.5;
+      }
     }
   }
-  // a change shows at once, then holds (hold.z s) before it may change again; the first decision at once
-  let since = (u.hold.x - at + 65536.0) % 65536.0;
-  if (want != shown && (u.hold.w > 0.5 || since >= u.hold.z * 1000.0)) {
+  let since = (now - at + 63500.0) % 63500.0;
+  // (not decided yet: at once where its room was looked at; off the screen it waits, not decided)
+  if (fresh && looked) {
     shown = want;
-    at = u.hold.x;
+    at = now;
+    cov = 0.0;
+  } else if (fresh) {
+    shown = false;
+    cov = 255.0;
+  } else if (want != shown && placed) {
+    if (!want) {
+      shown = false;
+      at = now;
+      cov = 0.0;
+    } else if (since >= u.room.z * 1000.0) {
+      shown = true;
+      at = now;
+      cov = 0.0;
+    }
   }
-  fade = clamp(fade + select(-1.0, 1.0, shown) * u.hold.y / 0.2, 0.0, 1.0);
-  return vec4f(select(0.0, 1.0, shown), fade, floor(at / 256.0) / 255.0, (at % 256.0) / 255.0);
+  // (its thing not placed: hidden, and decided at once when it is placed again)
+  if (!placed) {
+    shown = false;
+    cov = 255.0;
+  }
+  fade = clamp(fade + select(-1.0, 1.0, shown) * u.hold.y / max(u.room.w, 0.001), 0.0, 1.0);
+  return vec4f((select(0.0, 128.0, shown) + round(fade * 127.0)) / 255.0, floor(at / 256.0) / 255.0, (at % 256.0) / 255.0, cov / 255.0);
+}
+`;
+// ── a card set made again (its items changed): each card's decision carried to its item's new place by its id (the
+// items' old places: items.z of its third texel, + 1; 0: a new card, not decided yet); after its items, those gone a
+// moment (one given again meanwhile finds its decision there) ──
+const CARRY = /* wgsl */ `
+@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
+  let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));
+  return vec4f(p * 2.0 - 1.0, 0.0, 1.0);
+}
+@fragment fn fs(@builtin(position) pos: vec4f) -> @location(0) vec4f {
+  let q = vec2i(pos.xy);
+  let e = q.y * 4096 + q.x;
+  if (e >= i32(u.more.y)) {
+    return vec4f(0.0, 0.0, 0.0, 1.0);
+  }
+  let old = i32(cardItem(e, 2).z + 0.5) - 1;
+  if (old < 0) {
+    return vec4f(0.0, 0.0, 0.0, 1.0);
+  }
+  return textureLoad(state, vec2i(old % 4096, old / 4096), 0);
 }
 `;
 /** the cards' programs on WebGPU: placed on features (still), or on a set's things (its track's variant) */
-export function cardsWGSL(kind: 'cards' | 'claim' | 'decide', follow: SetsVariant | null): string {
+export function cardsWGSL(kind: 'cards' | 'claim' | 'decide' | 'carry', follow: SetsVariant | null): string {
   const B = follow ? SET_TEXTURES.length : 1;
   const tex = ['items', 'times', 'values', 'texts', 'glyphs', 'icons', 'fills', 'state', 'claims'];
   return `${follow ? setsTrackWGSL(follow) : FRAME_WGSL}
@@ -530,7 +630,7 @@ struct U { ${CARD_STRUCT} }
 ${follow ? '' : '@group(1) @binding(0) var places: texture_2d<f32>;'}
 ${tex.map((n, i) => `@group(1) @binding(${B + i}) var ${n}: texture_2d<f32>;`).join('\n')}
 @group(1) @binding(${B + tex.length}) var smp: sampler;
-${follow ? ANCHOR_FOLLOW_WGSL : ANCHOR_STILL_WGSL}${COMMON}${kind === 'cards' ? CARDS : kind === 'claim' ? CLAIM : DECIDE}`;
+${follow ? ANCHOR_FOLLOW_WGSL : ANCHOR_STILL_WGSL}${COMMON}${kind === 'cards' ? CARDS : kind === 'claim' ? CLAIM : kind === 'decide' ? DECIDE : CARRY}`;
 }
 /** the textures after the placement's own, in binding order */
 export const CARD_TEXTURES = ['items', 'times', 'values', 'texts', 'glyphs', 'icons', 'fills', 'state', 'claims'] as const;

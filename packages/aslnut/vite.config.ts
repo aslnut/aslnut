@@ -35,7 +35,7 @@ export default defineConfig({
   plugins: [self],
   build: {
     outDir: process.env.EXAMPLES_OUT ?? 'dist-examples', emptyOutDir: true, target: 'es2022', sourcemap: true, minify: false,
-    rollupOptions: { input: { 'hello-earth': resolve(root, 'examples/hello-earth/index.html'), suite: resolve(root, 'examples/suite/index.html'), 'healthy-city': resolve(root, 'examples/healthy-city/index.html'), primitives: resolve(root, 'examples/primitives/index.html'), roads: resolve(root, 'examples/roads/index.html'), fleet: resolve(root, 'examples/fleet/index.html'), layers: resolve(root, 'examples/layers/index.html'), lego: resolve(root, 'examples/lego/index.html'), recipes: resolve(root, 'examples/recipes/index.html'), journey: resolve(root, 'examples/journey/index.html') } },
+    rollupOptions: { input: { 'hello-earth': resolve(root, 'examples/hello-earth/index.html'), suite: resolve(root, 'examples/suite/index.html'), 'healthy-city': resolve(root, 'examples/healthy-city/index.html'), primitives: resolve(root, 'examples/primitives/index.html'), roads: resolve(root, 'examples/roads/index.html'), fleet: resolve(root, 'examples/fleet/index.html'), layers: resolve(root, 'examples/layers/index.html'), lego: resolve(root, 'examples/lego/index.html'), recipes: resolve(root, 'examples/recipes/index.html'), journey: resolve(root, 'examples/journey/index.html'), react: resolve(root, 'examples/react/index.html') } },
   },
   server: { port: 5190, host: true },
 });

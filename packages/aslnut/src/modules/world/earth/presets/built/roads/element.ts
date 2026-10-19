@@ -41,6 +41,8 @@ const CHUNK = 500;
 const isRoad = (t: Record<string, unknown>) => { const h = String(t.highway ?? '').replace(/_link$/, ''); return h in CLS && t.area !== 'yes' && t.service !== 'parking_aisle' && t.service !== 'driveway'; };
 
 export class Roads extends Solids {
+  // (it lies on the ground: a mark on the ground paints it)
+  override readonly stands = false;
   private rp: RoadsProps; private src: Source | null = null; private seen = -1; private off: (() => void) | null = null;
   private secs: Section[] = []; private juncs: Junction[] = []; private net: Network<{ cls: number; name: string }> | null = null; private lines: { line: [number, number][]; props: { cls: number; name: string } }[] = [];
   constructor(p: RoadsProps) { super({ hover: { color: '#ffd166' }, ...p }); this.rp = p; }

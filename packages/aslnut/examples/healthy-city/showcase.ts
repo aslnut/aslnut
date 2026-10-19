@@ -40,7 +40,7 @@ export function speciesAvenue(at: LL, heading: number): { layer: Element; names:
   return { layer: vegetation({ id: 'species', data, species: (d: Feature) => String(d.props.species), height: (d: Feature) => Number(d.props.height), crown: () => null }), names };
 }
 /** this example's paint for each car preset */
-const PRESET_PAINTS: Record<string, string> = { hatch: '#b8322a', sedan: '#2c5aa0', wagon: '#4a5a4f', pickup: '#e6e6e6', van: '#f2f2f2', bus: '#f2b705', truck: '#c43c2c' };
+const PRESET_PAINTS: Record<string, string> = { hatch: '#b8322a', sedan: '#2c5aa0', wagon: '#4a5a4f', pickup: '#e6e6e6', van: '#f2f2f2', bus: '#f2b705', truck: '#c43c2c', suv: '#5c6670', crossover: '#d9772b', tractor: '#1f4e79', citybus: '#2e8b57' };
 /** the car presets down the street (each its own build, parked on alternate sides, facing along it), a fleet of
  *  hatches in eight paints from one build (each instance tinted), and the drone presets hovering above */
 export function vehicleAvenue(at: LL, heading: number): { layers: Element[]; names: string[] } {

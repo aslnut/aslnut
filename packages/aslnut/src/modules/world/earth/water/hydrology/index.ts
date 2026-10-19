@@ -44,6 +44,8 @@ export interface WaterProps extends SolidsProps {
 }
 const CHUNK = 500, KZ = 110574;
 export class Water extends Solids {
+  // (it lies on the ground: a mark on the ground paints it)
+  override readonly stands = false;
   private wp: WaterProps; private srcs: Source[] = []; private offs: (() => void)[] = []; private seenV = '';
   constructor(p: WaterProps) { super({ hover: false, shadows: false, ...p }); this.wp = p; }
   override async attach(ctx: AttachContext): Promise<void> {

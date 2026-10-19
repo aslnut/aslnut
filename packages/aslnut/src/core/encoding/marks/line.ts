@@ -174,7 +174,7 @@ export class Line<D = Feature> extends FeatureMark<D, LineProps<D>> {
       // over the twin's solids: on the ground its roads and paths, over everything its roofs and crowns too
       this.upperLast = this.upperNow(ctx);
       if (!this.upperLast) return [d];
-      return [d, { ...this.call(this.upper(), { count: this.segs.count * 36 }, ctx.frame), textures: [this.feat!, this.segTex], upper: true, pickProgram: undefined }];
+      return [d, { ...this.call(this.upper(), { count: this.segs.count * 36 }, ctx.frame), textures: [this.feat!, this.segTex], upper: this.sits === 'ground' ? 'ground' : true, pickProgram: undefined }];
     }
     if (!this.inst || !this.segs.count) return [];
     return [this.call(this.progs[0]!, { vertices: this.inst, index: this.ibuf!, count: this.segs.count * 6 }, ctx.frame)];

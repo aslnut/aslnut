@@ -19,6 +19,17 @@
 5. **One world per canvas;** several worlds per page are fine.
 6. **Sizes follow the canvas:** a resize observer, and device-pixel-ratio limits for phones.
 
+### React
+
+`<World>` is the plain API in React, and nothing more:
+
+- **Made on mount, disposed on unmount:** `world(canvas, options)` on a canvas of its own (strict mode mounts twice: the first world is disposed as soon as it exists; a canvas a disposed world let go is never drawn on again).
+- **Elements are aslnut's own objects,** made in render (`layer(…)`, `entities(…)`), each with an `id`. From one render to the next they are matched by id: a new id is added (`w.add`), a gone one removed (`w.remove`), a changed prop set on the element already in the world (`element.setProps`): never made again. Values are compared by value; functions, sources and logs by identity, so make those once (outside the component, or `useMemo`): one made again each render is a new prop, a restyle each render.
+- **Options** are what the world is made with. Later, the ones with a setter follow their changes (`views`, `time`, `timeZone`, `quality`, `render.shadows`, `theme`, `budget`, `priorities`, `observation`); the rest stay as made (a new world: a new `key`). A changed `view` moves the camera only with `viewChange: 'go' | 'fly'`: the camera is the person's.
+- **Kept objects work too:** an element made once (`useMemo`, module scope) and taken out of the list and put back is removed and added again, and drawn anew; a new scale given by a prop reads its classes from the data first.
+- **Hooks are few:** `useWorld()`, `useElement(id)`, `useWorldEvent(name, fn)`.
+- **No component per function:** a JSX element per aslnut function would be a second vocabulary to learn and keep in step. The elements are data, so a flow node or any other shell does the same with `shell(w)` (from `'aslnut'`, no framework): `.elements(list)`, `.options(o)`.
+
 ```tree
 host/
 ├── plain
@@ -51,15 +62,28 @@ w.dispose();
 ```
 
 ```tsx
-// 2 · React: the same props
-import { World, Area } from 'aslnut/react';
-<World body={earth()} onReady={w => (window.w = w)}>
-  <Area id="suburbs" data={data} color={d => ramp(d.props.rate)} />
-</World>
+// 2 · React: the same objects, as data
+import { World, useWorldEvent } from 'aslnut/react';
+import { layer, plane } from 'aslnut';
+const BODY = plane();                                 // made once (outside the component)
+function Map({ dark }: { dark: boolean }) {
+  return (
+    <World options={{ body: BODY, view }} style={{ height: '100vh' }}
+      elements={[layer({ id: 'zones', data, area: { color: dark ? '#333' : '#ddd' } })]}   // dark changes: setProps
+      onReady={(w) => console.log(w.api)}>
+      <Panel />
+    </World>
+  );
+}
 // unmount → dispose, automatically
 
-// 3 · a hook for the state s
-const s = useWorldState(w => ({ zoom: w.view.zoom }));
+// 3 · hooks, inside <World>
+function Panel() {
+  const [picked, setPicked] = useState<Picked | null>(null);
+  useWorldEvent('tap', (p) => setPicked(p));          // w.on('tap', …) while mounted
+  const w = useWorld(), zones = useElement('zones');  // null until ready, until added
+  return picked && <aside>{String(picked.props.name)}</aside>;
+}
 ```
 
 ```ts
@@ -91,7 +115,11 @@ await world(canvas);                 // → AslnutError: "world() needs a browse
 
 ## Common mistakes
 
-- **Creating a world in React render.** Create it in the component (the shell does it).
+- **Creating a world in React render.** `<World>` makes it in an effect, on the client.
+- **Making a source, a log or a function in render.** Each render it is a new prop: a restyle (or a load) each render. Make it once, outside the component or with `useMemo`.
+- **An element without an `id`** is a new element each time it is made (said once, through the world's errors).
+- **A sign added to a layer later** (`labels` on a layer made without them): a layer's signs are made with it, and `setProps` restyles them but makes none. Give the layer its signs from the start, or a new `id` (a new layer).
+- **A `<World>` with no size:** its box is what you give it (a class or `style`); the canvas fills it.
 - **Forgetting `dispose`** in a plain single-page app.
 
 ## Status
@@ -99,7 +127,8 @@ await world(canvas);                 // → AslnutError: "world() needs a browse
 | part | status |
 |---|---|
 | plain JS | [built] |
-| React shell, Zebflow node | [planned] |
-| server-safe imports | [planned] |
-| `dispose` | [planned] |
-| the package (subpaths, types, code only) | [planned] |
+| React shell (`aslnut/react`: `<World>`, `useWorld`, `useElement`, `useWorldEvent`; `shell(w)` without React) | [built] |
+| Zebflow node | [planned] |
+| server-safe imports | [built] |
+| `dispose` | [built] |
+| the package (subpaths, types, code only) | [built] |

@@ -36,7 +36,7 @@ import { Levels, NO_OBSERVATION, type LevelChange, type ObservationOptions, type
 import { Gates } from '../observation/gates.ts';
 import { Governor, type Budget, type GovernorEvent, type GovernorOptions, type GovernorRung, type MemoryOptions, type Priorities } from '../runtime/budget/index.ts';
 import { RemoteLog, type RemoteLogOptions } from '../runtime/telemetry/index.ts';
-import { msPer, sunFrames, type FrameWant, type FramesOptions } from '../runtime/frame.ts';
+import { frameOpen, msPer, sunFrames, type FrameWant, type FramesOptions } from '../runtime/frame.ts';
 import type { CameraController, Controller, Entity } from '../entities/index.ts';
 import { scenarioApi, type ScenarioApi } from '../data/scenarios.ts';
 import { standOn, type Stands } from '../space/stands.ts';
@@ -167,7 +167,9 @@ export interface PickOptions { /** CSS px round the point that still count (defa
 /** what changed in the world's layers (a layer list keeps in step with it): added, removed, the draw order, shown or
  *  hidden (by hand or by its `when`), its opacity or other props */
 export interface ElementChange { what: 'add' | 'remove' | 'order' | 'shown' | 'opacity' | 'props'; ids: string[] }
-type Events = { /** the elements changed (core › world › elements: a layer list keeps in step) */ elements: [ElementChange]; /** the observation level changed (core › observation › levels) */ level: [LevelChange]; tap: [Picked | null, PointerInfo]; hover: [Picked | null, PointerInfo | null]; select: [string[]]; frame: [{ n: number; dt: number }]; error: [unknown]; /** a frame came late (> 50 ms after the one before): the gap, and what the last frame did */ long: [{ gapMs: number; profile: FrameProfile }]; /** the governor stepped detail down or up (a budget is set) */ governor: [GovernorEvent] };
+type Events = WorldEvents;
+/** what a world tells (w.on(name, fn)): each event's name and what its listener gets */
+export type WorldEvents = { /** the elements changed (core › world › elements: a layer list keeps in step) */ elements: [ElementChange]; /** the observation level changed (core › observation › levels) */ level: [LevelChange]; tap: [Picked | null, PointerInfo]; hover: [Picked | null, PointerInfo | null]; select: [string[]]; frame: [{ n: number; dt: number }]; error: [unknown]; /** a frame came late (> 50 ms after the one before): the gap, and what the last frame did */ long: [{ gapMs: number; profile: FrameProfile }]; /** the governor stepped detail down or up (a budget is set) */ governor: [GovernorEvent] };
 /** where a frame's time went (`w.profile()`, the 'long' event): the main thread's ms by part, and what reached the graphics */
 export interface FrameProfile {
   /** ms of the last frame: collecting draw calls (the layers' own work: tiles, uploads, labels…), handing them to the graphics */
@@ -985,6 +987,8 @@ export class World implements WorldLike {
     if (turned) this.emit('elements', { what: 'shown', ids: turned });
     const draws: DrawCall[] = [];
     if (r) {
+      // (from here until the frame is drawn, a source changed is told to its layers after: core › runtime › frame)
+      frameOpen();
       const f = r.frameData, e = c.eye;
       f.set(c.viewProj, 0);
       f.set([e[0]!, e[1]!, e[2]!, this.nowMs / 1000], 16);
@@ -1093,7 +1097,9 @@ export class World implements WorldLike {
     return top;
   }
   /** the frame's draws with the draped marks' parts over the solids moved after them (before the first layer drawn
-   *  over everything: points, labels, what floats), and the terrain's depth kept at the first draw after the ground */
+   *  over everything: points, labels, what floats), and the terrain's depth kept at the first draw after the ground. A
+   *  mark on the ground's parts go after what lies on the ground (roads, paths, water) and before what stands on it
+   *  (buildings, trees, benches: their draws moved after those parts, in their order): it never paints them */
   private banded(list: DrawCall[]): DrawCall[] {
     const ground = new Set<DrawCall>(), after = new Set<DrawCall>();
     let over = false;
@@ -1103,16 +1109,23 @@ export class World implements WorldLike {
       if (!over && (l.order ?? KIND_ORDER[l.kind]) > 4) over = true;
       if (over) for (const d of ds) after.add(d);
     }
-    const ups = list.filter((d) => d.upper), out: DrawCall[] = [];
-    let kept = false, placed = false;
-    const place = () => { placed = true; for (const u of ups) { if (!kept) { out.push({ ...u, keepDepth: true }); kept = true; } else out.push(u); } };
+    // (what stands: an element that says so, every draw of it (a solids layer's, its bodies'), or a draw that does)
+    const stand = new Set<DrawCall>(); for (const [l, ds] of this.drawsOf) if ((l as { stands?: boolean }).stands === true) for (const d of ds) stand.add(d);
+    const ups = list.filter((d) => d.upper === true), lows = list.filter((d) => d.upper === 'ground'), held: DrawCall[] = [], order: DrawCall[] = [];
+    let placed = false, lowPlaced = !lows.length;
+    const placeLow = () => { lowPlaced = true; order.push(...lows, ...held); held.length = 0; };
+    const place = () => { if (!lowPlaced) placeLow(); placed = true; order.push(...ups); };
     for (const d of list) {
       if (d.upper) continue;
       if (!placed && after.has(d)) place();
-      if (!kept && !ground.has(d)) { out.push({ ...d, keepDepth: true }); kept = true; continue; }
-      out.push(d);
+      // (what stands on the ground, while a mark on the ground's parts are still to come: after them)
+      if (!lowPlaced && (d.stands || stand.has(d)) && !after.has(d)) { held.push(d); continue; }
+      order.push(d);
     }
     if (!placed) place();
+    // the terrain's depth kept before the first draw after the ground (in the order drawn)
+    const out: DrawCall[] = []; let kept = false;
+    for (const d of order) { if (!kept && !ground.has(d)) { out.push({ ...d, keepDepth: true }); kept = true; } else out.push(d); }
     return out;
   }
   // ── light and shadows ───────────────────────────────────────────────────────────────────────────────────────

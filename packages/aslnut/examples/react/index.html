@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>aslnut · React</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #eef0f2; color: #e6ebf0; font: 13px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+  /* the world fills the screen, the bar over it (100dvh: a phone's own bars shown or hidden) */
+  #app { position: fixed; inset: 0; height: 100dvh; }
+  .bar { position: absolute; left: 8px; right: 8px; top: calc(8px + env(safe-area-inset-top)); display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; padding: 7px 10px; background: rgba(12,16,24,.84); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; backdrop-filter: blur(8px); }
+  .bar b { font-size: 14px; margin-right: auto; }
+  .seg { display: flex; border: 1px solid rgba(255,255,255,.16); border-radius: 9px; overflow: hidden; }
+  .seg button { all: unset; cursor: pointer; padding: 6px 12px; font-size: 13px; color: #cfe8ff; min-width: 36px; text-align: center; }
+  .seg button.on { background: #2f81f7; color: #fff; }
+  .status { flex-basis: 100%; color: #93a1af; font-size: 11px; }
+  .status .webgpu { color: #7ee787; } .status .webgl2 { color: #79c0ff; }
+  .panel { position: absolute; left: 8px; right: 8px; bottom: calc(28px + env(safe-area-inset-bottom)); max-height: 40vh; overflow: auto; background: rgba(12,16,24,.92); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; backdrop-filter: blur(8px); }
+  .panel header { display: flex; align-items: center; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .panel header b { flex: 1; font-size: 14px; }
+  .panel header button { all: unset; cursor: pointer; color: #93a1af; font-size: 20px; line-height: 1; padding: 2px 8px; }
+  .panel table { border-collapse: collapse; width: 100%; margin: 6px 10px 10px; }
+  .panel th { text-align: left; color: #93a1af; font-weight: 400; padding: 3px 12px 3px 0; width: 30%; }
+  .err { position: absolute; left: 8px; right: 8px; bottom: calc(28px + env(safe-area-inset-bottom)); background: rgba(120,20,20,.92); border-radius: 10px; padding: 8px 10px; font-size: 12px; }
+  @media (min-width: 720px) {
+    .bar { right: auto; max-width: 520px; }
+    .status { flex-basis: auto; }
+    .panel { left: auto; right: 8px; top: calc(8px + env(safe-area-inset-top)); bottom: auto; width: 300px; max-height: 60vh; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module" src="./main.tsx"></script>
+</body>
+</html>

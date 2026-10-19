@@ -13,6 +13,10 @@
      "title": "Authoring (for people and assistants)"
     },
     {
+     "path": "implementers",
+     "title": "Implementers (platforms built on aslnut)"
+    },
+    {
      "path": "concepts/principles",
      "title": "Principles"
     },

@@ -43,7 +43,7 @@ import { SHAPE_FNS_WGSL } from './shape-fns.wgsl.ts';
 
 /** what a set's programs are built for: its columns' types, the colour's source, the slots a texture row holds and
  *  the ground grid's side (pay only for what is set: the rest is compiled out) */
-export interface SetsVariant { time: 'u16' | 'f32'; place: 'u16' | 'f32'; value: 'none' | 'u8' | 'f32'; color: 'one' | 'thing' | 'ramp'; size: 'one' | 'thing' | 'value'; row: number; grid: number; /** the gauge's label (its value in per cent) */ label?: boolean; /** the log value its shapes' joints read (a 32-bit column; none: no joint reads one) */ joint?: 'none' | 'f32'; /** the shapes' joints' formulas, as the jointFormula's body (WGSL, GLSL) */ formula?: { wgsl: string; glsl: string }; /** its things fold into others for a while (a relation's windows: core › entities › placement): hidden then */ fold?: boolean; /** each sample's altitude (its column's type; none: on the ground) and what it is over (default the ground) */ alt?: 'u8' | 'f32'; over?: 'ground' | 'sea'; /** its shapes turned by their pose (the pose pass: where the pitch and the bank come from, their path or a column of the log's) */ pose?: { pitch: 'none' | 'climb' | 'u8' | 'f32'; bank: 'none' | 'turn' | 'u8' | 'f32' } }
+export interface SetsVariant { time: 'u16' | 'f32'; place: 'u16' | 'f32'; value: 'none' | 'u8' | 'f32'; color: 'one' | 'thing' | 'ramp'; size: 'one' | 'thing' | 'value'; row: number; grid: number; /** the gauge's label (its value in per cent) */ label?: boolean; /** its value a step (the log value's step): held from each sample to the next */ step?: boolean; /** the log value its shapes' joints read (a 32-bit column; none: no joint reads one) */ joint?: 'none' | 'f32'; /** the shapes' joints' formulas, as the jointFormula's body (WGSL, GLSL) */ formula?: { wgsl: string; glsl: string }; /** its things fold into others for a while (a relation's windows: core › entities › placement): hidden then */ fold?: boolean; /** each sample's altitude (its column's type; none: on the ground) and what it is over (default the ground) */ alt?: 'u8' | 'f32'; over?: 'ground' | 'sea'; /** its shapes turned by their pose (the pose pass: where the pitch and the bank come from, their path or a column of the log's) */ pose?: { pitch: 'none' | 'climb' | 'u8' | 'f32'; bank: 'none' | 'turn' | 'u8' | 'f32' } }
 /** the textures every program of a set reads (group 1, bindings 0 … 6), in order; a program's own come after them (a
  *  card placed on its things already reads 16 textures: the most a stage may on WebGPU by default) */
 export const SET_TEXTURES = ['things', 'tcol', 'pcol', 'vcol', 'ground', 'ramp', 'found'] as const;
@@ -56,6 +56,7 @@ const head = (v: SetsVariant, kind = '') => /* wgsl */ `${FRAME_WGSL}
 const TIME16: i32 = ${v.time === 'u16' ? 1 : 0};
 const PLACE16: i32 = ${v.place === 'u16' ? 1 : 0};
 const VALUE: i32 = ${v.value === 'u8' ? 1 : v.value === 'f32' ? 2 : 0};
+const STEP: i32 = ${v.step ? 1 : 0};
 const COLOR: i32 = ${v.color === 'ramp' ? 2 : v.color === 'thing' ? 1 : 0};
 const SIZE: i32 = ${v.size === 'value' ? 2 : v.size === 'thing' ? 1 : 0};
 const ROW: i32 = ${v.row};
@@ -234,6 +235,10 @@ fn valueBetween(m: vec4f, j: i32, f: f32) -> f32 {
   let n = i32(m.y);
   let a = clamp(j, 0, max(n - 1, 0));
   let b = min(a + 1, max(n - 1, 0));
+  // (a step: held from its sample to the next, never through the values between)
+  if (STEP == 1) {
+    return valueAt(slotOf(m, a));
+  }
   return mix(valueAt(slotOf(m, a)), valueAt(slotOf(m, b)), f);
 }
 // the ground: two GRID × GRID levels in one texture (rows 0…: the whole set's box; GRID…: round the view), metres
@@ -476,6 +481,10 @@ struct O { @builtin(position) pos: vec4f, @location(0) col: vec4f, @location(1) 
     tb = tAt(sb);
     vb = valueAt(sb);
     ab = altAt(sb);
+  }
+  // (a step: the piece's value its first sample's, to the next)
+  if (STEP == 1) {
+    vb = va;
   }
   var ok = j >= 0 && j - seg >= 0 && tb > tt && (distance(pa, pb) > 1e-12 || abs(ab - aa) > 0.01);
   if (ta < tt && tb > ta) {

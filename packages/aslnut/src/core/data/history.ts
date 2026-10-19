@@ -20,7 +20,9 @@ export type PlaceType = 'u16' | 'f32';
 export type TimeType = 'u16' | 'f32';
 export type ValueType = 'u8' | 'f32';
 /** a value a sample carries: its column type; a byte (u8) holds its domain in 255 steps */
-export interface ValueSpec { type?: ValueType; domain?: [number, number] }
+/** a value a sample carries: its column type; a byte (u8) holds its domain in 255 steps; `step`: it holds from one
+ *  sample to the next and changes at the next (a state, a count: never mixed between two samples, on the chip or here) */
+export interface ValueSpec { type?: ValueType; domain?: [number, number]; step?: boolean }
 /** each sample's height: metres over the ground (what it stands on) or over the sea, a value of its own (its column
  *  type and domain as any value's: a byte over [0, 150] m is 0.6 m a step; default a 32-bit float), named `value`
  *  (default 'alt') */
@@ -104,7 +106,7 @@ export class Log {
   lon0: number; lat0: number; m0: number;
   /** the place box in those units [x0, y0, x1, y1] (u16) */
   box: [number, number, number, number] = [0, 0, 0, 0];
-  readonly values: { name: string; type: ValueType; domain: [number, number] }[];
+  readonly values: { name: string; type: ValueType; domain: [number, number]; step?: boolean }[];
   readonly keep: number;
   /** it keeps each sample's metres along its thing's track (the value 'travel') */
   readonly travel: boolean;
@@ -152,7 +154,7 @@ export class Log {
     this.timeType = o.time?.type ?? 'f32'; this.timeStep = o.time?.step ?? 0.1;
     this.epoch = o.time?.epoch !== undefined ? msOf(o.time.epoch) : NaN;
     this.placeType = o.place?.type ?? 'f32';
-    this.values = Object.entries(o.values ?? {}).map(([name, v]) => { const s = typeof v === 'string' ? { type: v } : v; return { name, type: s.type ?? 'f32', domain: s.domain ?? [0, 1] }; });
+    this.values = Object.entries(o.values ?? {}).map(([name, v]) => { const s = typeof v === 'string' ? { type: v } : v; return { name, type: s.type ?? 'f32', domain: s.domain ?? [0, 1], ...(s.step ? { step: true } : {}) }; });
     this.travel = !!o.travel; if (this.travel && !this.values.some((v) => v.name === 'travel')) this.values.push({ name: 'travel', type: 'f32', domain: [0, 1] });
     // (its altitude: a value of its own, unless the values name it already)
     const al = o.altitude ? (typeof o.altitude === 'string' ? { over: o.altitude } : o.altitude) : null;
@@ -367,7 +369,7 @@ export class Log {
     const pa = this.relAt(a), pb = this.relAt(b, [0, 0]);
     const x = pa[0] + (pb[0] - pa[0]) * f, y = pa[1] + (pb[1] - pa[1]) * f, [lon, lat] = this.lonLat(x, y);
     const values: Record<string, number> = {};
-    this.values.forEach((v, k) => { const va = this.valueAt(k, a), vb = this.valueAt(k, b); values[v.name] = va + (vb - va) * f; });
+    this.values.forEach((v, k) => { const va = this.valueAt(k, a), vb = this.valueAt(k, b); values[v.name] = v.step ? va : va + (vb - va) * f; });
     const k = R * Math.cos(lat * D), moving = j >= 0 && j < n - 1 && tb > ta, an = this.altitude?.value;
     return { id: this.ids[i]!, index: i, lon, lat, heading: this.headingAt(i, Math.max(0, Math.min(n - 2, j))), speed: moving ? (Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) * k) / (tb - ta) : 0, values, props: this.props[i]!, outside: j < 0 ? -1 : j >= n - 1 && sec > this.secAt(this.slot(i, n - 1)) ? 1 : 0, ...(an ? { alt: values[an] ?? 0 } : {}) };
   }
@@ -550,8 +552,8 @@ export class Log {
     const b = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
     if (new TextDecoder().decode(b.subarray(0, 8)) !== MAGIC) throw new AslnutError('E-DATA-002', 'not a saved log (its first bytes are not ASLNHST1)', { fix: 'save it with log.toBytes()' });
     const n = new DataView(b.buffer, b.byteOffset, b.byteLength).getUint32(8, true);
-    const h = JSON.parse(new TextDecoder().decode(b.subarray(12, 12 + n))) as { bounds?: [number, number, number, number] | null; dense?: [number, number][]; id: string; attribution: string; epoch: number; origin: [number, number]; time: { type: TimeType; step: number }; place: { type: PlaceType; box: [number, number, number, number] }; values: { name: string; type: ValueType; domain: [number, number] }[]; altitude?: { over: 'ground' | 'sea'; value: string }; altMax?: number; maxSpeed: number; from: number; to: number; ids: string[]; props: Record<string, unknown[]>; slots: number; sections: { name: string; offset: number; bytes: number }[] };
-    const log = new Log({ id: h.id, attribution: h.attribution, time: { type: h.time.type, step: h.time.step, epoch: h.epoch }, place: { type: 'f32' }, values: Object.fromEntries(h.values.map((v) => [v.name, { type: v.type, domain: v.domain }])), ...(h.altitude ? { altitude: h.altitude } : o.altitude && h.values.some((v) => v.name === (typeof o.altitude === 'string' ? 'alt' : o.altitude!.value ?? 'alt')) ? { altitude: o.altitude } : {}), keep: o.keep });
+    const h = JSON.parse(new TextDecoder().decode(b.subarray(12, 12 + n))) as { bounds?: [number, number, number, number] | null; dense?: [number, number][]; id: string; attribution: string; epoch: number; origin: [number, number]; time: { type: TimeType; step: number }; place: { type: PlaceType; box: [number, number, number, number] }; values: { name: string; type: ValueType; domain: [number, number]; step?: boolean }[]; altitude?: { over: 'ground' | 'sea'; value: string }; altMax?: number; maxSpeed: number; from: number; to: number; ids: string[]; props: Record<string, unknown[]>; slots: number; sections: { name: string; offset: number; bytes: number }[] };
+    const log = new Log({ id: h.id, attribution: h.attribution, time: { type: h.time.type, step: h.time.step, epoch: h.epoch }, place: { type: 'f32' }, values: Object.fromEntries(h.values.map((v) => [v.name, { type: v.type, domain: v.domain, ...(v.step ? { step: true } : {}) }])), ...(h.altitude ? { altitude: h.altitude } : o.altitude && h.values.some((v) => v.name === (typeof o.altitude === 'string' ? 'alt' : o.altitude!.value ?? 'alt')) ? { altitude: o.altitude } : {}), keep: o.keep });
     (log as { placeType: PlaceType }).placeType = h.place.type; log.box = h.place.box;
     log.lon0 = h.origin[0]; log.lat0 = h.origin[1]; log.m0 = mercY(h.origin[1]);
     const sec = (name: string) => { const s = h.sections.find((x) => x.name === name); if (!s) throw new AslnutError('E-DATA-002', `saved log '${h.id}' has no '${name}'`, { fix: 'save it again with log.toBytes()' }); return s; };

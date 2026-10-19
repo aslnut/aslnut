@@ -431,7 +431,7 @@ aslnut
       host
         canvases [planned]
         plain [built] +1 +2 +3
-        react [planned]
+        react [built]
         zebflow [planned]
         server-safe [built]
         package [built] +1 +2 +3

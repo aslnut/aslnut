@@ -9,7 +9,7 @@
 - **Checkpoint 1 · the healthy-city twin (regions, walking, sun and shadows, heat): 99% (153 built, 3 partly / 156)**
 - **Checkpoint 2 · the city at night in rain (a game: streets, traffic, people, lights, weather): 69% (145 built, 19 partly / 225)**
 - **Checkpoint 3 · the riverfront city core (quays, outdoor stairs and terraces, bridges, a station; built from scans and data): 72% (125 built, 9 partly / 181)**
-- **Overall (every part): 47% (238 built, 37 partly / 545)** · built 238 · partly 37 · planned 225 · proposed 45 · open 0.
+- **Overall (every part): 47% (239 built, 37 partly / 545)** · built 239 · partly 37 · planned 224 · proposed 45 · open 0.
 
 ## Checkpoints
 
@@ -882,8 +882,8 @@ aslnut  72% (125 built, 9 partly / 181)
 ## The whole tree, 4 levels
 
 ```
-aslnut  47% (238 built, 37 partly / 545)
-├── core  53% (175 built, 28 partly / 355)
+aslnut  47% (239 built, 37 partly / 545)
+├── core  54% (176 built, 28 partly / 355)
 │   ├── space  21% (3 built, 2 partly / 19)
 │   │   ├── bodies  partly
 │   │   ├── frames  0% (0 built, 0 partly / 5)
@@ -1144,7 +1144,7 @@ aslnut  47% (238 built, 37 partly / 545)
 │   │       ├── orbits  0% (0 built, 0 partly / 4)
 │   │       ├── exchanges  planned
 │   │       └── growth  planned
-│   ├── world  69% (15 built, 3 partly / 24)
+│   ├── world  73% (16 built, 3 partly / 24)
 │   │   ├── elements  83% (2 built, 1 partly / 3)
 │   │   │   ├── element  built
 │   │   │   ├── props  partly
@@ -1169,10 +1169,10 @@ aslnut  47% (238 built, 37 partly / 545)
 │   │   │   ├── world  built
 │   │   │   ├── errors  built
 │   │   │   └── dispose  built
-│   │   └── host  50% (3 built, 0 partly / 6)
+│   │   └── host  67% (4 built, 0 partly / 6)
 │   │       ├── canvases  planned
 │   │       ├── plain  built
-│   │       ├── react  planned
+│   │       ├── react  built
 │   │       ├── zebflow  planned
 │   │       ├── server-safe  built
 │   │       └── package  built
@@ -1327,7 +1327,7 @@ aslnut  47% (238 built, 37 partly / 545)
 
 | id | status | checkpoints |
 |---|---|---|
-| `core` | 53% (175 built, 28 partly / 355) | 1 2 3 |
+| `core` | 54% (176 built, 28 partly / 355) | 1 2 3 |
 | `core.space` | 21% (3 built, 2 partly / 19) | 1 |
 | `core.space.bodies` | partly |  |
 | `core.space.frames` | 0% (0 built, 0 partly / 5) |  |
@@ -1724,7 +1724,7 @@ aslnut  47% (238 built, 37 partly / 545)
 | `core.simulation.phenomena.orbits.transfers` | planned |  |
 | `core.simulation.phenomena.exchanges` | planned |  |
 | `core.simulation.phenomena.growth` | planned |  |
-| `core.world` | 69% (15 built, 3 partly / 24) | 1 2 3 |
+| `core.world` | 73% (16 built, 3 partly / 24) | 1 2 3 |
 | `core.world.elements` | 83% (2 built, 1 partly / 3) | 1 2 3 |
 | `core.world.elements.element` | built | 1 2 3 |
 | `core.world.elements.props` | partly |  |
@@ -1749,10 +1749,10 @@ aslnut  47% (238 built, 37 partly / 545)
 | `core.world.lifecycle.world` | built | 1 2 3 |
 | `core.world.lifecycle.errors` | built | 1 2 3 |
 | `core.world.lifecycle.dispose` | built | 1 2 3 |
-| `core.world.host` | 50% (3 built, 0 partly / 6) | 1 2 3 |
+| `core.world.host` | 67% (4 built, 0 partly / 6) | 1 2 3 |
 | `core.world.host.canvases` | planned |  |
 | `core.world.host.plain` | built | 1 2 3 |
-| `core.world.host.react` | planned |  |
+| `core.world.host.react` | built |  |
 | `core.world.host.zebflow` | planned |  |
 | `core.world.host.server-safe` | built |  |
 | `core.world.host.package` | built | 1 2 3 |

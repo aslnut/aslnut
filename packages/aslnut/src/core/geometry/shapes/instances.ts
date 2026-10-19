@@ -95,11 +95,15 @@ export class Entities<P = Record<string, unknown>> extends Solids {
   }
   override detach(): void { this.off?.(); this.off = null; for (const f of this.unwatch) f(); this.unwatch = []; super.detach(); }
   /** build again (your params or data changed) */
-  refresh(): this { this.seen = -1; this.build(); return this; }
+  refresh(): this { this.seen = -1; this.sigs.clear(); this.origin = null; this.build(); return this; }
   /** the features as last built, each chunk's clones' features (their indices), a clone by its feature's id */
   private fs: Feature[] = []; private byChunk = new Map<string, Int32Array>(); private where: Map<string, [string, number, number]> | null = null;
   /** each chunk's sets' joints as given (the set's own rate, or each clone's) */
   private jointsOf = new Map<string, SetJoint[][]>();
+  /** each chunk as last put (its sets' forms and joints, their records): a build puts only the chunks that changed */
+  private sigs = new Map<string, { forms: string; recs: Float32Array[] }>();
+  /** the clones' metric frame's origin: the first place it was built with, kept (rows that come and go move no chunk) */
+  private origin: [number, number] | null = null; private builtOnce = false;
   private build(): void {
     if (this.src && this.src.version === this.seen) return;
     this.seen = this.src?.version ?? 0;
@@ -107,11 +111,13 @@ export class Entities<P = Record<string, unknown>> extends Solids {
     const fs = raw.map((f) => ((f as Feature).props ? f : { ...f, props: (f as unknown as { properties?: Record<string, unknown> }).properties ?? {} }) as Feature);
     const v = this.ep.variation ?? {}, builds = Math.max(1, v.builds ?? 1), ep = this.ep;
     this.fs = fs; this.where = null; this.byChunk.clear(); this.jointsOf.clear();
-    for (const k of this.keys()) this.drop(k);
+    // (the chunks it had: those it has no clones in now taken away after)
+    const gone = new Set(this.keys());
     // each clone: its chunk, its build (params and seed), its place; grouped by chunk then by form (a set each: builds
     // that come out the same, whatever their params or seed, one set: one draw a level)
-    const origin = (() => { for (const f of fs) { const at = ep.at?.(f) ?? centreOf(f); if (at) return [at[0], at[1]] as [number, number]; } return null; })();
-    if (!origin) return;
+    const origin = this.origin ?? (() => { for (const f of fs) { const at = ep.at?.(f) ?? centreOf(f); if (at) return [at[0], at[1]] as [number, number]; } return null; })();
+    if (!origin) { for (const k of gone) this.drop(k); this.sigs.clear(); return; }
+    this.origin = origin;
     const kx = 111320 * Math.cos(origin[1] * D), chunks = new Map<string, Map<string, { made: Made; idx: number[]; at: number[] }>>();
     // (each build once in this pass, whatever the shape's cache keeps: more params × seeds than it holds never build twice)
     const builtNow = new Map<string, Made>();
@@ -165,10 +171,16 @@ export class Entities<P = Record<string, unknown>> extends Solids {
         }));
         return [set, ...attached];
       }).flat();
-      this.byChunk.set(key, Int32Array.from(feats)); this.jointsOf.set(key, joints);
-      const fsNow = this.fs;
-      this.put(key, { origin, side: CHUNK, at: [ix * CHUNK, iz * CHUNK], instances, info: (id) => { const fi = this.byChunk.get(key)?.[id]; const f = fi === undefined ? undefined : fsNow[fi]; return f ? { kind: (ep.shape as { id: string }).id, id: f.id ?? `${key}:${id}`, props: f.props as Record<string, unknown> } : null; } });
+      this.byChunk.set(key, Int32Array.from(feats)); this.jointsOf.set(key, joints); gone.delete(key);
+      // (the same forms, joints and records as last put: nothing to put; a chunk put again keeps its look, a new one
+      // after the first build is shown at once: rows that come and go never dissolve in)
+      const sig = { forms: [...sets.keys()].join('|') + JSON.stringify(joints), recs: instances.map((x) => x.records) }, was = this.sigs.get(key);
+      if (was && was.forms === sig.forms && was.recs.length === sig.recs.length && was.recs.every((r, k) => sameFloats(r, sig.recs[k]!))) continue;
+      this.sigs.set(key, sig);
+      this.put(key, { origin, side: CHUNK, at: [ix * CHUNK, iz * CHUNK], instances, ...(this.builtOnce ? { fade: false } : {}), info: (id) => { const fi = this.byChunk.get(key)?.[id]; const f = fi === undefined ? undefined : this.fs[fi]; return f ? { kind: (ep.shape as { id: string }).id, id: f.id ?? `${key}:${id}`, props: f.props as Record<string, unknown> } : null; } });
     }
+    for (const k of gone) { this.drop(k); this.sigs.delete(k); }
+    this.builtOnce = true;
   }
   /** one clone's joint driven anew (its set gives each clone its own rate: `joints: { name: (d) => … }`): one write, its
    *  value kept where it is now; a driver for every clone: `joint(name, driver)` */
@@ -209,6 +221,8 @@ export class Entities<P = Record<string, unknown>> extends Solids {
     return this.where.get(id);
   }
 }
+/** two records' arrays alike (a chunk's clones as last put) */
+const sameFloats = (a: Float32Array, b: Float32Array): boolean => { if (a.length !== b.length) return false; for (let i = 0; i < a.length; i++) if (a[i] !== b[i] && !(a[i] !== a[i] && b[i] !== b[i])) return false; return true; };
 /** a build's form: its levels (the same arrays: a shape's builds that come out the same share them), its parts' pivots
  *  and joints, its anchors, emitters and range on screen; builds of one form are one set */
 const FORMS = new WeakMap<Made, string>(), LEVEL_IDS = new WeakMap<object, number>();

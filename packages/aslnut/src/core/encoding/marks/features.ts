@@ -262,6 +262,11 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
     for (const r of [this.feat, this.lbuf, this.pbuf]) r?.destroy();
     this.feat = null; this.lbuf = this.pbuf = null; this.g = null;
     this.freeGeometry();
+    // added again later (w.remove, then w.add of the same element: a shell's list), it starts over: its data read, its
+    // shapes built and styled anew (as after letGo), its features revealed as new ones
+    this.built = false; this.building = false; this.seen = { v: -1, sv: -1, arr: null, len: -1, scales: '' };
+    this.join.clear(); this.entries = []; this.bySlot = []; this.byKey = new Map(); this.scalesRead = []; this.plan = null;
+    this.featData = new Float32Array(0); this.rows = 0; this.layoutKey = -1; this.born = false; this.stateDirty = true; this.stateWide = true;
     super.detach();
   }
   protected abstract freeGeometry(): void;
@@ -426,9 +431,11 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
     }
     // (once its data was read, even empty: features that come later are new, revealed)
     if (readNow) this.born = true;
-    // scales re-read their domain when the data changed; a changed domain restyles
+    // scales re-read their domain when the data changed, or when one is new to it (a colour given a scale by
+    // setProps: its classes come from this data before it styles a feature); a changed domain restyles
     const sp = this.styleProps().filter(isScale) as unknown as { prepare(d: readonly unknown[], key?: string): void; version: number; auto?: boolean; kind: string }[];
-    if (values || shapes) this.prepareScales(sp);
+    const fresh = sp.length !== this.scalesRead.length || sp.some((x, i) => x !== this.scalesRead[i]);
+    if (values || shapes || (fresh && this.entries.length)) { this.prepareScales(sp); this.scalesRead = sp; }
     const sk = sp.map((x) => x.version).join(',');
     if (values || shapes || sk !== this.seen.scales) { this.seen.scales = sk; this.restyle(ctx, !first); }
     this.flushPlanes();
@@ -451,6 +458,8 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
     for (const sc of sp) sc.prepare(data, key);
   }
   private readGen = 0; private srcStarted = false;
+  /** the scales its classes were last read for (a new one is read before it styles) */
+  private scalesRead: readonly object[] = [];
   /** a scale with an 'auto' domain over a source that follows the view: an error with its fix (its classes would
    *  change as the view moves) */
   protected checkScales(): void {

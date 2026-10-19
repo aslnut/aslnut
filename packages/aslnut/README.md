@@ -6,7 +6,7 @@ A world engine for the web: GIS, digital twins and 3D viz on **WebGPU and WebGL2
 
 ## Install
 
-From source for now; an npm package comes later. Clone the repository, `npm install`, and import `packages/aslnut/src/index.ts` (any bundler that reads TypeScript; Node 24 runs it as it is). Start with the [authoring guide](docs/authoring.md); [llms.txt](docs/llms.txt) carries the guide, the recipes, every import and every signature in one file.
+From source for now; an npm package comes later. Clone the repository, `npm install`, and import `packages/aslnut/src/index.ts` (any bundler that reads TypeScript; Node 24 runs it as it is). Start with the [authoring guide](docs/authoring.md); [llms.txt](docs/llms.txt) carries the guide, the recipes, every import and every signature in one file. Wrapping it into a platform of your own: the [implementers' guide](docs/implementers.md).
 
 ```ts
 import { world, earth, imagery, terrain, layer, data, scale } from 'aslnut';

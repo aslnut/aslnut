@@ -71,7 +71,7 @@ w.add(layer({                                                                  /
 await w.settled();                                                             // the view complete: tiles, data, builds
 ```
 
-Next: the **[authoring guide](packages/aslnut/docs/authoring.md)** (one page to write a world, with a complete recipe per kind of app) and **[llms.txt](packages/aslnut/docs/llms.txt)** (the guide, the recipes, every import and every signature in one file, for assistants). The design, idea by idea, starts at [packages/aslnut/docs](packages/aslnut/docs/README.md).
+Next: the **[authoring guide](packages/aslnut/docs/authoring.md)** (one page to write a world, with a complete recipe per kind of app) and **[llms.txt](packages/aslnut/docs/llms.txt)** (the guide, the recipes, every import and every signature in one file, for assistants). Wrapping aslnut into a platform of your own (a component library, a flow runtime, a server)? Read the **[implementers' guide](packages/aslnut/docs/implementers.md)**. The design, idea by idea, starts at [packages/aslnut/docs](packages/aslnut/docs/README.md).
 
 ## WebGPU and WebGL2
 

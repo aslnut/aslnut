@@ -9,6 +9,7 @@ const head = (v: SetsVariant, kind = '') => /* glsl */ `${FRAME_GLSL}
 const int TIME16 = ${v.time === 'u16' ? 1 : 0};
 const int PLACE16 = ${v.place === 'u16' ? 1 : 0};
 const int VALUE = ${v.value === 'u8' ? 1 : v.value === 'f32' ? 2 : 0};
+const int STEP = ${v.step ? 1 : 0};
 const int COLOR = ${v.color === 'ramp' ? 2 : v.color === 'thing' ? 1 : 0};
 const int SIZE = ${v.size === 'value' ? 2 : v.size === 'thing' ? 1 : 0};
 const int ROW = ${v.row};
@@ -168,6 +169,10 @@ float valueBetween(vec4 m, int j, float f) {
   int n = int(m.y);
   int a = clamp(j, 0, max(n - 1, 0));
   int b = min(a + 1, max(n - 1, 0));
+  // (a step: held from its sample to the next, never through the values between)
+  if (STEP == 1) {
+    return valueAt(slotOf(m, a));
+  }
   return mix(valueAt(slotOf(m, a)), valueAt(slotOf(m, b)), f);
 }
 float gLoad(int x, int y) {
@@ -409,6 +414,10 @@ void main() {
     tb = tAt(sb);
     vb = valueAt(sb);
     ab = altAt(sb);
+  }
+  // (a step: the piece's value its first sample's, to the next)
+  if (STEP == 1) {
+    vb = va;
   }
   bool ok = j >= 0 && j - seg >= 0 && tb > tt && (distance(pa, pb) > 1e-12 || abs(ab - aa) > 0.01);
   if (ta < tt && tb > ta) {

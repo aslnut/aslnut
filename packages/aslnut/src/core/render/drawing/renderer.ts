@@ -8,6 +8,7 @@
 import { AslnutError } from '../../world/errors.ts';
 import { FRAME_FLOATS, type DrawCall, type GBuffer, type Graphics } from '../graphics/interface.ts';
 import type { Clock } from '../../time/clock.ts';
+import { frameDrawn } from '../../runtime/frame.ts';
 
 export interface RendererOptions {
   maxPixelRatio: number;
@@ -196,18 +197,24 @@ export class Renderer {
   step(dtMs: number): Promise<Uint8Array> | null {
     if (this.disposed) throw new AslnutError('E-WORLD-003', 'the world was disposed', { fix: 'make a new world' });
     const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
-    const draws = this.o.tick(dtMs);
-    const t1 = typeof performance !== 'undefined' ? performance.now() : 0;
-    this.graphics.resize(Math.round(this.cssWidth * this.pixelRatio), Math.round(this.cssHeight * this.pixelRatio));
-    const want = this.reads.splice(0), split = this.split, clear = this.o.clear ?? [0, 0, 0, 1];
-    let r: Promise<Uint8Array> | null;
-    if (split) {
-      // two scenarios side by side: the left part with its calls, then the right part beside it (the same buffers:
-      // every layer wrote them once this frame)
-      const W = this.graphics.width, H = this.graphics.height, x = Math.round(Math.max(0, Math.min(1, split.at)) * W);
-      this.graphics.frame(split.left, { clear, scissor: [0, 0, x, H] });
-      r = this.graphics.frame(split.right, { clear, keep: true, scissor: [x, 0, W - x, H], read: want.length > 0 });
-    } else r = this.graphics.frame(draws, { clear, read: want.length > 0, aa: this.antialiased });
+    // (from the first draw gathered until the frame is drawn, nothing its draws hold is freed: a buffer replaced by
+    // your everyFrame work, a source's rows changed in it, is freed after)
+    const g = this.graphics; g.hold?.(true);
+    let r: Promise<Uint8Array> | null, t1 = t0, want: typeof this.reads = [];
+    try {
+      const draws = this.o.tick(dtMs);
+      t1 = typeof performance !== 'undefined' ? performance.now() : 0;
+      want = this.reads.splice(0);
+      g.resize(Math.round(this.cssWidth * this.pixelRatio), Math.round(this.cssHeight * this.pixelRatio));
+      const split = this.split, clear = this.o.clear ?? [0, 0, 0, 1];
+      if (split) {
+        // two scenarios side by side: the left part with its calls, then the right part beside it (the same buffers:
+        // every layer wrote them once this frame)
+        const W = g.width, H = g.height, x = Math.round(Math.max(0, Math.min(1, split.at)) * W);
+        g.frame(split.left, { clear, scissor: [0, 0, x, H] });
+        r = g.frame(split.right, { clear, keep: true, scissor: [x, 0, W - x, H], read: want.length > 0 });
+      } else r = g.frame(draws, { clear, read: want.length > 0, aa: this.antialiased });
+    } finally { g.hold?.(false); frameDrawn(); }
     for (const w of want) w(r!);
     this.frames++; this.drawn++;
     const t2 = typeof performance !== 'undefined' ? performance.now() : 0;

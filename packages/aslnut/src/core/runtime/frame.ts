@@ -43,3 +43,18 @@ export function sunFrames(rate: number): number {
 }
 /** a rate made a step of the display's (60, 30, 20, 15, 12, 10…): frames come on a steady beat */
 export const msPer = (rate: number): number => (rate === Infinity || rate >= 60 ? 0 : 1000 / rate);
+
+// ── a frame being made: from its first draw gathered until it is drawn ──────────────────────────────────────────
+// What your data says changed meanwhile (a source's rows changed in your everyFrame work) is told to the layers once
+// the frame is drawn: its draws hold what they were made of (their buffers, their items in order), the change is the
+// next frame's. (What is freed meanwhile waits for it too: the graphics' hold.)
+const making = { open: 0, told: new Map<object, () => void>() };
+/** a frame's draws are being gathered (the world, before its layers' frames) */
+export function frameOpen(): void { making.open++; }
+/** the frame is drawn (or not drawn after all): what was told meanwhile is told now, each once, in order */
+export function frameDrawn(): void {
+  if (!making.open || --making.open) return;
+  while (making.told.size) { const fs = [...making.told.values()]; making.told.clear(); for (const f of fs) { try { f(); } catch (e) { console.error(e); } } }
+}
+/** tell now, or once the frame being made is drawn (`key`: told once however often it changed meanwhile) */
+export function whenDrawn(key: object, f: () => void): void { if (making.open) { making.told.delete(key); making.told.set(key, f); } else f(); }

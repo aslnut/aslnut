@@ -50,6 +50,9 @@ const AWAY = new WeakMap<WorkerLane, number>();
 interface Slot<T, E> { state: 'loading' | 'ready' | 'building' | 'arrived' | 'built' | 'missing'; tile?: T; dist: number; got?: { b: DetailBuilt<E>; ctx: DetailContext } }
 
 export class StreetDetail<T = unknown, E = unknown> extends Solids {
+  // (a tile's roads, paths and kerbs lie on the ground in its mesh, its buildings beside them: a mark on the ground
+  // paints what lies within GROUND_WITHIN m of the terrain)
+  override readonly stands = false;
   declare props: StreetDetailProps<T, E>;
   private index: DetailIndex | null = null; private avail = new Set<string>();
   private slots = new Map<string, Slot<T, E>>(); private inflight = 0;

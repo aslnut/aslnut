@@ -2,6 +2,7 @@
 // graphics (a WebGPU device or a WebGL2 context each), buffers, textures, targets, programs and their bytes. A world
 // disposed leaves nothing here; a count that grows from one world to the next is a leak.
 //   liveGraphics()  // { graphics: 0, buffers: 0, textures: 0, targets: 0, programs: 0, bytes: 0, made: 3 }
+import { AslnutError } from '../../world/errors.ts';
 export interface LiveGraphics {
   /** graphics open now (each world on a canvas opens one) */
   graphics: number;
@@ -36,3 +37,5 @@ export class Held {
   /** the largest first */
   list(): HeldItem[] { return [...this.m].map(([label, x]) => ({ label, bytes: x.bytes, count: x.count })).sort((a, b) => b.bytes - a.bytes); }
 }
+/** why a texture is not read back (readTexture): it was not made to be, on either graphics */
+export const unreadable = (d: { label?: string }) => new AslnutError('E-GPU-003', `texture '${d.label ?? 'texture'}' was not made to be read back`, { where: d.label, fix: 'make it with texture({ …, renderable: true }) (or growable) to read it back' });

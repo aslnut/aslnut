@@ -79,9 +79,8 @@ compile({ steps: { after: { mesh: chunk => addMyDecals(chunk) } } });
 **React and other hosts** get the same objects (see [hosting](hosting.md)):
 
 ```tsx
-<World body={earth({ imagery: [imagery.esri()] })}>
-  <Area id="crime" data={joined} color={scale.quantile(d => d.props.rate)} when={s => show} />
-</World>
+<World options={{ body: earth({ imagery: [imagery.esri()] }) }}
+  elements={[area({ id: 'crime', data: joined, color: RATE, when: (s) => s.user.toggles.crime }), new PulseRing({ id: 'ring' })]} />
 ```
 
 ## How it relates
@@ -103,4 +102,4 @@ compile({ steps: { after: { mesh: chunk => addMyDecals(chunk) } } });
 | `class extends Element`, WGSL hooks (a research prototype's extensions) | [partly] |
 | `w.provide` by name | [partly] (a research prototype, by rack number; names [planned]) |
 | `*.custom` sources, `reveal.define`, custom rules and steps | [planned] |
-| React shell | [planned] |
+| React shell (`aslnut/react`) | [built] |

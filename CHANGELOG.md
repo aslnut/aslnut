@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.1
+
+- **Live data without blinks:** cards keep their room (a shown card yields only when mostly covered for a while, and comes back no sooner than a set time); card state is kept by item id; only changed cards are worked out again, on the world's clock; `w.settled()` resolves while data streams.
+- **Cards:** text rows and a width per card.
+- **Step values** in history logs, so a state never blends through other states.
+- **Draping 'ground'** paints only what lies on the ground, never what stands on it.
+- **Moving sets:** a folded thing reappears the moment its window ends; only changed chunks are put; buffers are freed only after the frame is sent.
+- **React:** `aslnut/react` (`<World>`, `useWorld`, `useElement`, `useWorldEvent`), elements kept in step by id; `shell(w)` for other hosts.
+- **Cars:** rounder passenger bodies, each row its own type; a `tailRake` param.
+- **Read-back:** a texture is read back only when made to be; an unreadable one is refused on both graphics.
+- **Docs:** a guide for third-party implementers (`packages/aslnut/docs/implementers.md`).
+- **Tools:** an unknown preset is refused by name; checks no longer need build-time settings.
+
 ## 0.1.0 (2026-10-19)
 
 The first public version: the foundation of a world engine for the web, used from source (an npm package comes later). Every part and its status is in [STATUS.md](STATUS.md): 238 of 545 parts built and 37 partly (47% overall).

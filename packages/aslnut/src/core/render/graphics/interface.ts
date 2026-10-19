@@ -101,8 +101,12 @@ export interface DrawCall {
   /** out of the camera's view: only a caster (drawn into the shadow map, not into the frame, not picked) */
   shadowOnly?: boolean;
   /** a draped mark's part over the twin's solids (core › geometry › marks › drape): the world draws it after the
-   *  things standing on the ground, in its layer's order among the other such parts */
-  upper?: boolean;
+   *  things standing on the ground, in its layer's order among the other such parts; 'ground': a mark on the ground's,
+   *  drawn after what lies on the ground (roads, paths) and before what stands on it (it never paints a bench) */
+  upper?: boolean | 'ground';
+  /** what stands on the ground (buildings, trees, benches, a set's things): never painted by a mark on the ground (drawn
+   *  after its parts over the solids) */
+  stands?: boolean;
   /** before this draw the depth drawn so far (the terrain alone) is kept for programs that read `groundDepth` (the
    *  world marks the first draw after the ground, in frames with upper parts) */
   keepDepth?: boolean;
@@ -146,6 +150,9 @@ export interface FrameOptions {
 export interface Graphics {
   /** submit queued off-screen preparation without drawing another visible frame */
   flush?(): void;
+  /** a frame being made (from its first draw gathered until it is drawn): what is destroyed meanwhile is freed once it
+   *  is drawn (a buffer your everyFrame work replaced is still the frame's); hold(false) frees it */
+  hold?(on: boolean): void;
   readonly api: Api;
   readonly caps: Caps;
   /** the drawing buffer in device pixels */
@@ -162,7 +169,8 @@ export interface Graphics {
    *  where WebGL2 cannot draw into floats), or the copy did not land (WebGL2 refused it under a busy GPU process) */
   copyLayers(from: GTexture, to: GTexture, layers: number): boolean;
   /** a texture's texels back (layer 0 of a 2D one, row 0 first, as written): float formats → Float32Array (r32f: one
-   *  number a texel, rgba32f: four), rgba8 → Uint8Array. Waits for the chip without stalling it */
+   *  number a texel, rgba32f: four), rgba8 → Uint8Array. Waits for the chip without stalling it. Only a texture made
+   *  `renderable` (or `growable`): any other is refused (E-GPU-003) on both graphics (WebGPU cannot copy it out) */
   readTexture(texture: GTexture): Promise<Float32Array | Uint8Array>;
   /** compile and link (throws AslnutError E-GPU-003 with the compiler's log) */
   program(desc: ProgramDesc): Program;

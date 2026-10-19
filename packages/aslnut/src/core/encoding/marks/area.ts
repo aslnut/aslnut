@@ -284,8 +284,9 @@ export class Area<D = Feature> extends FeatureMark<D, AreaProps<D>> {
       this.upperLast = this.upperNow(ctx);
       if (this.upperLast) {
         const [uf, uo] = this.uppers();
-        if (this.triTex && this.nTri) out.push({ ...this.call(uf, { count: this.nTri * 24 }, ctx.frame), textures: this.withPic([this.feat!, this.triTex]), upper: true, pickProgram: undefined });
-        if (this.segTex && this.lbuf2 && this.segs.count && this.outlineKey) out.push({ ...this.call(uo, { count: this.segs.count * 36 }, ctx.frame, this.lbuf2), textures: [this.feat!, this.segTex], upper: true, pickProgram: undefined });
+        const upper = this.sits === 'ground' ? 'ground' as const : true;
+        if (this.triTex && this.nTri) out.push({ ...this.call(uf, { count: this.nTri * 24 }, ctx.frame), textures: this.withPic([this.feat!, this.triTex]), upper, pickProgram: undefined });
+        if (this.segTex && this.lbuf2 && this.segs.count && this.outlineKey) out.push({ ...this.call(uo, { count: this.segs.count * 36 }, ctx.frame, this.lbuf2), textures: [this.feat!, this.segTex], upper, pickProgram: undefined });
       }
       return out;
     }
