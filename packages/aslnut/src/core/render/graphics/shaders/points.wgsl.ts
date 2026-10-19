@@ -2,15 +2,15 @@
 // (longitude radians and Mercator y from the layer's origin, height m (true: × L.origin.z here, then the lift), the
 // feature's index). The rest is the feature's own, read from the features texture by its index (colour and the one
 // before, size now and before, value, state: see feature.wgsl.ts): a restyle writes it once and eases here, on the
-// chip, by the layer block's mix. The mark's own: a (outline px, depth bias, hovered size ×, selected size ×) · b
-// (outline rgba). Hooks: /*@position*/ (vertex), /*@color*/, /*@alpha*/, /*@reveal*/ (fragment). Twin: points.glsl.ts.
+// chip, by the layer block's mix. The mark's own: a (0, depth bias, hovered size ×, selected size ×); each feature's
+// outline: its width the numbers' fourth, its colour the mark's own plane (6). Hooks: /*@position*/ (vertex), /*@color*/, /*@alpha*/, /*@reveal*/ (fragment). Twin: points.glsl.ts.
 import { FEATURE_WGSL } from './feature.wgsl.ts';
 
 export const POINTS_WGSL = /* wgsl */ `${FEATURE_WGSL}
 struct Params { /*@params*/ }
 @group(0) @binding(2) var<uniform> params: Params;
 struct I { @builtin(vertex_index) vid: u32, @location(0) at: vec4f }
-struct O { @builtin(position) pos: vec4f, @location(0) corner: vec2f, @location(1) col: vec4f, @location(2) world: vec3f, @location(3) extra: vec4f, @location(4) size: f32, @location(5) reveal: f32, @location(6) ring: f32 }
+struct O { @builtin(position) pos: vec4f, @location(0) corner: vec2f, @location(1) col: vec4f, @location(2) world: vec3f, @location(3) extra: vec4f, @location(4) size: f32, @location(5) reveal: f32, @location(6) ring: f32, @location(7) oc: vec4f }
 /*@functions*/
 // on the far side of the globe (the earth's middle is RE under the view centre)
 fn behindGlobe(p: vec3f) -> bool {
@@ -44,7 +44,9 @@ fn cornerOf(v: i32) -> vec2f {
   let hide = behindGlobe(position);
   let hov = state.x;
   let sel = state.y;
-  let ring = u.a.x + u.hover2.y * hov + u.sel2.y * sel;
+  // its outline: each feature's width (the numbers' fourth) and colour (the mark's own plane)
+  let ow = nums.w;
+  let ring = ow + u.hover2.y * hov + u.sel2.y * sel;
   // pop: the size overshoots as it grows in, the disc shows over the first quarter
   var grow = 1.0;
   var reveal = state.z;
@@ -53,7 +55,7 @@ fn cornerOf(v: i32) -> vec2f {
     reveal = min(1.0, state.z * 4.0);
   }
   // its size: CSS px, or metres where it is seen, within the layer's range (core › render › drawing › size)
-  var size = sizePx(mix(nums.y, nums.x, u.look.z), u.size, position) * grow * mix(1.0, u.a.z, hov) * mix(1.0, u.a.w, sel) + 2.0 * (ring - u.a.x);
+  var size = sizePx(mix(nums.y, nums.x, u.look.z), u.size, position) * grow * mix(1.0, u.a.z, hov) * mix(1.0, u.a.w, sel) + 2.0 * (ring - ow);
   let value = nums.z;
   let time = frame.eye.w;
   /*@position*/
@@ -67,6 +69,7 @@ fn cornerOf(v: i32) -> vec2f {
   o.size = size * frame.size.z;
   o.reveal = reveal;
   o.ring = ring;
+  o.oc = featAt(idx, 6);
   o.col = colourOf(idx, state);
   return o;
 }
@@ -77,8 +80,8 @@ fn cornerOf(v: i32) -> vec2f {
   let ring = smoothstep(1.0 - px * (i.ring + 1.0), 1.0 - px * i.ring, r);
   let hov = select(0.0, 1.0, i.extra.w == 1.0 || i.extra.w == 3.0);
   let sel = select(0.0, 1.0, i.extra.w >= 2.0);
-  let oc = mix(mix(u.b.rgb, u.sel.rgb, sel), u.hover.rgb, hov);
-  let oa = max(u.b.a, max(hov, sel));
+  let oc = mix(mix(i.oc.rgb, u.sel.rgb, sel), u.hover.rgb, hov);
+  let oa = max(i.oc.a, max(hov, sel));
   var color = vec4f(mix(i.col.rgb, oc, ring * oa), i.col.a * disc);
   let uv = i.corner;
   let value = i.extra.x;

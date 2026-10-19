@@ -5,7 +5,8 @@
 //              selection looks, the pick number
 //   features   one float texture, up to 6 planes of one texel per feature: 0 colour · 1 the colour before (an eased
 //              restyle) · 2 state (hovered, selected, reveal progress, shown) · 3 numbers (now, before, value, base)
-//              · 4 centre and half size (from the origin) · 5 motion (east, north, up metres, scale). Only the planes
+//              · 4 centre and half size (from the origin) · 5 motion (east, north, up metres, scale) · 6 the mark's
+//              own (a point's outline colour, a line's dashes). Only the planes
 //              that differ between features are there (L.slots: each one's row block, -1: not there); the others are
 //              the same for every feature: the colour and numbers in L.k0 and L.k3, no motion, no box
 import { FRAME_WGSL } from './frame.wgsl.ts';
@@ -17,8 +18,9 @@ export const FEATURE_WGSL = /* wgsl */ `${FRAME_WGSL}
 // a, b, c: the mark's own · ground: (the lowest, the highest ground under it, m) for marks draped on the ground
 // slots: (colour, colour before, numbers, box) planes' row blocks · slots2: (state, motion, 0, 0) · k0: the colour and
 // k3: the numbers when they are the same for every feature · size: how its size or width is drawn (units, least, most
-// CSS px: core › render › drawing › instancing, sizePx)
-struct L { origin: vec4f, look: vec4f, reveal: vec4f, hover: vec4f, hover2: vec4f, sel: vec4f, sel2: vec4f, a: vec4f, b: vec4f, c: vec4f, ground: vec4f, slots: vec4f, slots2: vec4f, k0: vec4f, k3: vec4f, size: vec4f }
+// CSS px: core › render › drawing › instancing, sizePx) · slots3: (the mark's own plane's row block, 0, 0, 0) · k6: that
+// plane when it is the same for every feature
+struct L { origin: vec4f, look: vec4f, reveal: vec4f, hover: vec4f, hover2: vec4f, sel: vec4f, sel2: vec4f, a: vec4f, b: vec4f, c: vec4f, ground: vec4f, slots: vec4f, slots2: vec4f, k0: vec4f, k3: vec4f, size: vec4f, slots3: vec4f, k6: vec4f }
 @group(0) @binding(1) var<uniform> u: L;
 @group(1) @binding(0) var feat: texture_2d<f32>;
 const FW = 512;
@@ -92,6 +94,9 @@ fn slotOf(plane: i32) -> f32 {
   if (plane == 4) {
     s = u.slots.w;
   }
+  if (plane == 6) {
+    s = u.slots3.x;
+  }
   return s;
 }
 // a plane the same for every feature: the colour (now and before), the numbers, no motion, no box
@@ -104,6 +109,9 @@ fn constOf(plane: i32) -> vec4f {
   }
   if (plane == 5) {
     return vec4f(0.0, 0.0, 0.0, 1.0);
+  }
+  if (plane == 6) {
+    return u.k6;
   }
   return vec4f(0.0);
 }
@@ -125,6 +133,46 @@ fn colourOf(index: f32, state: vec4f) -> vec4f {
 }
 fn raiseOf(state: vec4f) -> f32 {
   return u.hover2.x * state.x + u.sel2.x * state.y;
+}
+// a dash pattern (on, off, on, off CSS px; the first 0: none) at a distance along it: false in its gaps
+fn dashOn(at: f32, d: vec4f) -> bool {
+  let p = d.x + d.y + d.z + d.w;
+  if (d.x <= 0.0 || p <= 0.0001) {
+    return true;
+  }
+  let k = at - floor(at / p) * p;
+  return k < d.x || (k >= d.x + d.y && k < d.x + d.y + d.z);
+}
+// how far across a line's piece a point is, in px (t: along the piece 0..1, s: across, len: the piece's length, k: units
+// a px; ends.z / .w: a piece before / after it): at the line's ends its caps (u.a.z: 0 round, 1 butt, 2 square); a
+// joint belongs to the piece after it, and to this piece's round end too with round joins (u.a.w: 1); 1e9: not drawn
+fn acrossAt(t: f32, s: f32, len: f32, k: f32, ends: vec4f) -> f32 {
+  let cap = u.a.z;
+  if (t < 0.0) {
+    if (ends.z > 0.5 || (cap > 0.5 && cap < 1.5)) {
+      return 1e9;
+    }
+    if (cap > 1.5) {
+      return max(abs(s), -t * len) / k;
+    }
+    return length(vec2f(s, t * len)) / k;
+  }
+  if (t >= 1.0) {
+    if (ends.w > 0.5) {
+      if (u.a.w < 0.5) {
+        return 1e9;
+      }
+      return length(vec2f(s, (t - 1.0) * len)) / k;
+    }
+    if (cap > 0.5 && cap < 1.5) {
+      return 1e9;
+    }
+    if (cap > 1.5) {
+      return max(abs(s), (t - 1.0) * len) / k;
+    }
+    return length(vec2f(s, (t - 1.0) * len)) / k;
+  }
+  return s / k;
 }
 fn easeOutBack(t: f32) -> f32 {
   let c = 1.70158;

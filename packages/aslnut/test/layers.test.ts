@@ -3,7 +3,7 @@
 // layers) described for your own UI. Headless: no graphics, the same answers.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, area, line, points, text, arc, raster, DRAPE_DEFAULTS, drapeOf, layers, AslnutError, Tiled, type ElementChange } from '../src/index.ts';
+import { world, area, line, points, text, arc, raster, layer, DRAPE_DEFAULTS, drapeOf, layers, AslnutError, Tiled, type ElementChange } from '../src/index.ts';
 
 const box = (w: number, s: number, e: number, n: number, id: string) => ({ id, props: { v: 1 }, geometry: { type: 'Polygon' as const, coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] } });
 const ln = (id: string) => ({ id, props: {}, geometry: { type: 'LineString' as const, coordinates: [[107.6, -6.9], [107.61, -6.91]] } });
@@ -123,5 +123,32 @@ test('steady while the view moves fast: a feature that comes back is not reveale
   w.go({ lon: 145.1, lat: -37.9, zoom: 14.1 }); w.step(16); assert.equal(a.target, 1, 'past the margin, before the dwell (0.5 s): still shown');
   w.go({ lon: 145.1, lat: -37.9, zoom: 14.6 }); w.step(16); w.step(1000); assert.equal(w.level, 'street', 'back before the dwell: no change at all');
   w.go({ lon: 145.1, lat: -37.9, zoom: 14.1 }); w.step(16); w.step(600); w.step(16); assert.equal(w.level, 'district'); assert.equal(a.target, 0, 'past the margin for the dwell: hidden');
+  w.dispose();
+});
+
+test('a layer takes a sign later: setProps with a sign it did not have adds it (attached, in its place, in its band), labels with it', async () => {
+  const w = await world(null), data = [box(107.6, -6.9, 107.7, -6.8, 'x')];
+  const L = layer({ id: 'zones', data, points: { size: 6 } });
+  w.add(L, points({ id: 'top', data: [{ at: [107.6, -6.9] }] }));
+  await w.settled();
+  const kindBefore = L.kind;
+  L.setProps({ line: { color: '#333333', width: 2 } });
+  assert.deepEqual(L.signs.map((m) => m.id), ['zones-line', 'zones-points'], 'the outline in its place (before the points)');
+  L.setProps({ area: { color: '#ff0000' } });
+  assert.deepEqual(L.signs.map((m) => m.id), ['zones-fill', 'zones-line', 'zones-points']);
+  assert.notEqual(L.kind, kindBefore, 'a fill first: the layer moves to the fills\' band');
+  assert.ok(w.list.findIndex((x) => x.id === 'zones') < w.list.findIndex((x) => x.id === 'top'), 'sorted again: under the points layer');
+  await w.settled({ strict: true });
+  assert.equal(L.status().ready, true, 'its new signs attached');
+  assert.equal(L.signs[0]!.props.data, data, 'the layer\'s data');
+  // a sign it has: changed, not made again
+  const fill = L.signs[0]; L.setProps({ area: { color: '#00ff00' } }); assert.equal(L.signs[0], fill);
+  // labels later: in the world with it, removed with it
+  L.setProps({ labels: { text: () => 'x' } });
+  assert.ok(L.labels && w.list.some((x) => x.id === 'zones-labels'));
+  w.remove('zones'); assert.ok(!w.list.some((x) => x.id.startsWith('zones')));
+  // before it is in a world: made, attached with it
+  const M = layer({ id: 'later', data, area: { color: '#ff0000' } }); M.setProps({ line: { color: '#000000' } });
+  w.add(M); await w.settled({ strict: true }); assert.deepEqual(M.signs.map((m) => m.id), ['later-fill', 'later-line']);
   w.dispose();
 });

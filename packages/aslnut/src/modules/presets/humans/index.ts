@@ -6,6 +6,7 @@
 // The template (faces, weights, hair: a pack of ~110 KB gzipped) is data, loaded once.
 export { generate, params, BASE, MORPHS, MORPH_ORDER, PART_NAMES, bodyRings, headRings, vertexParts, buildPositions, designMesh, joints, type Morph, type Joint, type BodyRings } from './body/generator.ts';
 export { loadTemplate, parseTemplate, type Template, type SkinPiece, type CorrectiveRule } from './body/template.ts';
+export { loadFit, parseFit, fitBody, type BodyFit } from './body/fit.ts';
 export { humanFigure, figureKey, type FigureSpec, type HumanFigure } from './body/figure.ts';
 export { headMeasures } from './body/features.ts';
 export { FACE_DEFAULTS, FACE_MATERIAL, IRIS, packFace, type Face } from './face/index.ts';

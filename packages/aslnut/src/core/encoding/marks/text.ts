@@ -22,6 +22,7 @@ import { lonLatOf, worldOf, type LonLatH } from '../../space/geo.ts';
 import { hex, rgba, type Color } from '../../render/style/color.ts';
 import { FeatureMark, Prog, type Entry, type FeatureMarkProps, type PerFeature, type Styled } from './features.ts';
 import { sizePxAt, sizeUnits, sizeValue, type SizeOf, type SizeUnits } from '../../render/drawing/size.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 export type Anchor = 'center' | 'top' | 'bottom' | 'left' | 'right';
 export interface TextProps<D> extends FeatureMarkProps<D> {
@@ -312,7 +313,7 @@ export class Text<D = Feature> extends FeatureMark<D, TextProps<D>> {
   private measured = new Map<string, { w: number; h: number }>();
   private colorsGen = -1;
   /** its text, priority or anchor changed: decided again, once */
-  override setProps(p: Partial<TextProps<D>>): this { super.setProps(p); if (('text' in p || 'priority' in p || 'at' in p) && this.entries.length) { this.build(); this.attached?.world && (this.attached.world as { invalidate?: () => void }).invalidate?.(); } return this; }
+  override setProps(given: Partial<Leveled<TextProps<D>>>): this { const p = given as Partial<TextProps<D>>; super.setProps(p); if (('text' in p || 'priority' in p || 'at' in p) && this.entries.length) { this.build(); this.attached?.world && (this.attached.world as { invalidate?: () => void }).invalidate?.(); } return this; }
   private texSize = 0;
   private colors = new Map<number, string>(); private q4: [number, number, number, number] = [0, 0, 0, 0];
   private hidden = new Map<number, boolean>(); private occlusionTurn = 0; private occlusionFrame = -1;
@@ -349,4 +350,4 @@ export class Text<D = Feature> extends FeatureMark<D, TextProps<D>> {
   protected freeGeometry(): void { for (const r of [this.inst, this.tbuf, this.tex]) r?.destroy(); this.inst = this.tbuf = null; this.tex = null; this.atlas = null; this.cap = 0; }
   override readouts() { return { count: () => this.size, shown: () => this.count, turns: () => this.turns, restepped: () => this.restepped }; }
 }
-export const text = <D = Feature>(p: TextProps<D>) => new Text<D>(p);
+export const text = <D = Feature>(p: Leveled<TextProps<D>>) => new Text<D>(p as TextProps<D>);

@@ -25,7 +25,7 @@ BASE = '601f034'
 
 PAGE = {'WD': 'core/world', 'S': 'core/space', 'T': 'core/time', 'D': 'core/data', 'O': 'core/observation', 'G': 'core/geometry', 'EN': 'core/encoding', 'E': 'core/entities',
         'SM': 'core/simulation', 'R': 'core/render', 'I': 'core/interaction', 'RT': 'core/runtime', 'W': 'modules/world', 'EA': 'modules/earth',
-        'MS': 'modules/space', 'ME': 'modules/presets', 'H': 'modules/human', 'DB': 'kits/dashboard', 'GM': 'kits/game', 'AU': 'kits/authoring', 'TL': 'tools'}
+        'MS': 'modules/space', 'MC': 'kits/compat', 'ME': 'modules/presets', 'H': 'modules/human', 'DB': 'kits/dashboard', 'GM': 'kits/game', 'AU': 'kits/authoring', 'TL': 'tools'}
 
 # the kinds of use: from the renames file (codes and words of the needs list → a label, and a full text for the key)
 CODES, WORDS, OTHER, KINDS = {}, [], None, []
@@ -118,12 +118,12 @@ M = {
     147: 'H:expressions/emotions H:expressions/visemes H:expressions/gestures H:expressions/blink E:body/morphs E:motion/look', 148: 'H:vrm',
     149: 'H:body H:face H:hair H:clothing H:poses H:gaits H:speech H:people',
     150: 'ME:animals/quadruped ME:animals/bird ME:animals/fish ME:animals/reptile', 151: 'SM:agents/rhythm SM:agents/behaviour E:placement/attach',
-    49: 'SM:fields/raster SM:fields/surface SM:fields/graph SM:fields/volume SM:fidelity/observed', 50: 'SM:rules/presets SM:rules/custom SM:fields/kernels',
+    49: 'SM:fields/raster SM:fields/surface SM:fields/graph SM:fields/volume O:presence', 50: 'SM:rules/presets SM:rules/custom SM:fields/kernels',
     51: 'SM:phenomena/fluids EA:water/hydrology/water', 52: 'SM:phenomena/heat EA:climate/heat', 53: 'SM:phenomena/fire EA:climate/fire', 54: 'SM:phenomena/exchanges SM:phenomena/growth', 55: 'SM:phenomena/acoustics EA:life/soundscape',
     56: 'W:surface/sky EA:air/sky/sun EA:air/sky/moon EA:air/sky/stars EA:air/sky/cultures EA:air/sky/locks MS:stars MS:constellations c:sky',
     57: 'EA:air/atmosphere/scattering EA:air/atmosphere/haze EA:air/atmosphere/clouds EA:air/weather/presets EA:air/weather/wind EA:air/weather/rain EA:air/weather/fog R:look/materials',
     58: 'SM:phenomena/light R:look/shadows', 59: 'R:look/lights EA:presets/built/lights EA:presets/built/lights/street EA:presets/built/lights/vehicle EA:presets/built/lights/windows EA:presets/built/buildings/windows', 60: 'SM:rules/regimes', 61: 'SM:measure/probes SM:measure/sensors SM:measure/validation',
-    62: 'SM:rules/coupling', 63: 'SM:constants', 152: 'SM:fidelity/fixed SM:fidelity/observed',
+    62: 'SM:rules/coupling', 63: 'SM:constants', 152: 'SM:fields/raster O:presence',
     64: 'D:loading/loader D:loading/stores D:loading/packs D:loading/readiness', 65: 'D:features/features D:query/join',
     66: 'D:live/set D:live/upsert D:live/patch D:live/remove D:sources/services/stream',
     67: 'D:history/log D:history/state-at D:history/replay D:history/checkpoints',
@@ -158,6 +158,7 @@ M = {
     182: 'RT:partners/experiment T:step', 183: 'c:boundaries', 184: 'c:boundaries',
     185: 'c:boundaries EA:life/society EA:life/ecology EA:presets/built/infrastructure/energy/wind-turbine W:shared EA:shared ME:shared', 186: 'WD:host/package TL:checks/smoke c:hosting', 187: '',
     193: 'WD:state/states c:states',
+    194: 'c:boundaries',
     188: 'EA:water/sea/level EA:water/sea/shore WD:settings/params WD:settings/readouts', 189: 'EA:body/base/terrain/gebco EA:body/base/terrain/etopo EA:body/base/terrain/mapzen EA:water/sea/exposed EA:water/sea/look',
     190: 'EA:water/hydrology/flow EN:marks/lines/line R:reveal/modes', 191: 'T:deep T:ranges', 192: 'D:history/epochs O:presence',
 }
@@ -167,6 +168,7 @@ NEW = {  # needs found since the list (evidence: a reference video, 2026-10-11);
     190: ('E', 'rivers derived from the terrain (flow routing and accumulation, including the exposed shelf) as a data source drawn with `line` + `trace`', 'videos, physics labs, hazard twins'),
     191: ('G', 'paleo time scales: years ago, ka, Ma, readable as counters', 'videos, physics labs'),
     192: ('F', 'time-varying layers from datasets (e.g. ice-sheet extent per epoch) chosen by the clock or `when`', 'videos, physics labs'),
+    194: ('O', 'code written for another web-map interface (Leaflet) runs on a world unchanged, each object a handle over the public parts; a few opt-in extras for what that interface cannot do', 'GIS apps moving to 3D, assistants'),
     193: ('F', 'an answer as a presentation: a saved state (camera, time, observation, layers shown with params and filters, selection) captured, applied with a camera flight and reveals, compared, checked by a schema, shared as a link', 'dashboards, presentations, assistants, city twins'),
 }
 JUSTIFIED = {  # rows no need names, kept with evidence
@@ -183,7 +185,7 @@ JUSTIFIED = {  # rows no need names, kept with evidence
 BEFORE = {}
 for n in (175, 13, 22, 29, 30, 31, 42, 43, 44, 46, 58, 62, 78, 90, 93, 97, 100, 103, 112, 124, 131, 142, 168, 174, 182, 12, 40):
     BEFORE[n] = 'thin'
-for n in (193, 15, 18, 19, 60, 63, 75, 85, 89, 94, 106, 114, 115, 116, 118, 125, 159, 169, 183, 184, 185, 186, 188, 189, 190, 191, 192):
+for n in (194, 193, 15, 18, 19, 60, 63, 75, 85, 89, 94, 106, 114, 115, 116, 118, 125, 159, 169, 183, 184, 185, 186, 188, 189, 190, 191, 192):
     BEFORE[n] = 'GAP'
 for n in (86, 88, 91, 92, 95, 99, 101):
     BEFORE[n] = 'thin'        # served outside, but the boundary wasn't written down
@@ -207,7 +209,7 @@ WHY = {  # one line on what changed, for every need that wasn't covered before
     142: 'splats as an import', 159: 'corrections table at compile and read', 168: 'TAA, reflections, HDRI, sky occlusion, interiors, wet',
     169: 'select / isolate / highlight in `s.user`', 174: 'project, visible, settled, readback, stepping all listed',
     182: 'a synchronous experiment socket', 183: 'the boundaries page', 184: 'the domain rule', 185: 'the promotion rule',
-    186: 'the package section', 193: 'core/world/state/states', 188: 'sea/level, shore', 189: 'gebco, etopo, exposed, look', 190: 'water.flow',
+    186: 'the package section', 193: 'core/world/state/states', 194: 'kits › compat › leaflet', 188: 'sea/level, shore', 189: 'gebco, etopo, exposed, look', 190: 'water.flow',
     191: 'time › deep', 192: 'data › history/epochs', 86: 'boundary written', 88: 'boundary written; the legend stays in the kit, names are a layer\'s labels',
     91: 'boundary written', 92: 'boundary written', 95: 'boundary written', 99: 'boundary written', 101: 'boundary written',
 }

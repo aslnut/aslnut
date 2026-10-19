@@ -9,20 +9,30 @@ import { LIGHT_WGSL } from './light.wgsl.ts';
 export const FIELD_SURFACE_WGSL = /* wgsl */ `${FRAME_WGSL}
 // p: (the north-west cell's centre in world metres x, z; metres a cell x, z) · l: (the ramp's low and high, the least
 // drawn, opacity) · m: (exaggeration, columns, rows, which of the four numbers) · e: (1: lying on its base, the value
-// only colouring it; metres above the base, 0, 0)
+// only colouring it; metres above the base, the next epoch's share (its values over time: core › data › history ›
+// epochs, morphed on the chip), 0)
 struct S { p: vec4f, l: vec4f, m: vec4f, e: vec4f }
 @group(0) @binding(1) var<uniform> s: S;
 @group(1) @binding(0) var state: texture_2d<f32>;
 @group(1) @binding(1) var base: texture_2d<f32>;
 @group(1) @binding(2) var lut: texture_2d<f32>;
 ${LIGHT_WGSL(3)}
+// the next epoch's state (epochs morphed; else the state again, its share 0)
+@group(1) @binding(4) var next: texture_2d<f32>;
 struct O { @builtin(position) pos: vec4f, @location(0) world: vec3f, @location(1) v: f32, @location(2) n: vec3f }
 fn cellOf(i: i32, j: i32) -> vec2i {
   return clamp(vec2i(i, j), vec2i(0, 0), vec2i(i32(s.m.y) - 1, i32(s.m.z) - 1));
 }
-fn cellValue(i: i32, j: i32) -> f32 {
-  let c = textureLoad(state, cellOf(i, j), 0);
+// which of a cell's four numbers is drawn
+fn channelOf(c: vec4f) -> f32 {
   return select(select(select(c.x, c.y, s.m.w > 0.5), c.z, s.m.w > 1.5), c.w, s.m.w > 2.5);
+}
+fn cellValue(i: i32, j: i32) -> f32 {
+  let a = channelOf(textureLoad(state, cellOf(i, j), 0));
+  if (s.e.z <= 0.0) {
+    return a;
+  }
+  return mix(a, channelOf(textureLoad(next, cellOf(i, j), 0)), s.e.z);
 }
 // the top of a cell in world metres (its base plus its value, exaggerated as the ground is)
 fn cellTop(i: i32, j: i32) -> f32 {
@@ -60,7 +70,9 @@ fn cellTop(i: i32, j: i32) -> f32 {
   let v = normalize(frame.eye.xyz - o.world);
   let fres = pow(1.0 - max(dot(v, o.n), 0.0), 3.0);
   c = airFog(mix(themed(c, 0.0), frame.haze.rgb, fres * 0.5), o.world);
-  let a = s.l.w * col.a * smoothstep(s.l.z, s.l.z * 3.0 + 0.0001, o.v);
+  // faded in over its least drawn (water's edge); lying on its base (a value colouring the ground), or no least: whole
+  let fade = select(1.0, smoothstep(s.l.z, s.l.z * 3.0 + 0.0001, o.v), s.l.z > -1.0e29 && s.e.x < 0.5);
+  let a = s.l.w * col.a * fade;
   return vec4f(c, a);
 }
 `;

@@ -18,6 +18,7 @@ out vec4 v_extra;
 out float v_size;
 out float v_reveal;
 out float v_ring;
+out vec4 v_oc;
 vec3 towardEye(vec3 p, float discPx) {
   vec3 toEye = frame.eye.xyz - p;
   float d = length(toEye);
@@ -39,6 +40,7 @@ void main() {
   v_size = 1.0;
   v_reveal = 0.0;
   v_ring = 0.0;
+  v_oc = vec4(0.0);
   if (state.w <= 0.0) {
     gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     return;
@@ -49,14 +51,15 @@ void main() {
   bool hide = behindGlobe(position);
   float hov = state.x;
   float sel = state.y;
-  float ring = u.a.x + u.hover2.y * hov + u.sel2.y * sel;
+  float ow = nums.w;
+  float ring = ow + u.hover2.y * hov + u.sel2.y * sel;
   float grow = 1.0;
   float reveal = state.z;
   if (u.reveal.x == 8.0) {
     grow = max(0.0, easeOutBack(state.z));
     reveal = min(1.0, state.z * 4.0);
   }
-  float size = sizePx(mix(nums.y, nums.x, u.look.z), u.size, position) * grow * mix(1.0, u.a.z, hov) * mix(1.0, u.a.w, sel) + 2.0 * (ring - u.a.x);
+  float size = sizePx(mix(nums.y, nums.x, u.look.z), u.size, position) * grow * mix(1.0, u.a.z, hov) * mix(1.0, u.a.w, sel) + 2.0 * (ring - ow);
   float value = nums.z;
   float time = frame.eye.w;
   /*@position*/
@@ -70,6 +73,7 @@ void main() {
   v_size = size * frame.size.z;
   v_reveal = reveal;
   v_ring = ring;
+  v_oc = featAt(idx, 6);
   v_col = colourOf(idx, state);
 }
 `,
@@ -81,6 +85,7 @@ in vec4 v_extra;
 in float v_size;
 in float v_reveal;
 in float v_ring;
+in vec4 v_oc;
 out vec4 outColor;
 void main() {
   float r = length(v_corner);
@@ -89,8 +94,8 @@ void main() {
   float ring = smoothstep(1.0 - px * (v_ring + 1.0), 1.0 - px * v_ring, r);
   float hov = (v_extra.w == 1.0 || v_extra.w == 3.0) ? 1.0 : 0.0;
   float sel = v_extra.w >= 2.0 ? 1.0 : 0.0;
-  vec3 oc = mix(mix(u.b.rgb, u.sel.rgb, sel), u.hover.rgb, hov);
-  float oa = max(u.b.a, max(hov, sel));
+  vec3 oc = mix(mix(v_oc.rgb, u.sel.rgb, sel), u.hover.rgb, hov);
+  float oa = max(v_oc.a, max(hov, sel));
   vec4 color = vec4(mix(v_col.rgb, oc, ring * oa), v_col.a * disc);
   vec2 uv = v_corner;
   float value = v_extra.x;

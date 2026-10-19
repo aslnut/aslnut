@@ -22,6 +22,7 @@ import { solveJunctions } from '../../../core/geometry/networks/junctions.ts';
 import { walkways, type Walkway } from '../../../core/geometry/networks/walkways.ts';
 import { Footprints, Rng, inside, nearestOn, seedOf, signedArea, type P2 } from './shared/plan.ts';
 import { TREES, treeInstances, treeShapes, type TreeLook } from './presets/living/plants/index.ts';
+import type { Leveled } from '../../../core/observation/presence.ts';
 
 /** one tile as stored (v1): decimetres from its north-west corner, x east, z south, polylines delta encoded */
 export interface CityTile {
@@ -386,7 +387,7 @@ export class Streets extends StreetDetail<CityTile, CityExtra> {
     return out;
   }
 }
-export const streets = (p: StreetsProps) => new Streets(p);
+export const streets = (p: Leveled<StreetsProps>) => new Streets(p as StreetsProps);
 /** a tile's place and its ground (a 21 × 21 grid, 25 m) as numbers */
 function placeOf(ctx: DetailContext): TilePlace {
   const n = 21, step = ctx.size / (n - 1), heights = new Float32Array(n * n);

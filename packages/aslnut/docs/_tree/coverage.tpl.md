@@ -148,7 +148,7 @@ The pattern: providers with defaults · your own data · custom functions · `wh
 |---|---|---|
 | space | complete: bodies, frames, orbits, the observer at light speed, satellites, stars, galaxies | [space](#concepts/space), [modules › space](#reference/modules/space) |
 | bodies & agents | complete: agents for any body; humans and animals as presets; tiers that conserve counts | [agents](#reference/core/simulation), [society](#reference/modules/earth~life-society), [ecology](#reference/modules/earth~life-ecology) |
-| physics | complete: fields, rules, multi-rate coupling, regimes, citable constants, fidelity, probes; sea level and river flow | [physics](#concepts/physics), [phenomena](#reference/core/simulation) |
+| physics | complete: fields, rules, multi-rate coupling, regimes, citable constants, a resolution by level, probes; sea level and river flow | [physics](#concepts/physics), [phenomena](#reference/core/simulation) |
 | live twins | complete: live updates, streams, history, scenarios, corrections, external engines, an experiment socket | [live twins](#concepts/live-twins) |
 | phones | complete: lite by default, WebGL2, budgets, compiled chunks, workers, remote log, phone shots | [performance](#concepts/performance), [runtime](#reference/core/runtime) |
 | hosting | complete: plain, React, Zebflow, server-safe, dispose, a code-only package (decision 9) | [hosting](#concepts/hosting) |

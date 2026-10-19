@@ -33,7 +33,10 @@ export function legend(w: World | null, o: LegendOptions): LegendHandle {
     if (!isScale(v)) throw new AslnutError('E-DATA-001', `layer '${o.for}' has no scale in '${o.prop ?? 'color'}'`, { where: o.for, fix: 'give it color: scale.quantile(…) (or pass the scale itself)' });
     return v as Scale<never, unknown>;
   };
-  const describe = () => ({ ...scaleOf().legend({ format: o.format }), ...(o.title ? { title: o.title } : {}) } as Legend & { title?: string });
+  // (a field's: its ramp over its domain, its own legend())
+  const own = typeof o.for === 'string' && w ? (w.element(o.for) as unknown as { legend?: unknown }) : null;
+  const ownLegend = own && typeof own.legend === 'function' ? () => (own.legend as () => Legend)() : null;
+  const describe = () => ({ ...(ownLegend ? ownLegend() : scaleOf().legend({ format: o.format })), ...(o.title ? { title: o.title } : {}) } as Legend & { title?: string });
   let el: HTMLElement | null = null, seen = -1, off: (() => void) | null = null;
   const canvas = w?.renderer?.canvas as HTMLCanvasElement | undefined;
   const host = o.into ?? (canvas && 'parentElement' in canvas ? canvas.parentElement : null);
@@ -59,7 +62,7 @@ export function legend(w: World | null, o: LegendOptions): LegendHandle {
     el.className ||= 'aslnut-legend';
     host.appendChild(el);
     render();
-    if (w) off = w.on('frame', () => { try { const v = scaleOf().version; if (v !== seen) { seen = v; render(); } } catch { /* layer removed */ } });
+    if (w && !ownLegend) off = w.on('frame', () => { try { const v = scaleOf().version; if (v !== seen) { seen = v; render(); } } catch { /* layer removed */ } });
   }
   return { el, describe, update: render, remove: () => { off?.(); el?.remove(); el = null; } };
 }

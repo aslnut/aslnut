@@ -131,7 +131,8 @@ export class Scenarios {
     const twins: Element[] = [], hidden: Element[] = [], pairs: [Element, Element][] = [];
     const twin = (l: Element, props: Record<string, unknown>): Element => {
       const Ctor = l.constructor as new (p: unknown) => Element;
-      const t = new Ctor({ ...(l.props as object), ...props, id: `${l.id}--${b}`, above: l.id, order: undefined });
+      // (its props by level as given: the twin follows the level too)
+      const t = new Ctor({ ...(l.props as object), ...l.byLevel, ...props, id: `${l.id}--${b}`, above: l.id, order: undefined });
       twins.push(t); pairs.push([l, t]); return t;
     };
     for (const [key, src] of Object.entries(rb.set)) for (const l of this.layersFor(key)) {
@@ -140,7 +141,7 @@ export class Scenarios {
       hidden.push(l);
       const cls = (k: keyof typeof DIFF_COLOURS) => (f: { id: string | number }) => (this.diffSets.get(`${l.id}:${k}`)?.has(String(f.id)) ? DIFF_COLOURS[k] : 'rgba(0,0,0,0)');
       twin(l, { data: src, color: (d: { id: string | number }) => (this.diffSets.get(`${l.id}:added`)?.has(String(d.id)) ? DIFF_COLOURS.added : cls('changed')(d)) });
-      const gone = new (l.constructor as new (p: unknown) => Element)({ ...(l.props as object), id: `${l.id}--${b}--removed`, above: l.id, order: undefined, color: cls('removed') });
+      const gone = new (l.constructor as new (p: unknown) => Element)({ ...(l.props as object), ...l.byLevel, id: `${l.id}--${b}--removed`, above: l.id, order: undefined, color: cls('removed') });
       twins.push(gone);
     }
     for (const [id, x] of Object.entries(rb.rules)) {

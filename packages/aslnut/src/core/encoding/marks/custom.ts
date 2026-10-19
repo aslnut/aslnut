@@ -17,6 +17,7 @@ import { CUSTOM_GLSL } from '../../render/graphics/shaders/custom.glsl.ts';
 import { CUSTOM_WGSL } from '../../render/graphics/shaders/custom.wgsl.ts';
 import { worldOf, type LonLatH } from '../../space/geo.ts';
 import { rangeUnits, sizeUnits, sizeValue, type SizeOf, type SizeRange } from '../../render/drawing/size.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 export interface CustomProps<D> extends Omit<ElementProps, 'shader'> {
   data: D[];
@@ -119,9 +120,9 @@ export class Custom<D = unknown> extends Element<CustomProps<D> & ElementProps> 
   override detach(): void { for (const r of [this.prog, this.inst, this.ubuf, this.pbuf]) r?.destroy(); this.prog = null; this.inst = this.ubuf = this.pbuf = null; super.detach(); }
 }
 /** a custom layer: quads of your own per item (data, at), or your own geometry (geometry: triangles, lines, points) */
-export function custom<D>(p: CustomMeshProps<D>): CustomMesh<D>;
-export function custom<D>(p: CustomProps<D>): Custom<D>;
-export function custom<D>(p: CustomProps<D> | CustomMeshProps<D>): Custom<D> | CustomMesh<D> { return 'geometry' in p && p.geometry ? new CustomMesh<D>(p as CustomMeshProps<D>) : new Custom<D>(p as CustomProps<D>); }
+export function custom<D>(p: Leveled<CustomMeshProps<D>>): CustomMesh<D>;
+export function custom<D>(p: Leveled<CustomProps<D>>): Custom<D>;
+export function custom<D>(p: Leveled<CustomProps<D>> | Leveled<CustomMeshProps<D>>): Custom<D> | CustomMesh<D> { return 'geometry' in p && p.geometry ? new CustomMesh<D>(p as CustomMeshProps<D>) : new Custom<D>(p as CustomProps<D>); }
 
 // ── your own geometry (vertex arrays drawn with your own shader) ────────────────────────────────────────────────
 //   custom({ id: 'net', geometry: { positions, colors }, primitive: 'lines', at: [145.12, -37.92] })

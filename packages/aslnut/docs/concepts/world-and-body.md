@@ -74,7 +74,7 @@ body/
 | body | what it is | status |
 |---|---|---|
 | `earth()` | the Earth with imagery and terrain lists | [partly] (a sphere for now; provider factories built) |
-| `plane()` | a flat floor: a lab, a game level, an interior | [planned] |
+| `plane()` | a flat floor: a lab, a game level, an interior | [built] (a painted sky, or the sun of yours: `plane({ sky: sky() })`) |
 | `sun()` | the star: light and position | [planned] (a research prototype exists) |
 | `moon()`, `mars()` | other bodies with their tiles and real positions | [planned] |
 

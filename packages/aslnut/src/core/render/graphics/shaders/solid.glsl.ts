@@ -52,6 +52,8 @@ flat out vec4 v_co;
 export const SOLID_FRAGMENT_LIB_GLSL = /* glsl */ `${HEAD}
 uniform highp sampler2D tints;
 uniform highp sampler2D picture;
+// a surface field's colours on this mesh (solid-field.glsl.ts sets it): a theme's subject, kept
+float fieldNear = 0.0;
 ${LIGHT_GLSL(1)}
 ${SHAPE_FNS_GLSL}
 /*@functions*/
@@ -144,6 +146,7 @@ vec3 shadeSolid(vec3 base, vec3 n0, vec3 world, float id, float mat0) {
   }
   vec3 c = mix(base, tn.rgb, tn.a);
   float keep = step(0.002, tn.a);
+  keep = max(keep, fieldNear);
   if (abs(id - t.v.z) < 0.5) {
     c = mix(c, t.w.rgb, 0.45);
     keep = 1.0;
@@ -235,6 +238,7 @@ flat in vec4 v_co;
 out vec4 outColor;
 void main() {
   tileIn(v_ck, v_co);
+  /*@fieldfragment*/
   if (t.v.w < 1.0 && dither(gl_FragCoord.xy) > t.v.w) {
     discard;
   }
@@ -265,6 +269,7 @@ void main() {
   float h = groundAt(b.x, b.y) * t.v.x + a.y;
   vec3 position = placeOf(a.x, h, a.z);
   v_col = unpackRGB(a.w);
+  /*@fieldvertex*/
   v_n = unpackNormal(b.z);
   float mat = floor(b.w / 65536.0);
   v_id = b.w - mat * 65536.0;

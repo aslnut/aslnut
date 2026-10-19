@@ -21,6 +21,7 @@ import { motionFrames } from '../../../../../core/runtime/frame.ts';
 import { STARS_GLSL } from '../../../../../core/render/graphics/shaders/stars.glsl.ts';
 import { STARS_WGSL } from '../../../../../core/render/graphics/shaders/stars.wgsl.ts';
 import { catalogues, skyTurn, starData, STAR_FLOATS, type Catalogue } from './stars.ts';
+import type { Leveled } from '../../../../../core/observation/presence.ts';
 
 export { sunAt, moonAt, skyDir, sunTimes, phaseName } from './ephemeris.ts';
 export type { SkyPosition, MoonPosition } from './ephemeris.ts';
@@ -148,7 +149,7 @@ export class EarthSky extends Element<EarthSkyProps> {
   /** the weather now (eased towards its target), and the lightning's clock */
   private wNow: SkyWeather; private wTarget: SkyWeather | null = null; private wEase = 4; private wName = 'clear';
   private nextFlash = 5; private lastMs = -1; private cloudOff: [number, number] = [0, 0];
-  constructor(p: EarthSkyProps = {}) { super({ id: 'sky', ...p }); this.wNow = { ...CLEAR, ...(typeof p.weather === 'object' ? p.weather : {}) }; }
+  constructor(p: EarthSkyProps = {}) { super({ id: 'sky', ...p }); const wt = this.props.weather; this.wNow = { ...CLEAR, ...(typeof wt === 'object' ? wt : {}) }; }
   /** change the weather: a preset's name (WEATHERS) or your mix; it eases there over `seconds` (default 4) */
   setWeather(w: string | Partial<SkyWeather>, o: { seconds?: number } = {}): this {
     const t = typeof w === 'string' ? WEATHERS[w] : { ...this.wNow, ...w };
@@ -359,4 +360,4 @@ export async function coverAt(src: RasterSource, lon: number, lat: number, z: nu
   return (px[3]! / 255) * ((0.299 * px[0]! + 0.587 * px[1]! + 0.114 * px[2]!) / 255);
 }
 /** the Earth's sky over the view at the world's time: the real sun and moon, stars, a physical sky, its light */
-export const sky = (p: EarthSkyProps = {}) => new EarthSky(p);
+export const sky = (p: Leveled<EarthSkyProps> = {}) => new EarthSky(p as EarthSkyProps);

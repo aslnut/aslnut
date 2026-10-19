@@ -1,12 +1,13 @@
 import { presetOf } from '../preset.ts';
 // The primitives check: every visual a city twin's five screens need (and the tree's wire-sphere hover), and a
 // low-level 3D checklist, built with the public API only, on WebGPU and WebGL2. Not a demo: a page the
-// smoke opens scene by scene (?go=region | studio | heatlab | clayton | access | wire | three | extend).
+// smoke opens scene by scene (?go=region | studio | heatlab | clayton | access | wire | three | extend | surface |
+// epochs | levels). Every value shown is generated here: no data files.
 //   &graphics=webgpu | webgl2   &clock=30 (the tools: a fixed step)
 import {
-  BLOCK, HOUSE, LOT, Element, MeshBuilder, POLES, STREET, area, bins, custom, data, earth, fence, house, imagery, line, material, poles,
-  roadSection, shape, sidewalks, sky, solids, streets, text, wires, world, type AttachContext, type DrawCall, type FrameContext, type GBuffer,
-  type Program, type World,
+  BLOCK, HOUSE, LOT, Element, MeshBuilder, POLES, STREET, area, bins, buildings, custom, data, earth, fence, field, house, imagery, legend, line,
+  material, points, poles, replay, roadSection, rules, shape, sidewalks, sky, solids, streets, text, wires, world, type AttachContext, type DrawCall,
+  type FrameContext, type GBuffer, type Program, type SurfaceFn, type World,
 } from '../../src/index.ts';
 
 declare const __BUILD__: number;
@@ -53,6 +54,9 @@ async function main(): Promise<void> {
     wire: { view: { lon: ll(0, 0)[0], lat: ll(0, 0)[1], zoom: 21.4, tilt: 60, bearing: 330 }, ground: '#8fae6a', lit: true, note: 'hover a tree: the wire net round its crown (a shape in the wire material, a hover form)' },
     three: { view: { lon: ll(0, 0)[0], lat: ll(0, 0)[1], zoom: 20.5, tilt: 58, bearing: 340 }, ground: '#3a4250', lit: true, note: 'your own geometry (positions, normals, uvs, colours, attributes, indexed), triangles / lines / points, your shader with uniforms, varyings and a canvas texture, blending, depth, sides, instances with their own attributes' },
     extend: { view: { lon: ll(0, 0)[0], lat: ll(0, 0)[1], zoom: 20.0, tilt: 50, bearing: 0 }, ground: '#3a4250', note: 'your own layer: a class extending Element with its own program (WGSL and GLSL), drawn each frame' },
+    surface: { view: { lon: ll(0, 0)[0], lat: ll(0, 0)[1], zoom: 17.4, tilt: 60, bearing: 330 }, ground: '#3a4250', lit: true, note: 'a surface field: a block of buildings, walls and roofs coloured by a made-up value by facet orientation and height (&n=2000: more buildings, &field=0: none)' },
+    epochs: { view: { lon: ll(0, 0)[0], lat: ll(0, 0)[1], zoom: 16.9, tilt: 52, bearing: 330 }, ground: '#3a4250', lit: true, note: 'epochs: 24 hourly grids of a warm patch moving over a district, morphed by the clock (the slider), on the ground and on the buildings\' walls and roofs (&t=7.5: the hour)' },
+    levels: { view: { lon: ll(0, 0)[0], lat: ll(0, 0)[1], zoom: 13.5, tilt: 0, bearing: 0 }, ground: '#3a4250', note: 'params by level: points sized and coloured by the observation level, a field whose res and area follow it (the default ladder, turned on by them; zoom in and out)' },
   };
   const go = presetOf(q, Object.keys(scenes), 'region');
   const sc = scenes[go]!;
@@ -73,6 +77,9 @@ async function main(): Promise<void> {
   else if (go === 'wire') studio(w, true, extra);
   else if (go === 'three') three(w);
   else if (go === 'extend') w.add(new PulseRing({ id: 'pulse', at: ll(0, 0), radius: 30 }));
+  else if (go === 'surface') surfaceScene(w, extra);
+  else if (go === 'epochs') epochsScene(w, extra);
+  else if (go === 'levels') levelsScene(w, extra);
   (window as unknown as { aslnutDemo: unknown }).aslnutDemo = { w, go, extra, ll };
 }
 
@@ -323,3 +330,81 @@ class PulseRing extends Element<{ id?: string; at: [number, number]; radius: num
 
 void main().catch((e) => { document.querySelector('#note')!.textContent = String((e as Error).message ?? e); console.error(e); });
 void text;
+
+// ── 9. a surface field: values on walls and roofs (aslnut draws them; the values are made up here) ────────────────
+/** a block of rectangular buildings round the centre (m east, south): a grid of plots, seeded sizes and heights */
+function blocks(n: number, seed: number): { id: string; ring: [number, number][]; h: number }[] {
+  const rnd = new Rng(seed), side = Math.ceil(Math.sqrt(n)), plot = 34, out: { id: string; ring: [number, number][]; h: number }[] = [];
+  for (let k = 0; k < n; k++) {
+    const i = k % side, j = Math.floor(k / side), x = (i - side / 2) * plot + rnd.range(-2, 2), z = (j - side / 2) * plot + rnd.range(-2, 2), wd = rnd.range(14, 24), dp = rnd.range(12, 22);
+    out.push({ id: `b${k}`, ring: [[x, z], [x + wd, z], [x + wd, z + dp], [x, z + dp], [x, z]], h: rnd.chance(0.15) ? rnd.range(40, 70) : rnd.range(8, 26) });
+  }
+  return out;
+}
+const asFeatures = (bs: { id: string; ring: [number, number][]; h: number }[]) => bs.map((b) => ({ id: b.id, props: { height: b.h }, geometry: { type: 'Polygon' as const, coordinates: [b.ring.map(([x, z]) => ll(x, z))] } }));
+/** a made-up warmth: walls by how much they face the north-east (0.25 … 0.85), the higher up the warmer, roofs warm */
+const warmth: SurfaceFn = (_b, facet, n, at) => (facet === 'roof' ? 1 : 0.2 + 0.3 * (1 + 0.7071 * (n[0] + n[1]))) + Math.min(0.15, at[2] / 300);
+function surfaceScene(w: World, extra: Record<string, unknown>): void {
+  const n = Number(q.get('n') ?? 400), bs = blocks(n, 11);
+  w.add(buildings({ id: 'block', data: asFeatures(bs) as never, windows: false }));
+  if (q.get('field') !== '0') {
+    w.add(field({ id: 'warmth', kind: 'surface', on: 'block', values: warmth, draw: { ramp: 'plasma', domain: [0.15, 1.15] } }));
+    legend(w, { for: 'warmth', title: 'made-up warmth (facet, height)', position: 'bottom-right' });
+  }
+  // (the smoke reads the middle of two walls of the building nearest the centre: its south face and its east face)
+  const b = bs.reduce((a, c) => (Math.hypot(c.ring[0]![0] + 10, c.ring[0]![1] + 10) < Math.hypot(a.ring[0]![0] + 10, a.ring[0]![1] + 10) ? c : a));
+  const [x0, z0] = b.ring[0]!, [x1] = b.ring[1]!, [, z2] = b.ring[2]!;
+  extra.walls = { south: [...ll((x0 + x1) / 2, z2), b.h * 0.4], east: [...ll(x1, (z0 + z2) / 2), b.h * 0.4], building: b.id };
+}
+
+// ── 10. epochs: 24 hourly grids of a moving warm patch, morphed by the clock, on the ground and on the buildings ────
+function epochsScene(w: World, extra: Record<string, unknown>): void {
+  const H = 3600e3, day = Date.UTC(2026, 0, 14, 13), size = 900, res = 10, cells = size / res;
+  // where the patch is at hour h (m east, south of the centre): round the district once a day
+  const centreAt = (h: number): [number, number] => [Math.cos((h / 24) * 2 * Math.PI) * 260, Math.sin((h / 24) * 2 * Math.PI) * 260];
+  const warmAt = (h: number, x: number, z: number) => { const [cx, cz] = centreAt(h); return 22 + 16 * Math.exp(-((x - cx) ** 2 + (z - cz) ** 2) / (2 * 140 ** 2)); };
+  const grid = (h: number) => { const g = new Float32Array(cells * cells); for (let j = 0; j < cells; j++) for (let i = 0; i < cells; i++) g[j * cells + i] = warmAt(h, (i + 0.5) * res - size / 2, (j + 0.5) * res - size / 2); return g; };
+  // (each hour loaded when the clock comes near it: a function of no parameters)
+  const hours = Array.from({ length: 24 }, (_, h) => h);
+  const ground = data.epochs(hours.map((h) => ({ at: day + h * H, source: () => grid(h) })), { blend: 'morph' });
+  const walls = data.epochs<SurfaceFn>(hours.map((h) => ({ at: day + h * H, source: ((_b, facet, _n, at) => warmAt(h, (at[0] - CLAYTON[0]) * kx, (CLAYTON[1] - at[1]) * KZ) + (facet === 'roof' ? 3 : 0)) as SurfaceFn })), { blend: 'morph' });
+  w.add(buildings({ id: 'district', data: asFeatures(blocks(144, 5)) as never, windows: false }));
+  w.add(field({ id: 'warm', res, area: { centre: CLAYTON, size }, data: ground, draw: { ramp: 'inferno', domain: [20, 42], opacity: 0.8 } }));
+  w.add(field({ id: 'warm-walls', kind: 'surface', on: 'district', data: walls, draw: { ramp: 'inferno', domain: [20, 42] } }));
+  legend(w, { for: 'warm', title: 'made-up warmth (°C)', position: 'bottom-right' });
+  const p = replay(w, { from: ground.from, to: ground.to, speed: Number(q.get('speed') ?? 1800), loop: true });
+  p.seek(day + Number(q.get('t') ?? 7.5) * H);
+  // the time slider: the hour of the day, and play
+  const ui = document.createElement('div');
+  ui.style.cssText = 'position:fixed;left:8px;right:8px;top:calc(46px + env(safe-area-inset-top));display:flex;gap:8px;align-items:center;z-index:5;background:rgba(10,14,22,.8);border-radius:7px;padding:6px 9px';
+  ui.innerHTML = '<button id="ep-play" style="font:inherit">play</button><input id="ep-t" type="range" min="0" max="23" step="0.05" style="flex:1"><output id="ep-h" style="min-width:3.2em"></output>';
+  document.body.appendChild(ui);
+  const t = ui.querySelector<HTMLInputElement>('#ep-t')!, out = ui.querySelector('output')!, play = ui.querySelector<HTMLButtonElement>('#ep-play')!;
+  const show = () => { const h = (w.time.getTime() - day) / H; t.value = String(h); out.textContent = `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.floor((h % 1) * 60)).padStart(2, '0')}`; };
+  t.oninput = () => { p.seek(day + Number(t.value) * H); show(); };
+  play.onclick = () => { p.toggle(); play.textContent = p.playing ? 'pause' : 'play'; };
+  p.on(() => show()); w.on('frame', () => { if (p.playing) show(); }); show();
+  extra.epochs = { day, H, playback: p, hotAt: (h: number) => { const [cx, cz] = centreAt(h); return ll(cx, cz); } };
+}
+
+// ── 11. params by level: points sized and coloured by the level, a field whose res and area follow it ─────────────
+function levelsScene(w: World, extra: Record<string, unknown>): void {
+  const rng = new Rng(11), centre = ll(0, 0);
+  // made-up places over 10 km: a ring of them round the centre, denser near it
+  const places = Array.from({ length: 240 }, (_, k) => { const r = 150 + 4800 * rng.next() ** 2, a = rng.next() * 2 * Math.PI; return { id: `p${k}`, at: ll(Math.cos(a) * r, Math.sin(a) * r) }; });
+  w.add(points({ id: 'clinics', data: places, at: (d) => d.at,
+    size: { level: { district: 6, street: 14 } }, color: { level: { city: '#ffd166', street: '#ef476f' } }, outline: { width: 1, color: '#111827' } }));
+  // a warm patch, smoothed once (its state is its own, not its init): a finer grid near, a coarser one over more
+  // ground far, about the same cells at each level
+  const flood = field({ id: 'flood', rule: rules.diffusion({ k: 40 }),
+    res: { level: { street: 2, district: 8, city: 32 } },
+    area: { level: { street: { centre, size: 600 }, district: { centre, size: 2400 }, city: { centre, size: 12000 } } },
+    init: (lon, lat) => { const x = (lon - centre[0]) * kx, z = (centre[1] - lat) * KZ; return Math.exp(-(x * x + z * z) / (2 * 260 ** 2)) + 0.6 * Math.exp(-((x - 520) ** 2 + (z + 320) ** 2) / (2 * 240 ** 2)); },
+    draw: { ramp: 'viridis', domain: [0, 1], min: 0.02, opacity: 0.75 } });
+  w.add(flood);
+  flood.step(600);
+  // every setProps an element gets is heard (the world's 'elements' event, what: 'props'): the measure of applies
+  const applies: Record<string, number> = { clinics: 0, flood: 0 };
+  w.on('elements', (e) => { if (e.what === 'props') for (const id of e.ids) if (id in applies) applies[id]!++; });
+  extra.levels = { applies, centre };
+}

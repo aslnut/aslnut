@@ -108,3 +108,45 @@ export function asksLevel(when: When | undefined, s: State): boolean {
   for (const p of rec) if (p === 'observation' || p.startsWith('observation\u0001')) return true;
   return false;
 }
+
+// ── params by level ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Any prop of any element may be given per observation level: an object whose only key is `level`, its value the
+// rungs by name (plain JSON: a catalog or a config carries it). A rung not named takes the nearest named coarser rung
+// on the ladder; with none coarser, the nearest finer. It is resolved once a level change (the same moment `when`
+// turns, through the gates' margin and dwell), never per frame, and applied through the element's own setProps.
+//   points({ size: { level: { district: 6, street: 14 } } })     world … district: 6 · street, building, room: 14
+//   field({ res: { level: { street: 1, district: 4, city: 16 } } })
+
+/** a value given per observation level: { level: { district: 6, street: 14 } } (any value: a number, a colour, an
+ *  object, an array) */
+export interface LevelValues<T> { level: Record<string, T> }
+/** a value, or the same given per observation level */
+export type ByLevel<T> = T | LevelValues<T>;
+/** props, each of which may be given per observation level (where element props enter: factories, setProps) */
+export type Leveled<P> = { [K in keyof P]: P[K] | LevelValues<P[K]> };
+
+const plain = (v: unknown): v is Record<string, unknown> => {
+  if (v === null || typeof v !== 'object' || Array.isArray(v)) return false;
+  const pr = Object.getPrototypeOf(v);
+  return pr === Object.prototype || pr === null;
+};
+/** a prop given per level: a plain object whose ONLY key is `level`, its value a plain object of rungs (nothing else
+ *  is taken for one). `when` is never one: its own `{ level }` is presence */
+export function isByLevel(v: unknown): v is LevelValues<unknown> {
+  if (!plain(v)) return false;
+  const ks = Object.keys(v);
+  return ks.length === 1 && ks[0] === 'level' && plain(v.level);
+}
+/** the value a prop given per level takes at the rung `index` of `names`: the nearest named rung at or coarser than
+ *  it, else the nearest finer. A rung not on the ladder is an error (E-LEVEL-002), `where` the element and prop */
+export function levelValue<T>(spec: LevelValues<T>, names: readonly string[], index: number, where = ''): T {
+  const given = Object.keys(spec.level);
+  if (!given.length) throw new AslnutError('E-LEVEL-002', `${where || 'a prop by level'}: no levels named`, { where, fix: "name at least one level: { level: { district: 6, street: 14 } }" });
+  let coarse = -1, fine = Infinity;
+  for (const n of given) {
+    const k = names.indexOf(n);
+    if (k < 0) throw new AslnutError('E-LEVEL-002', `${where || 'a prop by level'}: no level '${n}' on the ladder`, { where, fix: names.length ? `the levels: ${names.join(', ')}` : "this world has no levels: world(canvas, { observation: { levels: 'default' } })" });
+    if (k <= index) { if (k > coarse) coarse = k; } else if (k < fine) fine = k;
+  }
+  return spec.level[names[coarse >= 0 ? coarse : fine]!] as T;
+}

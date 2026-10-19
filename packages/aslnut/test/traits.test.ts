@@ -52,6 +52,21 @@ test('typology: a neutral house and office in white to grey, fully by params, wi
   const x = (t: typeof L, k: string) => (t[k] as { at: number[] }[])[0]!.at[0]!;
   assert.ok(x(L, 'service') > 5 && x(R, 'service') < -5 && x(L, 'parking') === x(L, 'service'));
   assert.equal((N.parking as unknown[]).length, 1);
+  // the garage is drawn at every level, at its side, whatever the roof, size or levels (a flat-roofed two-storey house
+  // 14 m wide with its garage at its left drew it too: it stood behind the house in a view of the house's back, as the
+  // front faces the heading: heading 0, the front to the north, seen from the north)
+  const { SHAPE_FLOATS: SF } = await import('../src/index.ts');
+  const reach = (v: Float32Array) => { let lo = Infinity, hi = -Infinity; for (let i = 0; i < v.length; i += SF) { lo = Math.min(lo, v[i]!); hi = Math.max(hi, v[i]!); } return [lo, hi] as const; };
+  for (const p of [{ width: 14, depth: 11, levels: 2, roof: 'flat', garage: 'left', driveway: 6 }, { width: 11, depth: 13, levels: 1, roof: 'dutch', pitch: 30, garage: 'left', driveway: 9 }, { width: 12, depth: 12, levels: 2, roof: 'hip', garage: 'right', driveway: 7 }, { width: 14, depth: 11, levels: 2, roof: 'flat', garage: 'none' }] as const) {
+    const m = typology.house.make(p as never), side = p.garage === 'left' ? 1 : p.garage === 'right' ? -1 : 0;
+    m.levels.forEach((v, k) => {
+      const [lo, hi] = reach(v as Float32Array), far = side > 0 ? hi : side < 0 ? -lo : Math.max(hi, -lo);
+      if (side) assert.ok(far > p.width / 2 + 3.5, `${JSON.stringify(p)} level ${k}: its garage reaches ${far.toFixed(1)} m out`);
+      else assert.ok(far < p.width / 2 + 3.5, `no garage, level ${k}`);
+    });
+    const entry = (traits(m, kinds.house).entries as { at: number[] }[])[0]!;
+    assert.ok(entry.at[2]! > p.depth / 2, 'its door at its front (+z), the side that faces its heading');
+  }
   // an office: its bays by rows, a service point at the head of each of the first row's
   const o = traits(typology.office.make({ carpark: 2, bays: 9 }), kinds.office);
   assert.equal((o.parking as unknown[]).length, 18); assert.equal((o.service as unknown[]).length, 9); assert.equal((o.entries as unknown[]).length, 2);

@@ -3,7 +3,7 @@
 // turns: `w.set('heat.gain', 2)`), readouts (live values) and named points (places others aim at); and its life:
 // attach (make graphics resources, load data) → frame (each frame: its draw calls) → detach (free everything).
 //   class Heat extends Element { kind = 'custom' as const; frame(ctx) { … return [draw]; } }
-import { Joined, Stream } from '../data/sources/index.ts';
+import { Source } from '../data/sources/source.ts';
 import type { Loader } from '../data/loading/loader.ts';
 import type { Camera } from '../observation/observers/orbit/camera.ts';
 import type { DrawCall, GBuffer, GTexture, Graphics, GroundDraw } from '../render/graphics/interface.ts';
@@ -12,9 +12,10 @@ import type { Profile } from '../render/graphics/caps.ts';
 import { paramBlock, type ParamBlock, type ParamValue, type ShaderCode } from '../render/graphics/shaders/hooks.ts';
 import type { LonLatH } from '../space/geo.ts';
 import { AslnutError } from './errors.ts';
+import { DEFAULT_LADDER } from '../observation/levels.ts';
 import type { Kind } from './order.ts';
 import type { State } from './state.ts';
-import type { When } from '../observation/presence.ts';
+import { isByLevel, levelValue, type Leveled, type LevelValues, type When } from '../observation/presence.ts';
 
 export interface ParamSpec {
   /** 'text': any string (a code, an id, a name: what a drill-down or a search sets) */
@@ -100,19 +101,31 @@ export interface WorldLike {
 }
 export interface ElementStatus { ready: boolean; pending: string[]; failed: { what: string; error: string }[]; missing: string[] }
 
-// A source can feed several elements (or worlds). The last attached user closes its stream; the next one opens it again.
-const streamUsers = new WeakMap<Stream, Set<Element>>();
-function streamsOf(props: ElementProps): Set<Stream> {
-  const found = new Set<Stream>();
+// A source can feed several elements (or worlds). Its first attached user opens it (a stream's socket, a join's or a
+// roll-up's subscriptions to what it is made from), its last closes it; the sources it is made from go with it.
+const sourceUsers = new WeakMap<Source, Set<Element>>();
+function sourcesOf(props: ElementProps): Set<Source> {
+  const found = new Set<Source>();
   const take = (source: unknown): void => {
-    if (source instanceof Stream) found.add(source);
-    else if (source instanceof Joined) { take(source.shapes); take(source.rows); }
+    if (!(source instanceof Source) || found.has(source)) return;
+    found.add(source); for (const s of source.inputs()) take(s);
   };
   const p = props as ElementProps & { data?: unknown; drive?: { source?: unknown } };
   take(p.data); take(p.drive?.source);
   return found;
 }
 let seq = 0;
+/** props never given by level: its id, and `when` (its own `{ level }` is presence) */
+const PLAIN_ONLY = new Set(['id', 'when']);
+const DEFAULT_NAMES = DEFAULT_LADDER.map((r) => r.name);
+/** a prop by level's value before its world says the level: the coarsest rung named (by the default ladder, else the
+ *  first named) */
+function firstGuess(v: LevelValues<unknown>): unknown {
+  const names = Object.keys(v.level);
+  let best = names[0], at = Infinity;
+  for (const n of names) { const k = DEFAULT_NAMES.indexOf(n); if (k >= 0 && k < at) { at = k; best = n; } }
+  return best === undefined ? undefined : v.level[best];
+}
 export abstract class Element<P extends ElementProps = ElementProps> {
   abstract readonly kind: Kind;
   readonly id: string;
@@ -139,14 +152,70 @@ export abstract class Element<P extends ElementProps = ElementProps> {
   /** the detail it draws at now (1: full; lower: coarser levels sooner, fewer copies over time) */
   detailOf(s: State): number { return (this.detailPinned ? 1 : s.render.detail ?? 1) * this.detailOwn; }
   protected attached: AttachContext | null = null;
-  private streams = new Set<Stream>();
+  private sourcesInUse = new Set<Source>();
+  /** its props given by level (core › observation › presence), as given: prop name → { level: { rung: value } }.
+   *  `props` holds the values for the level now (what it runs with) */
+  readonly byLevel: Readonly<Record<string, LevelValues<unknown>>> = {};
+  /** the ladder's names and the rung its props by level were resolved for (null: not yet in a world with levels) */
+  private levelRung: { names: readonly string[]; index: number } | null = null;
+  /** its own setProps (the subclass's), under the one that resolves props by level first */
+  private ownSetProps: (p: object) => unknown;
 
-  constructor(props: P) {
-    this.props = props;
-    const id = props.id ?? `${this.constructor.name.toLowerCase()}-${++seq}`;
+  constructor(props: Leveled<P>) {
+    // props by level: kept as given; `props` gets a first value (the world resolves them for its level when it is added)
+    const given = props as unknown as Record<string, unknown>;
+    let run = props as unknown as P;
+    for (const k of Object.keys(given)) {
+      const v = given[k];
+      if (PLAIN_ONLY.has(k) || !isByLevel(v)) continue;
+      if (run === (props as unknown)) run = { ...given } as unknown as P;
+      (this.byLevel as Record<string, LevelValues<unknown>>)[k] = v;
+      (run as unknown as Record<string, unknown>)[k] = firstGuess(v);
+    }
+    this.props = run;
+    // every setProps (the subclass's own too) sees resolved values: a prop by level replaces its spec and is resolved
+    // at once, a plain value drops it back to plain
+    this.ownSetProps = this.setProps as (p: object) => unknown;
+    Object.defineProperty(this, 'setProps', { configurable: true, writable: true, enumerable: false, value: (p: Partial<Leveled<P>>) => {
+      // (a change refused, by its level or by the element itself, leaves its specs as they were)
+      const by = this.byLevel as Record<string, LevelValues<unknown>>, was = { ...by };
+      try { this.ownSetProps.call(this, this.leveled(p)); } catch (e) { for (const k of Object.keys(by)) delete by[k]; Object.assign(by, was); throw e; }
+      return this;
+    } });
+    const id = run.id ?? `${this.constructor.name.toLowerCase()}-${++seq}`;
     if (!/^[A-Za-z0-9_-]+$/.test(id)) throw new AslnutError('E-WORLD-001', `layer id '${id}' is not a plain name`, { fix: "use letters, digits, '-' and '_' (no dots: params are '<id>.<name>')" });
     this.id = id;
-    if (props.params) { this.paramBlock = paramBlock(props.params); this.paramValues = { ...props.params }; }
+    if (run.params) { this.paramBlock = paramBlock(run.params); this.paramValues = { ...run.params }; }
+  }
+  /** the world's level (core › observation › presence): its props by level resolved for the rung `index` of `names`,
+   *  and passed through its own setProps where their value changed (once a level change; a world calls it when the
+   *  element is added and at each level change). The props it changed */
+  atLevel(names: readonly string[], index: number): string[] {
+    const by = this.byLevel, keys = Object.keys(by), now = this.props as unknown as Record<string, unknown>, changed: Record<string, unknown> = {};
+    for (const k of keys) { const v = levelValue(by[k]!, names, index, `${this.id}.${k}`); if (!Object.is(v, now[k])) changed[k] = v; }
+    this.levelRung = { names, index };
+    const ks = Object.keys(changed);
+    if (ks.length) this.ownSetProps.call(this, changed);
+    return ks;
+  }
+  /** the level its props by level are resolved for now (null: none yet) */
+  protected get levelNow(): string | null { const a = this.levelRung; return a ? a.names[a.index] ?? null : null; }
+  /** props in: those given by level kept as given and resolved for the level now (checked on its ladder), the rest
+   *  plain (a prop given by level before drops back to plain) */
+  private leveled(p: Partial<Leveled<P>>): Partial<P> {
+    const given = p as Record<string, unknown>, at = this.levelRung, by = this.byLevel as Record<string, LevelValues<unknown>>;
+    let out: Record<string, unknown> | null = null;
+    const specs: [string, LevelValues<unknown>][] = [];
+    for (const k of Object.keys(given)) {
+      const v = given[k];
+      if (PLAIN_ONLY.has(k) || !isByLevel(v)) continue;
+      out ??= { ...given };
+      out[k] = at ? levelValue(v, at.names, at.index, `${this.id}.${k}`) : firstGuess(v);
+      specs.push([k, v]);
+    }
+    for (const k of Object.keys(given)) if (k in by) delete by[k];
+    for (const [k, v] of specs) by[k] = v;
+    return (out ?? given) as Partial<P>;
   }
   get order(): number | undefined { return this.props.order; }
   /** it can be made see-through (props.opacity: a uniform, one frame, nothing built again) */
@@ -209,7 +278,7 @@ export abstract class Element<P extends ElementProps = ElementProps> {
   points(): Record<string, () => LonLatH> { return {}; }
 
   /** make graphics resources and load data (graphics is null in a headless world) */
-  async attach(ctx: AttachContext): Promise<void> { this.attached = ctx; this.keepStreams(streamsOf(this.props)); }
+  async attach(ctx: AttachContext): Promise<void> { this.attached = ctx; this.keepSources(sourcesOf(this.props)); }
   /** while hidden, ahead of being shown (the orbit near a level it is shown at, a swap bringing it in, hidden by
    *  hand): load and build, a slice per call (the world gives it a few ms, in frames or between them); true when there
    *  is nothing (left) to do */
@@ -223,22 +292,22 @@ export abstract class Element<P extends ElementProps = ElementProps> {
   /** what is still loading or failed (settled reads it) */
   status(): ElementStatus { return { ready: true, pending: [], failed: this.failure ? [{ what: this.id, error: this.failure.message }] : [], missing: [] }; }
   /** free everything it made */
-  private keepStreams(next: Set<Stream>): void {
-    for (const stream of next) {
-      let users = streamUsers.get(stream);
-      if (!users) streamUsers.set(stream, (users = new Set()));
-      if (!users.size) stream.reopen();
+  private keepSources(next: Set<Source>): void {
+    for (const source of next) {
+      let users = sourceUsers.get(source);
+      if (!users) sourceUsers.set(source, (users = new Set()));
+      if (!users.size) source.reopen();
       users.add(this);
     }
-    const previous = this.streams; this.streams = next;
-    for (const stream of previous) if (!next.has(stream)) {
-      const users = streamUsers.get(stream); users?.delete(this);
-      if (!users?.size) stream.close();
+    const previous = this.sourcesInUse; this.sourcesInUse = next;
+    for (const source of previous) if (!next.has(source)) {
+      const users = sourceUsers.get(source); users?.delete(this);
+      if (!users?.size) source.close();
     }
   }
-  detach(): void { this.attached = null; this.keepStreams(new Set()); }
+  detach(): void { this.attached = null; this.keepSources(new Set()); }
   /** change props; what depends on them is rebuilt (showing, opacity and order: nothing is, the next frame shows them) */
-  setProps(p: Partial<P>): this { this.props = { ...this.props, ...p }; if (this.attached) this.keepStreams(streamsOf(this.props)); const w = this.attached?.world; (w as { invalidate?: () => void } | undefined)?.invalidate?.(); w?.elementChanged?.(this, Object.keys(p)); return this; }
+  setProps(p: Partial<Leveled<P>>): this { this.props = { ...this.props, ...(p as Partial<P>) }; if (this.attached) this.keepSources(sourcesOf(this.props)); const w = this.attached?.world; (w as { invalidate?: () => void } | undefined)?.invalidate?.(); w?.elementChanged?.(this, Object.keys(p)); return this; }
   /** names for the attribution line, while shown */
   attribution(): string[] { return []; }
 }

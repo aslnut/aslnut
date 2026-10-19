@@ -12,6 +12,7 @@ import { HOOK_POINTS, assemble, type ShaderCode } from '../../render/graphics/sh
 import { rgba, type Color } from '../../render/style/color.ts';
 import { polygonMesh } from '../../geometry/build/mesh.ts';
 import { FeatureMark, P_BOX, P_NUMBERS, Prog, type Entry, type FeatureMarkProps, type PerFeature, type Styled } from './features.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 export interface ExtrusionProps<D> extends FeatureMarkProps<D> {
   /** metres (default 10) */
@@ -92,4 +93,4 @@ export class Extrusion<D = Feature> extends FeatureMark<D, ExtrusionProps<D>> {
   }
   protected freeGeometry(): void { this.vbuf?.destroy(); this.vbuf = null; }
 }
-export const extrusion = <D = Feature>(p: ExtrusionProps<D>) => new Extrusion<D>(p);
+export const extrusion = <D = Feature>(p: Leveled<ExtrusionProps<D>>) => new Extrusion<D>(p as ExtrusionProps<D>);

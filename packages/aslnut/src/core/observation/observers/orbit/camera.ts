@@ -4,7 +4,7 @@
 // tilt; the wheel zooms towards the pointer and eases there; a drag let go glides on.
 // Time comes from the world's clock (`update(w, h, dtMs)`), never the wall clock: a capture steps it exactly.
 import { mat4, vec3, vec4 } from 'wgpu-matrix';
-import { zoomForDist } from '../../../world/state.ts';
+import { REF_H, distForZoom, zoomForDist } from '../../../world/state.ts';
 import { D, MAX_LAT, R, lonLatOf, worldOf, wrap, type Frame } from '../../../space/geo.ts';
 import { AslnutError } from '../../../world/errors.ts';
 import { ease, easing, type Ease } from './ease.ts';
@@ -51,6 +51,12 @@ export class Camera implements Frame {
   minDist = 40; maxDist = R * 8;
   /** what a person's hands may do to the camera (core › interaction › controllers: orbit, pan) */
   gestures = { pan: true, rotate: true, tilt: true, zoom: true };
+  /** the inputs that zoom (each within gestures.zoom) */
+  zoomInputs = { wheel: true, pinch: true, keys: true };
+  /** the box the centre is kept in by hand [w, s, e, n] (null: none), how hard it holds (1: never past it) */
+  bounds: [number, number, number, number] | null = null; viscosity = 1;
+  /** a zoom by hand ends on a multiple of these levels (0: where it stops); levels a key zooms; the keys on */
+  snap = 0; step = 1; keys = false;
   /** the pitch a person may tilt to (radians over the horizon: 2° … straight down; the tilt limit by the eye's height
    *  holds too) */
   pitchRange: [number, number] = [(90 - TILT_MAX) * D, Math.PI / 2 - 1e-4];
@@ -92,10 +98,15 @@ export class Camera implements Frame {
   /** web-map zoom at the centre, for a reference frame 800 CSS px tall (the same framing on every screen) */
   get zoom(): number { return zoomForDist(this.dist / this.frameK, this.lat); }
   /** 'auto': a portrait screen sees as much across as a landscape one does (a zoom shows the same place whole on a
-   *  phone); 'height': a zoom frames the same height on every screen */
-  frame: 'auto' | 'height' = 'auto';
-  /** how much farther the camera stands for this screen's shape (1, or more on a portrait screen) */
-  get frameK(): number { return this.frame !== 'auto' || this.width >= this.height ? 1 : Math.min(2.5, Math.max(1, (1.2 * this.height) / Math.max(1, this.width))); }
+   *  phone); 'height': a zoom frames the same height on every screen; 'pixels': a zoom is the web map's at this
+   *  canvas's own pixels (a 256 px tile of that level drawn 256 CSS px across, whatever the canvas's size) */
+  frame: 'auto' | 'height' | 'pixels' = 'auto';
+  /** how much farther the camera stands for this screen's shape (1, or more on a portrait screen; 'pixels': its height
+   *  against the 800 px reference) */
+  get frameK(): number {
+    if (this.frame === 'pixels') return Math.max(1, this.height) / REF_H;
+    return this.frame !== 'auto' || this.width >= this.height ? 1 : Math.min(2.5, Math.max(1, (1.2 * this.height) / Math.max(1, this.width)));
+  }
   /** metres per CSS pixel at the centre */
   get pixelSize(): number { return (2 * this.dist * Math.tan(this.fov / 2)) / Math.max(1, this.height); }
   /** set the pose at once (stops any flight); a view or pose with a number that is not finite is refused (nothing
@@ -194,11 +205,29 @@ export class Camera implements Frame {
       const k = Math.abs(Math.log(this.zoomLeft)) < 1e-4 ? this.zoomLeft : this.zoomLeft ** (1 - Math.exp(-dt / 90));
       this.zoomByHand(k, ...this.zoomAtPx); this.zoomLeft /= k;
       if (Math.abs(Math.log(this.zoomLeft)) < 1e-4) this.zoomLeft = 1;
+      if (this.zoomLeft === 1) this.snapping = false;
     }
     if (this.glide[0] || this.glide[1]) {
       this.panByHand(this.glide[0] * dt, this.glide[1] * dt);
       const f = Math.exp(-dt / 170); this.glide = [this.glide[0] * f, this.glide[1] * f];
       if (Math.hypot(...this.glide) < 0.01) this.glide = [0, 0];
+    }
+    // a zoom by hand that ended (the wheel's ease done, the fingers off): on to the nearest multiple of `snap`
+    if (this.zoomedByHand && this.zoomLeft === 1 && this.pinching === 0 && this.clock - this.zoomedAt > 0.12) {
+      this.zoomedByHand = false;
+      if (this.snap > 0) {
+        const z = this.zoom, to = Math.round(z / this.snap) * this.snap, want = Math.min(this.maxDist, Math.max(this.minDist, distForZoom(to, this.lat) * this.frameK));
+        if (Math.abs(to - z) > 1e-3 && Number.isFinite(want)) { this.zoomLeft = want / this.dist; this.snapping = true; }
+      }
+    }
+    // let go past the box (viscosity under 1): eased back inside
+    if (this.pastBox && this.bounds && this.pressed === 0 && !this.glide[0] && !this.glide[1]) {
+      const [w, s, e, n] = this.bounds, lon = Math.min(e, Math.max(w, this.lon)), lat = Math.min(n, Math.max(s, this.lat));
+      if (lon === this.lon && lat === this.lat) this.pastBox = false;
+      else {
+        const k = 1 - Math.exp(-dt / 90), near = Math.abs(lon - this.lon) < 1e-7 && Math.abs(lat - this.lat) < 1e-7;
+        this.lon = near ? lon : this.lon + (lon - this.lon) * k; this.lat = near ? lat : this.lat + (lat - this.lat) * k;
+      }
     }
     if (this.motion) {
       const m = this.motion; if (Number.isNaN(m.t0)) m.t0 = this.clock;
@@ -356,10 +385,59 @@ export class Camera implements Frame {
     if (y || p) { this.turn(y, p); this.byHand('turn'); }
   }
   /** move the centre by a person's hands (a drag, a glide, two fingers moving together) */
-  private panByHand(dx: number, dy: number): void { if (!dx && !dy) return; this.pan(dx, dy); this.byHand('pan'); }
+  private panByHand(dx: number, dy: number): void {
+    if (!dx && !dy) return;
+    const lon0 = this.lon, lat0 = this.lat;
+    this.pan(dx, dy); this.byHand('pan');
+    const b = this.bounds; if (!b) return;
+    // past the box: held at its edge (viscosity 1), or let go past it by the share left (eased back when let go)
+    const [w, s, e, n] = b, v = Math.max(0, Math.min(1, this.viscosity)), keep = (x: number, x0: number, lo: number, hi: number) => {
+      if (x >= lo && x <= hi) return x;
+      const edge = x < lo ? lo : hi;
+      if (v >= 1) return edge;
+      // (from the edge when it was inside; from where it was when it was past already: only going farther is held back)
+      if (x0 >= lo && x0 <= hi) return edge + (x - edge) * (1 - v);
+      return Math.abs(x - edge) > Math.abs(x0 - edge) ? x0 + (x - x0) * (1 - v) : x;
+    };
+    this.lon = keep(this.lon, lon0, w, e); this.lat = keep(this.lat, lat0, s, n);
+    this.pastBox = this.lon < w || this.lon > e || this.lat < s || this.lat > n;
+  }
+  /** dragged past the box (viscosity under 1): eased back once let go */
+  private pastBox = false;
   /** zoom by a person's hands (a pinch, the wheel easing in) */
-  private zoomByHand(f: number, px: number, py: number): void { if (f === 1) return; this.zoomAt(f, px, py); this.byHand('zoom'); }
+  private zoomByHand(f: number, px: number, py: number): void {
+    if (f === 1) return;
+    this.zoomAt(f, px, py); this.byHand('zoom');
+    // (a snap's own ease is not a new zoom by hand: it ends where it was going)
+    if (this.snapping) return;
+    this.zoomedByHand = true; this.zoomedAt = this.clock;
+  }
+  /** a zoom by hand went on (ended: snapped to `snap`), when it last moved, a snap under way, fingers down, pinching */
+  private zoomedByHand = false; private zoomedAt = 0; private snapping = false; private pressed = 0; private pinching = 0;
+  /** a key pressed on the canvas (keys on): the arrows move the view by a sixth of the screen, + and - zoom by `step`
+   *  levels (round the centre); true when it was one of them */
+  key(k: string): boolean {
+    if (!this.keys) return false;
+    const g = this.gestures, pan = (dx: number, dy: number) => { if (!g.pan) return; this.glide = [0, 0]; this.panByHand(dx, dy); };
+    const w = this.width / 6, h = this.height / 6;
+    switch (k) {
+      case 'ArrowLeft': pan(w, 0); return true;
+      case 'ArrowRight': pan(-w, 0); return true;
+      case 'ArrowUp': pan(0, h); return true;
+      case 'ArrowDown': pan(0, -h); return true;
+      case '+': case '=': case '-': case '_': {
+        if (!g.zoom || !this.zoomInputs.keys) return true;
+        const out = k === '-' || k === '_';
+        this.zoomLeft = Math.min(8, Math.max(1 / 8, this.zoomLeft * 2 ** (out ? this.step : -this.step))); this.zoomAtPx = [this.width / 2, this.height / 2]; this.changed?.();
+        return true;
+      }
+      default: return false;
+    }
+  }
 
+  private el: HTMLElement | null = null;
+  /** with the keys on, the element it is attached to takes the focus (a tab stop, focused by a press) */
+  focusable(): void { const el = this.el; if (!el || !this.keys || el.tabIndex >= 0) return; el.tabIndex = 0; el.addEventListener('pointerdown', () => el.focus({ preventScroll: true })); }
   /** pointer, touch and wheel on an element; returns the function that removes them all */
   attach(el: HTMLElement, onTap?: (x: number, y: number) => void): () => void {
     const pts = new Map<number, { x: number; y: number }>();
@@ -374,7 +452,7 @@ export class Camera implements Frame {
       if (!this.interrupt && (this.motion || this.playing || this.driver)) return;
       // (a press stops a flight and camera keys; a move and a follow end only when the hands move what they keep)
       const d = this.driver; this.driver = null;
-      el.setPointerCapture?.(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); this.stop(); this.driver = d; this.touches++;
+      el.setPointerCapture?.(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); this.stop(); this.driver = d; this.touches++; this.pressed = pts.size; this.pinching = pts.size >= 2 ? 1 : 0; if (this.snapping) { this.snapping = false; this.zoomLeft = 1; }
       if (pts.size === 1) { moved = 0; vel = [0, 0]; }
       if (pts.size === 2) { const t = two(); pinch = t.d; twist = t.ang; mid = t.m; midY = t.m[1]; }
     });
@@ -395,7 +473,7 @@ export class Camera implements Frame {
         const t = two();
         const g = this.gestures;
         // (two fingers on one point give no ratio yet)
-        if (g.zoom && pinch > 0) this.zoomByHand(pinch / Math.max(1, t.d), ...local(t.m[0], t.m[1]));
+        if (g.zoom && this.zoomInputs.pinch && pinch > 0) this.zoomByHand(pinch / Math.max(1, t.d), ...local(t.m[0], t.m[1]));
         if (g.rotate && t.ang !== twist) { this.yaw += t.ang - twist; this.byHand('turn'); }
         // two fingers moving up / down together: tilt
         const dm = t.m[1] - midY; if (Math.abs(t.d - pinch) < 4) this.turnByHand(0, dm * 0.004);
@@ -407,17 +485,21 @@ export class Camera implements Frame {
       if (pts.size === 1 && moved < 8 && e.type === 'pointerup') { const r = el.getBoundingClientRect(); onTap?.(e.clientX - r.left, e.clientY - r.top); }
       else if (pts.size === 1 && performance.now() - tMove < 60 && Math.hypot(...vel) > 0.15) this.glide = [vel[0], vel[1]];
       pts.delete(e.pointerId); if (pts.size < 2) mid = null;
+      this.pressed = pts.size; if (pts.size < 2) this.pinching = 0;
     };
     add('pointerup', up); add('pointercancel', up);
     add('wheel', (e) => {
       e.preventDefault();
-      if (!this.gestures.zoom || (!this.interrupt && (this.motion || this.playing || this.driver))) return;
+      if (!this.gestures.zoom || !this.zoomInputs.wheel || (!this.interrupt && (this.motion || this.playing || this.driver))) return;
       // the wheel takes the camera as a touch does: flights and keys end (a move ends as it zooms; a follow goes on)
       if (this.motion || this.playing) { const d = this.driver; this.driver = null; this.stop(); this.driver = d; }
-      this.glide = [0, 0]; this.touches++;
+      this.glide = [0, 0]; this.touches++; this.snapping = false;
       const d = e.deltaY * (e.deltaMode === 1 ? 16 : 1) * (e.ctrlKey ? 0.01 : 0.0018);
       this.zoomLeft = Math.min(8, Math.max(1 / 8, this.zoomLeft * Math.exp(d))); this.zoomAtPx = local(e.clientX, e.clientY); this.changed?.();
     }, { passive: false });
-    return () => { for (const [t, f, o] of on) el.removeEventListener(t, f, o); el.style.touchAction = prevTouch; };
+    // the keys (controllers.orbit({ keys: true })): the canvas takes the focus to hear them
+    add('keydown', (e) => { if (!e.ctrlKey && !e.metaKey && !e.altKey && this.key(e.key)) e.preventDefault(); });
+    this.el = el; this.focusable();
+    return () => { for (const [t, f, o] of on) el.removeEventListener(t, f, o); el.style.touchAction = prevTouch; this.el = null; };
   }
 }

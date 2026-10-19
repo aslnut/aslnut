@@ -14,6 +14,7 @@ import type { State } from '../../../../../core/world/state.ts';
 import { MATERIAL_CODES } from '../../../../../core/render/look/materials.ts';
 import { D } from '../../../../../core/space/geo.ts';
 import { densify, type P2 } from '../../shared/plan.ts';
+import type { Leveled } from '../../../../../core/observation/presence.ts';
 
 export interface WaterLook { water: string; stream: string; sea: string }
 export const WATER: WaterLook = { water: '#3f7fae', stream: '#3f7fae', sea: '#2f6a96' };
@@ -46,8 +47,10 @@ const CHUNK = 500, KZ = 110574;
 export class Water extends Solids {
   // (it lies on the ground: a mark on the ground paints it)
   override readonly stands = false;
-  private wp: WaterProps; private srcs: Source[] = []; private offs: (() => void)[] = []; private seenV = '';
-  constructor(p: WaterProps) { super({ hover: false, shadows: false, ...p }); this.wp = p; }
+  /** its props as it runs (given by level: the values for the level now) */
+  private get wp(): WaterProps { return this.props as unknown as WaterProps; }
+  private srcs: Source[] = []; private offs: (() => void)[] = []; private seenV = '';
+  constructor(p: WaterProps) { super({ hover: false, shadows: false, ...p }); }
   override async attach(ctx: AttachContext): Promise<void> {
     await super.attach(ctx);
     for (const d of [this.wp.lakes, this.wp.rivers]) if (d instanceof Source) { this.srcs.push(d); this.offs.push(d.watch(() => this.build())); void d.start({ loader: ctx.loader, error: (e) => ctx.world.error(e) }).then(() => this.build()); }
@@ -97,4 +100,4 @@ export class Water extends Solids {
 
 }
 /** lakes, rivers and the sea from any sources: water({ lakes, rivers, sea, level }) */
-export const water = (p: WaterProps = {}) => new Water(p);
+export const water = (p: Leveled<WaterProps> = {}) => new Water(p as WaterProps);

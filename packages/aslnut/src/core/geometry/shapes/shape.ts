@@ -204,21 +204,61 @@ function clampParam(s: ParamSpec, v: unknown): unknown {
 }
 function seedRand(seed: number): () => number { let s = (seed * 2654435761) >>> 0 || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
 
-/** a form for a shape's params: one control each (a slider, a whole-number slider, a dropdown, a colour, a switch),
- *  with its range and default; `render` makes it in a page (its values go to `onChange`) */
-export interface FormControl { key: string; kind: 'slider' | 'stepper' | 'dropdown' | 'colour' | 'switch' | 'text'; min?: number; max?: number; step?: number; options?: readonly string[]; value: unknown }
-export function form<D extends Record<string, ParamSpec>, X>(s: Shape<D, X>): { controls: FormControl[]; render(into: HTMLElement, onChange: (p: Partial<ParamsOf<D>>) => void): HTMLElement } {
-  const controls: FormControl[] = Object.entries(s.spec.params ?? {}).map(([key, p]) => p.kind === 'num' ? { key, kind: 'slider', min: p.min, max: p.max, step: (p.max - p.min) / 100, value: p.def } : p.kind === 'int' ? { key, kind: 'stepper', min: p.min, max: p.max, step: 1, value: p.def } : p.kind === 'choice' ? { key, kind: 'dropdown', options: p.options, value: p.def } : p.kind === 'color' ? { key, kind: 'colour', value: p.def } : p.kind === 'text' ? { key, kind: 'text', max: p.max, value: p.def } : { key, kind: 'switch', value: p.def });
+/** a form for params: one control each (a slider, a whole-number slider, a number box, a dropdown, a colour, a switch,
+ *  a text box, a vector), with its range, unit and default. One schema for every kind of params: a shape's (num, int,
+ *  choice, color, flag, text), a shape package's (its shape's), an element's or a world's (core › world › settings ›
+ *  params: number, enum, bool, color, vector, text). `controls` is the schema an editor draws (tools › catalog);
+ *  `render` makes a plain one in a page (its values go to `onChange`) */
+export interface FormControl {
+  key: string; kind: 'slider' | 'stepper' | 'number' | 'dropdown' | 'colour' | 'switch' | 'text' | 'vector';
+  min?: number; max?: number; step?: number; options?: readonly string[];
+  /** its default (an element's: its value now) */
+  value: unknown;
+  /** a text's most characters; a vector's count of numbers */
+  size?: number; unit?: string; describe?: string;
+}
+/** a world's or an element's param (core › world › settings › params; an element's `params()` adds its get and set) */
+export type KnobSpec = import('../../world/element.ts').ParamSpec & { get?: () => unknown };
+/** what form() takes: a shape, a package (its shape), an element (its params()), or params of either kind by name */
+export type FormSource = Shape<any, any> | { shape: Shape<any, any> } | { params(): Record<string, KnobSpec> } | Record<string, ParamSpec | KnobSpec>; // eslint-disable-line @typescript-eslint/no-explicit-any
+const controlOf = (key: string, p: ParamSpec | KnobSpec): FormControl => {
+  if ('kind' in p) return p.kind === 'num' ? { key, kind: 'slider', min: p.min, max: p.max, step: (p.max - p.min) / 100, value: p.def } : p.kind === 'int' ? { key, kind: 'stepper', min: p.min, max: p.max, step: 1, value: p.def } : p.kind === 'choice' ? { key, kind: 'dropdown', options: p.options, value: p.def } : p.kind === 'color' ? { key, kind: 'colour', value: p.def } : p.kind === 'text' ? { key, kind: 'text', size: p.max, max: p.max, value: p.def } : { key, kind: 'switch', value: p.def };
+  if (!p || typeof p !== 'object' || !('type' in p)) throw new AslnutError('E-DATA-001', `param '${key}' is neither a shape's (num, int, choice, color, flag, text) nor a world's ({ type, default })`, { where: key, fix: "params: { size: num(.3, 2, .6) } or { size: { type: 'number', range: [.3, 2], default: .6 } }" });
+  const value = typeof p.get === 'function' ? p.get() : p.default, more = { ...(p.unit ? { unit: p.unit } : {}), ...(p.describe ? { describe: p.describe } : {}) };
+  if (p.type === 'number') return p.range ? { key, kind: 'slider', min: p.range[0], max: p.range[1], step: (p.range[1] - p.range[0]) / 100, value, ...more } : { key, kind: 'number', value, ...more };
+  if (p.type === 'enum') return { key, kind: 'dropdown', options: p.options ?? [], value, ...more };
+  if (p.type === 'bool') return { key, kind: 'switch', value: !!value, ...more };
+  if (p.type === 'color') return { key, kind: 'colour', value, ...more };
+  if (p.type === 'vector') return { key, kind: 'vector', size: Array.isArray(p.default) ? p.default.length : 3, value, ...(p.range ? { min: p.range[0], max: p.range[1] } : {}), ...more };
+  return { key, kind: 'text', value, ...more };
+};
+const paramsOfSource = (s: FormSource): Record<string, ParamSpec | KnobSpec> => {
+  const isShape = (x: unknown): x is Shape => x instanceof Shape || (!!x && typeof (x as Shape).make === 'function' && typeof (x as Shape).spec === 'object');
+  if (isShape(s)) return s.spec.params ?? {};
+  const o = s as Record<string, unknown>;
+  if (isShape(o.shape)) return o.shape.spec.params ?? {};
+  if (typeof o.params === 'function') return (o.params as () => Record<string, KnobSpec>)();
+  return s as Record<string, ParamSpec | KnobSpec>;
+};
+export function form<D extends Record<string, ParamSpec>, X>(s: Shape<D, X>): { controls: FormControl[]; render(into: HTMLElement, onChange: (p: Partial<ParamsOf<D>>) => void): HTMLElement };
+export function form(s: FormSource): { controls: FormControl[]; render(into: HTMLElement, onChange: (p: Record<string, unknown>) => void): HTMLElement };
+export function form(s: FormSource): { controls: FormControl[]; render(into: HTMLElement, onChange: (p: Record<string, unknown>) => void): HTMLElement } {
+  const controls: FormControl[] = Object.entries(paramsOfSource(s)).map(([key, p]) => controlOf(key, p));
   return {
     controls,
     render(into, onChange) {
       const box = document.createElement('div'), now: Record<string, unknown> = Object.fromEntries(controls.map((c) => [c.key, c.value]));
       for (const c of controls) {
-        const row = document.createElement('label'); row.style.display = 'block'; row.textContent = `${c.key} `;
+        const row = document.createElement('label'); row.style.display = 'block'; row.textContent = `${c.key}${c.unit ? ` (${c.unit})` : ''} `;
+        if (c.kind === 'vector') {
+          const v = Array.isArray(c.value) ? [...(c.value as number[])] : Array.from({ length: c.size ?? 3 }, () => 0);
+          v.forEach((x, i) => { const inp = document.createElement('input'); inp.type = 'number'; inp.value = String(x); inp.style.width = '5em'; inp.addEventListener('input', () => { v[i] = Number(inp.value); now[c.key] = [...v]; onChange({ ...now }); }); row.appendChild(inp); });
+          box.appendChild(row); continue;
+        }
         let el: HTMLInputElement | HTMLSelectElement;
         if (c.kind === 'dropdown') { const sel = document.createElement('select'); for (const o of c.options ?? []) { const op = document.createElement('option'); op.value = o; op.textContent = o; sel.appendChild(op); } sel.value = String(c.value); el = sel; }
-        else { const inp = document.createElement('input'); inp.type = c.kind === 'colour' ? 'color' : c.kind === 'switch' ? 'checkbox' : c.kind === 'text' ? 'text' : 'range'; if (c.max !== undefined && c.kind === 'text') inp.maxLength = c.max; if (c.min !== undefined && c.kind !== 'text') inp.min = String(c.min); if (c.max !== undefined && c.kind !== 'text') inp.max = String(c.max); if (c.step !== undefined) inp.step = String(c.step); if (c.kind === 'switch') inp.checked = !!c.value; else inp.value = String(c.value); el = inp; }
-        el.addEventListener('input', () => { now[c.key] = c.kind === 'switch' ? (el as HTMLInputElement).checked : c.kind === 'slider' || c.kind === 'stepper' ? Number(el.value) : el.value; onChange({ ...now } as Partial<ParamsOf<D>>); });
+        else { const inp = document.createElement('input'); inp.type = c.kind === 'colour' ? 'color' : c.kind === 'switch' ? 'checkbox' : c.kind === 'text' ? 'text' : c.kind === 'number' ? 'number' : 'range'; if (c.max !== undefined && c.kind === 'text') inp.maxLength = c.max; if (c.min !== undefined && c.kind !== 'text') inp.min = String(c.min); if (c.max !== undefined && c.kind !== 'text') inp.max = String(c.max); if (c.step !== undefined) inp.step = String(c.step); if (c.kind === 'switch') inp.checked = !!c.value; else inp.value = String(c.value); el = inp; }
+        el.addEventListener('input', () => { now[c.key] = c.kind === 'switch' ? (el as HTMLInputElement).checked : c.kind === 'slider' || c.kind === 'stepper' || c.kind === 'number' ? Number(el.value) : el.value; onChange({ ...now }); });
         row.appendChild(el); box.appendChild(row);
       }
       into.appendChild(box); return box;

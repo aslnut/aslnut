@@ -20,8 +20,9 @@ export class Gates {
   swap: Swap | null = null;
   /** what a level change hid: when, and the level it was shown at */
   private hidden = new Map<Element, { at: number; level: string }>();
-  /** counts, for the observation panel and the measures: level changes, swaps done, elements let go */
-  readonly counts = { changes: 0, swaps: 0, released: 0, waitedMs: 0 };
+  /** counts, for the observation panel and the measures: level changes, swaps done, elements let go, elements whose
+   *  props by level were applied (one each a level change that changed one of them) */
+  readonly counts = { changes: 0, swaps: 0, released: 0, waitedMs: 0, applied: 0 };
   readonly levels: Levels;
   constructor(levels: Levels) { this.levels = levels; }
 

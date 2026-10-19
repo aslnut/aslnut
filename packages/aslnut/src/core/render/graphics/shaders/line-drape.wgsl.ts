@@ -122,19 +122,8 @@ fn footCorner(k: i32) -> i32 {
   let t = dot(rp, i.dir.xyz) / i.dir.w;
   let s = dot(rp, i.side);
   let mpp = mppAt(position);
-  var across = s / mpp;
-  // round caps at the line's ends; a joint belongs to the segment after it
-  if (t < 0.0) {
-    if (i.ends.z > 0.5) {
-      discard;
-    }
-    across = length(vec2f(s, t * i.dir.w)) / mpp;
-  } else if (t >= 1.0) {
-    if (i.ends.w > 0.5) {
-      discard;
-    }
-    across = length(vec2f(s, (t - 1.0) * i.dir.w)) / mpp;
-  }
+  // its caps at the line's ends, its joints (acrossAt)
+  let across = acrossAt(t, s, i.dir.w, mpp, i.ends);
   if (abs(across) > i.halfw) {
     discard;
   }
@@ -146,10 +135,8 @@ fn footCorner(k: i32) -> i32 {
   let value = i.value;
   let reveal = i.state.z;
   let mode = u.reveal.x;
-  // dashes, flowing along at u.b.y px a second (0: still)
-  let dashP = max(u.a.z + u.a.w, 0.0001);
-  let dashAt = alongPx - time * u.b.y;
-  if (u.a.z > 0.0 && (dashAt - floor(dashAt / dashP) * dashP) > u.a.z) {
+  // dashes (the feature's own pattern and offset), flowing along at u.b.y px a second (0: still)
+  if (!dashOn(alongPx + featAt(i.idx, 3).w - time * u.b.y, featAt(i.idx, 6))) {
     discard;
   }
   if (mode == 1.0 || mode == 3.0) {

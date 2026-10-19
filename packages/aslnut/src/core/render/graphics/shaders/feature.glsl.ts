@@ -2,7 +2,7 @@
 import { FRAME_GLSL } from './frame.glsl.ts';
 
 export const FEATURE_GLSL = /* glsl */ `${FRAME_GLSL}
-layout(std140) uniform L { vec4 origin; vec4 look; vec4 reveal; vec4 hover; vec4 hover2; vec4 sel; vec4 sel2; vec4 a; vec4 b; vec4 c; vec4 ground; vec4 slots; vec4 slots2; vec4 k0; vec4 k3; vec4 size; } u;
+layout(std140) uniform L { vec4 origin; vec4 look; vec4 reveal; vec4 hover; vec4 hover2; vec4 sel; vec4 sel2; vec4 a; vec4 b; vec4 c; vec4 ground; vec4 slots; vec4 slots2; vec4 k0; vec4 k3; vec4 size; vec4 slots3; vec4 k6; } u;
 uniform highp sampler2D feat;
 const int FW = 512;
 const float PI = 3.141592653589793;
@@ -71,6 +71,9 @@ float slotOf(int plane) {
   if (plane == 4) {
     s = u.slots.w;
   }
+  if (plane == 6) {
+    s = u.slots3.x;
+  }
   return s;
 }
 vec4 constOf(int plane) {
@@ -82,6 +85,9 @@ vec4 constOf(int plane) {
   }
   if (plane == 5) {
     return vec4(0.0, 0.0, 0.0, 1.0);
+  }
+  if (plane == 6) {
+    return u.k6;
   }
   return vec4(0.0);
 }
@@ -101,6 +107,42 @@ vec4 colourOf(float index, vec4 state) {
 }
 float raiseOf(vec4 state) {
   return u.hover2.x * state.x + u.sel2.x * state.y;
+}
+bool dashOn(float at, vec4 d) {
+  float p = d.x + d.y + d.z + d.w;
+  if (d.x <= 0.0 || p <= 0.0001) {
+    return true;
+  }
+  float k = at - floor(at / p) * p;
+  return k < d.x || (k >= d.x + d.y && k < d.x + d.y + d.z);
+}
+float acrossAt(float t, float s, float len, float k, vec4 ends) {
+  float cap = u.a.z;
+  if (t < 0.0) {
+    if (ends.z > 0.5 || (cap > 0.5 && cap < 1.5)) {
+      return 1e9;
+    }
+    if (cap > 1.5) {
+      return max(abs(s), -t * len) / k;
+    }
+    return length(vec2(s, t * len)) / k;
+  }
+  if (t >= 1.0) {
+    if (ends.w > 0.5) {
+      if (u.a.w < 0.5) {
+        return 1e9;
+      }
+      return length(vec2(s, (t - 1.0) * len)) / k;
+    }
+    if (cap > 0.5 && cap < 1.5) {
+      return 1e9;
+    }
+    if (cap > 1.5) {
+      return max(abs(s), (t - 1.0) * len) / k;
+    }
+    return length(vec2(s, (t - 1.0) * len)) / k;
+  }
+  return s / k;
 }
 float easeOutBack(float t) {
   float c = 1.70158;

@@ -42,11 +42,11 @@ void main() {
 };
 
 interface PBuf extends GBuffer { buf: WebGLBuffer; target: number; /** a number for the vertex arrays' cache */ vid: number; version: number }
-interface PTex extends GTexture { tex: WebGLTexture; target: number }
+interface PTex extends GTexture { tex: WebGLTexture; target: number; version: number }
 interface PProg extends Program { prog: WebGLProgram | null; vao: WebGLVertexArrayObject | null; ok: boolean; depthUnit: number; /** the unit of the terrain's kept depth (groundDepth) */ groundUnit: number; /** a vertex array per (instances, vertices) pair it draws with: their pointers set once */ vaos: Map<number, WebGLVertexArrayObject> }
 /** a picture drawn into: colour and depth renderbuffers, and (made on first need) a copy of its depth as a texture */
 interface Scene { fb: WebGLFramebuffer; color: WebGLRenderbuffer | null; colorTex?: WebGLTexture; depth: WebGLRenderbuffer; w: number; h: number; copyFb: WebGLFramebuffer | null; copy: WebGLTexture | null; /** the terrain's depth kept before the solids (made on first need) */ keptFb?: WebGLFramebuffer | null; kept?: WebGLTexture | null }
-interface PTarget extends GTarget { scene: Scene | null; layerFb?: WebGLFramebuffer }
+interface PTarget extends GTarget { scene: Scene | null; layerFb?: WebGLFramebuffer; /** the texture it draws into (its pixels' version counted per frame) */ into?: PTex }
 
 export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graphics {
   const gl = canvas.getContext('webgl2', { antialias: false, depth: true, stencil: false, alpha: false, premultipliedAlpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' }) as WebGL2RenderingContext | null;
@@ -305,9 +305,10 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
       bytes += size; const lab = desc.label ?? 'texture'; held.add(lab, size);
       const fmt = desc.format === 'r32f' ? gl.RED : gl.RGBA, type = desc.format === 'rgba8' ? gl.UNSIGNED_BYTE : gl.FLOAT;
       const t: PTex = {
-        desc, tex, target,
+        desc, tex, target, version: 0,
         write(d, o = {}) {
           if (dead) return;
+          t.version++;
           const w = o.width ?? desc.width, h = o.height ?? desc.height;
           timed(() => {
             gl.bindTexture(target, tex);
@@ -319,6 +320,7 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
         },
         writeImage(src, o = {}) {
           if (dead) return;
+          t.version++;
           // (a canvas's colours times alpha here; a bitmap keeps how it was made: premultiplyAlpha: 'premultiply')
           if (o.premultiplied) gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
           timed(() => {
@@ -347,6 +349,7 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
     copyLayers(from: GTexture, to: GTexture, layers: number) {
       const a = from as PTex, b = to as PTex, n = Math.min(layers, a.desc.layers ?? 1, b.desc.layers ?? 1);
       if (dead || n <= 0) return true;
+      b.version++;
       // (each layer drawn into the new one: a float one only where floats can be drawn into)
       if (a.desc.format !== 'rgba8' && !caps.floatTargets) return false;
       const w = Math.min(a.desc.width, b.desc.width), h = Math.min(a.desc.height, b.desc.height);
@@ -360,15 +363,15 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
       if (tx.target === gl.TEXTURE_2D) gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tx.tex, 0); else gl.framebufferTextureLayer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, tx.tex, 0, layer);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      const t: PTarget = { width: tx.desc.width, height: tx.desc.height, scene: null, layerFb: fb, destroy() { if (owned.delete(t)) { tally.remove('targets'); gone(() => gl.deleteFramebuffer(fb)); } } };
+      const t: PTarget = { width: tx.desc.width, height: tx.desc.height, scene: null, layerFb: fb, into: tx, destroy() { if (owned.delete(t)) { tally.remove('targets'); gone(() => gl.deleteFramebuffer(fb)); } } };
       owned.add(t); tally.add('targets');
       return t;
     },
     target(w: number, h: number, o: { sampled?: boolean; label?: string } = {}) {
       const W = Math.max(1, Math.round(w)), H = Math.max(1, Math.round(h)), scene = makeScene(W, H, !!o.sampled);
       bytes += W * H * 8; const lab = o.label ?? 'target'; held.add(lab, W * H * 8);
-      const texture: PTex | undefined = scene.colorTex ? { desc: { label: 'target', width: W, height: H, format: 'rgba8', filter: 'nearest' }, tex: scene.colorTex, target: gl.TEXTURE_2D, write() { throw new AslnutError('E-GPU-003', 'a target is drawn into, not written', { fix: 'draw into it with frame({ target })' }); }, writeImage() { throw new AslnutError('E-GPU-003', 'a target is drawn into, not written', { fix: 'draw into it with frame({ target })' }); }, destroy() {} } : undefined;
-      const t: PTarget = { width: W, height: H, scene, texture, destroy() { if (owned.delete(t)) { bytes -= W * H * 8; held.remove(lab, W * H * 8); tally.remove('targets', W * H * 8); gone(() => freeScene(scene)); } } };
+      const texture: PTex | undefined = scene.colorTex ? { desc: { label: 'target', width: W, height: H, format: 'rgba8', filter: 'nearest' }, tex: scene.colorTex, target: gl.TEXTURE_2D, version: 0, write() { throw new AslnutError('E-GPU-003', 'a target is drawn into, not written', { fix: 'draw into it with frame({ target })' }); }, writeImage() { throw new AslnutError('E-GPU-003', 'a target is drawn into, not written', { fix: 'draw into it with frame({ target })' }); }, destroy() {} } : undefined;
+      const t: PTarget = { width: W, height: H, scene, texture, into: texture, destroy() { if (owned.delete(t)) { bytes -= W * H * 8; held.remove(lab, W * H * 8); tally.remove('targets', W * H * 8); gone(() => freeScene(scene)); } } };
       owned.add(t); tally.add('targets', W * H * 8);
       return t;
     },
@@ -441,6 +444,7 @@ export function createWebGL2(canvas: HTMLCanvasElement | OffscreenCanvas): Graph
     frame(draws: DrawCall[], o: FrameOptions) {
       if (dead || gl.isContextLost()) return o.read ? Promise.reject(new AslnutError('E-GPU-004', 'the WebGL2 context was lost', { fix: 'reload the page' })) : null;
       const tg = o.target as PTarget | undefined;
+      if (tg?.into) tg.into.version++;
       const width = tg ? tg.width : this.width, height = tg ? tg.height : this.height;
       // a layer of a texture (a tile's ground marks): colour only, no depth, the draws in order
       if (tg?.layerFb) {

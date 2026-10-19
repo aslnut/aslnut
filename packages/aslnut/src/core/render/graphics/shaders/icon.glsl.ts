@@ -15,7 +15,7 @@ vec2 iconCorner(int v) {
   return vec2(x, y);
 }
 vec4 iconItem(int e, int k) {
-  int i = e * 2 + k;
+  int i = e * 3 + k;
   return texelFetch(items, ivec2(i % 4096, i / 4096), 0);
 }
 float iconAngle(vec3 p, float h) {
@@ -25,9 +25,10 @@ float iconAngle(vec3 p, float h) {
   return dot(d, d) > 1e-12 ? atan(d.x, d.y) : 0.0;
 }
 void main() {
-  int e = gl_InstanceID;
+  int slot = gl_InstanceID;
+  vec4 it = iconItem(slot, 0);
+  int e = int(it.w + 0.5);
   vec4 a = anchorOf(e);
-  vec4 it = iconItem(e, 0);
   vec2 corner = iconCorner(gl_VertexID);
   gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
   vUv = vec2(0.0);
@@ -37,22 +38,24 @@ void main() {
   if (a.w < 0.5 || it.x < 0.0 || anchorShaped(e) || anchorBehind(a.xyz)) {
     return;
   }
-  float size = sizePx(it.y, u.size, a.xyz);
+  vec4 fit = iconItem(slot, 2);
+  vec2 sz = vec2(sizePx(it.y, u.size, a.xyz), sizePx(it.z, u.size, a.xyz));
+  vec2 local = vec2((corner.x + 1.0) * 0.5 - fit.x, fit.y - (1.0 - corner.y) * 0.5) * sz;
   float ang = u.look.w > 0.5 ? iconAngle(a.xyz, anchorTurn(e)) : 0.0;
   float c = cos(ang);
   float sn = sin(ang);
-  vec2 r = vec2(corner.x * c + corner.y * sn, -corner.x * sn + corner.y * c);
+  vec2 r = vec2(local.x * c + local.y * sn, -local.x * sn + local.y * c);
   vec4 clip = frame.viewProj * vec4(a.xyz, 1.0);
   if (clip.w < 0.01) {
     return;
   }
-  vec2 off = r * size * frame.size.z / frame.size.xy * clip.w;
+  vec2 off = r * 2.0 * frame.size.z / frame.size.xy * clip.w;
   gl_Position = clipOut(vec4(clip.xy + off, clip.z, clip.w));
-  vUv = vec2(corner.x * 0.5 + 0.5, 0.5 - corner.y * 0.5);
+  vUv = vec2(0.5) + (vec2(corner.x * 0.5 + 0.5, 0.5 - corner.y * 0.5) - vec2(0.5)) * fit.zw;
   float col = mod(it.x, u.look.y);
   float row = floor(it.x / u.look.y);
   vCell = vec4(col / u.look.y, row / u.look.z, 1.0 / u.look.y, 1.0 / u.look.z);
-  vTint = iconItem(e, 1);
+  vTint = iconItem(slot, 1);
 }
 `;
 const ICON_FS = /* glsl */ `

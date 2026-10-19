@@ -143,6 +143,38 @@ test('regions: which region a place is in, parents and children, numbers rolled 
   assert.equal(up2.get('E')!.props.count, 1, 'live');
 });
 
+test('roll-ups and joins let go of what they follow when their last layer is removed or their world disposed (a count of live subscriptions), and catch up when read', async () => {
+  const { world, area } = await import('../src/index.ts');
+  const lgas = data.geojson({ type: 'FeatureCollection', features: [sq(0, 0, 2, { name: 'West' }, 'W'), sq(2, 0, 2, { name: 'East' }, 'E')] });
+  const subs = data.geojson({ type: 'FeatureCollection', features: [sq(0, 0, 1, { name: 'w1' }, 'w1'), sq(2, 0, 1, { name: 'e1' }, 'e1')] });
+  const tree = await regions.tree({ levels: ['lga', 'suburb'], sources: { lga: lgas, suburb: subs } }).load(new Loader({ store: new MemoryStore() }));
+  const crime = data.rows([{ id: 1, suburb: 'w1', count: 3 }, { id: 2, suburb: 'e1', count: 10 }]);
+  const live = () => crime.watching + lgas.watching + subs.watching;
+  assert.equal(live(), 0);
+  // a layer of each world: the shapes joined with a roll-up, over and over (as an app making views of it does)
+  const w = await world(null);
+  for (let k = 0; k < 5; k++) {
+    const up = tree.rollup(crime, { on: 'suburb', to: 'lga', sum: ['count'] });
+    w.add(area({ id: `by-lga-${k}`, data: tree.level('lga').join(up, { on: 'id' }) }));
+  }
+  await new Promise((ok) => setImmediate(ok));
+  assert.equal(crime.watching, 5, 'one roll-up following the rows per layer');
+  for (let k = 0; k < 4; k++) w.remove(`by-lga-${k}`);
+  assert.equal(crime.watching, 1, 'removed layers: their roll-ups let go');
+  w.dispose();
+  assert.equal(live(), 0, 'the world disposed: nothing follows the rows or the levels any more');
+  // a roll-up read with nothing following: it catches up first; taken up by a layer again: live again
+  const up = tree.rollup(crime, { on: 'suburb', to: 'lga', sum: ['count'] }), j = tree.level('lga').join(up, { on: 'id' });
+  up.close(); j.close(); assert.equal(live(), 0, 'used without a layer: closed by hand');
+  crime.patch(2, { count: 4 });
+  assert.equal(up.get('E')!.props.count, 4, 'read closed: caught up');
+  assert.equal(j.get('E')!.props.count, 4, 'the join too');
+  const w2 = await world(null); w2.add(area({ id: 'again', data: j }));
+  assert.ok(crime.watching >= 1, 'a layer took it up: following again');
+  crime.patch(2, { count: 6 }); assert.equal(up.get('E')!.props.count, 6, 'live');
+  w2.dispose(); assert.equal(live(), 0);
+});
+
 test('tiles at a URL: MVT and GeoJSON for the view, pieces of one id joined; TMS rows; missing tiles are none', async () => {
   const f: Feature[] = [
     { id: 1, props: { name: 'across' }, geometry: { type: 'Polygon', coordinates: [[[-0.1, -0.1], [0.1, -0.1], [0.1, 0.1], [-0.1, 0.1], [-0.1, -0.1]]] } },
@@ -243,3 +275,17 @@ test('a stream closed by its last layer opens again for the next one (remove the
   assert.equal(stopped, 2);
 });
 
+
+test('a join taken up by a layer is not joined again (no change told, nothing eases on a still view)', async () => {
+  const { world, area } = await import('../src/index.ts');
+  const shapes = data.rows([{ id: 'a', lon: 0, lat: 0 }]), stat = data.rows([{ id: 'a', v: 1 }]);
+  const joined = shapes.join(stat, { on: 'id' });
+  let told = 0; joined.watch(() => { told++; }, { now: true });
+  const w = await world(null);
+  w.add(area({ id: 'one', data: joined }), area({ id: 'two', data: joined }));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(told, 0, 'no change told by being taken up');
+  stat.patch('a', { v: 2 });
+  assert.equal(told, 1, 'a real change is told once');
+  w.dispose();
+});

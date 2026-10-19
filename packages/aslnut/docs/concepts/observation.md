@@ -117,7 +117,7 @@ world(canvas, { observation: { levels: [{ name: 'campus', from: 0 }, { name: 'bu
 | the orbit acrobatic: only uniforms move each frame | [built] (measured with an acrobatic script at phone size on WebGPU and WebGL2: within a level no load, no restyle, no fade) |
 | the ladder, the level, the binding (margin, dwell) | [built] |
 | the app sets the level | [built] |
-| presence by level (`when: { level }`) | [built] |
+| presence by level (`when: { level }`), and any prop by level (`size: { level: { district: 6, street: 14 } }`: applied once a level change, through the element's own `setProps`) | [built] |
 | data ahead, swapped once, kept | [built] |
 | other observers (eyes, sensors, fixed views) | [planned] |
 | render detail: parents shown while loading, never a hole | [built] |

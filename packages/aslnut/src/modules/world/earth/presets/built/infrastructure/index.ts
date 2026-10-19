@@ -7,6 +7,7 @@ import { Line, type LineProps } from '../../../../../../core/encoding/marks/line
 import type { Entry } from '../../../../../../core/encoding/marks/features.ts';
 import type { FrameContext } from '../../../../../../core/world/element.ts';
 import type { P2 } from '../../../shared/plan.ts';
+import type { Leveled } from '../../../../../../core/observation/presence.ts';
 
 export interface PoleLook { spacing: number; height: number; chance: number; wires: boolean; color: string; wire: string }
 export const POLES: PoleLook = { spacing: 42, height: 10, chance: 0.75, wires: true, color: '#6b5a46', wire: '#1f2328' };
@@ -40,8 +41,10 @@ export interface WiresProps<D> extends LineProps<D> {
 }
 /** wires between poles: each span a line that sags between the pole tops, one pixel wide, at true heights */
 export class Wires<D = WireDatum> extends Line<D> {
-  private w: WiresProps<D>; private pf = new Int32Array(0);
-  constructor(p: WiresProps<D>) { super({ width: 1, color: POLES.wire, pickable: false, detail: { step: 1e12 }, ...p, on: 'absolute' } as LineProps<D>); this.w = p; }
+  /** its props as it runs (given by level: the values for the level now) */
+  private get w(): WiresProps<D> { return this.props as unknown as WiresProps<D>; }
+  private pf = new Int32Array(0);
+  constructor(p: WiresProps<D>) { super({ width: 1, color: POLES.wire, pickable: false, detail: { step: 1e12 }, ...p, on: 'absolute' } as LineProps<D>); }
   // a row's datum is the span itself, or a feature holding it in its props (rows from a source)
   private spanOf(d: D): WireDatum { if (this.w.span) return this.w.span(d); const x = d as unknown as WireDatum & { props?: WireDatum }; return x.a ? x : x.props!; }
   protected override read(now: number): Entry<D>[] {
@@ -67,4 +70,4 @@ export class Wires<D = WireDatum> extends Line<D> {
     this.upload(ctx);
   }
 }
-export const wires = <D = WireDatum>(p: WiresProps<D>) => new Wires<D>(p);
+export const wires = <D = WireDatum>(p: Leveled<WiresProps<D>>) => new Wires<D>(p as WiresProps<D>);

@@ -2,7 +2,7 @@
 // WebGL2): the ready rules keep what they should, move what they should; probes; kernels; custom rules.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { field, rules, kernel, constants } from '../src/index.ts';
+import { field, rules, kernel, constants, world } from '../src/index.ts';
 
 const AREA = { centre: [145.12, -37.92] as [number, number], size: 400 };
 const sum = (a: Float32Array) => a.reduce((s, v) => s + v, 0);
@@ -83,4 +83,25 @@ test('constants: citable tables, one number by its path, your own table, materia
   assert.equal(constants.get('mine.basalt.albedo'), 0.1);
   assert.throws(() => constants.add('bad', { x: { y: { value: 1 } as never } }), /needs \{ value, unit, source \}/);
   const [a] = constants.materials(['asphalt']); assert.equal(a!.albedo, 0.08); assert.equal(a!.label, 'Asphalt road');
+});
+
+test('constants: what a world adds stays its own (w.constants, a scope of the process\'s tables); constants.add is the process\'s, seen by every world', async () => {
+  const a = await world(null), b = await world(null);
+  a.constants.add('site', { slab: { albedo: { value: 0.3, unit: '', source: 'a survey' } } });
+  a.constants.add('materials', { asphalt: { albedo: { value: 0.2, unit: '', source: 'a fresh coat' } } });
+  assert.equal(a.constants.get('site.slab.albedo'), 0.3);
+  assert.throws(() => b.constants.get('site.slab.albedo'), /no constant/, 'the other world does not see it');
+  assert.throws(() => constants.get('site.slab.albedo'), /no constant/, 'nor the process');
+  assert.equal(a.constants.materials(['asphalt'])[0]!.albedo, 0.2, 'its own value over the table');
+  assert.equal(a.constants.get('materials.grass.albedo'), constants.get('materials.grass.albedo'), 'the rest of the table as the process has it');
+  assert.equal(b.constants.materials(['asphalt'])[0]!.albedo, 0.08); assert.equal(constants.get('materials.asphalt.albedo'), 0.08);
+  // the process's own: every world sees it (also one made before), as the docs say
+  constants.add('shared', { x: { k: { value: 2, unit: '', source: 'test' } } });
+  assert.equal(a.constants.get('shared.x.k'), 2); assert.equal(b.constants.get('shared.x.k'), 2);
+  assert.ok(b.constants.names().includes('shared') && !b.constants.names().includes('site') && a.constants.names().includes('site'));
+  // a scope of a scope: reads both, keeps its own
+  const s = a.constants.scope(); s.add('site', { slab: { emissivity: { value: 0.9, unit: '', source: 'test' } } });
+  assert.equal(s.get('site.slab.albedo'), 0.3); assert.equal(s.get('site.slab.emissivity'), 0.9);
+  assert.throws(() => a.constants.get('site.slab.emissivity'), /no constant/);
+  a.dispose(); b.dispose();
 });

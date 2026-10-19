@@ -20,9 +20,9 @@ const DEPTH = { less: 'less', 'less-equal': 'less-equal', 'greater-equal': 'grea
 let nextId = 1;
 
 interface PBuf extends GBuffer { id: number; buf: GPUBuffer; version: number }
-interface PTex extends GTexture { id: number; view: GPUTextureView; tex: GPUTexture }
+interface PTex extends GTexture { id: number; view: GPUTextureView; tex: GPUTexture; version: number }
 interface PProg extends Omit<Program, 'ready'> { id: number; pipe: GPURenderPipeline | null; layouts: GPUBindGroupLayout[]; ok: boolean; ready: Promise<void>; vslot: number; depthLayout: GPUBindGroupLayout | null }
-interface PTarget extends GTarget { layerView?: GPUTextureView; color?: GPUTexture; depth?: GPUTexture }
+interface PTarget extends GTarget { layerView?: GPUTextureView; color?: GPUTexture; depth?: GPUTexture; /** the texture it draws into (its pixels' version counted per frame) */ into?: PTex }
 
 export async function createWebGPU(canvas: HTMLCanvasElement | OffscreenCanvas, o: { powerPreference?: GPUPowerPreference } = {}): Promise<Graphics> {
   const gpu = (navigator as Navigator & { gpu?: GPU }).gpu;
@@ -148,15 +148,17 @@ export async function createWebGPU(canvas: HTMLCanvasElement | OffscreenCanvas, 
       const size = desc.width * desc.height * (desc.layers ?? 1) * BPP[desc.format];
       bytes += size; const lab = desc.label ?? 'texture'; held.add(lab, size);
       const t: PTex = {
-        id: nextId++, desc, tex, view: tex.createView({ dimension: desc.layers !== undefined ? '2d-array' : '2d' }),
+        id: nextId++, desc, tex, view: tex.createView({ dimension: desc.layers !== undefined ? '2d-array' : '2d' }), version: 0,
         write(d, o = {}) {
           if (dead) return;
+          t.version++;
           const w = o.width ?? desc.width, h = o.height ?? desc.height;
           device.queue.writeTexture({ texture: tex, origin: [o.x ?? 0, o.y ?? 0, o.layer ?? 0] }, d.buffer as ArrayBuffer, { offset: d.byteOffset, bytesPerRow: w * BPP[desc.format], rowsPerImage: h }, [w, h, 1]);
           nUp++; uploads += w * h * BPP[desc.format];
         },
         writeImage(src, o = {}) {
           if (dead) return;
+          t.version++;
           device.queue.copyExternalImageToTexture({ source: src }, { texture: tex, origin: [o.x ?? 0, o.y ?? 0, o.layer ?? 0], premultipliedAlpha: !!o.premultiplied }, [src.width, src.height, 1]);
           nUp++; uploads += src.width * src.height * 4;
         },
@@ -168,6 +170,7 @@ export async function createWebGPU(canvas: HTMLCanvasElement | OffscreenCanvas, 
     copyLayers(from: GTexture, to: GTexture, layers: number) {
       const a = from as PTex, b = to as PTex, n = Math.min(layers, a.desc.layers ?? 1, b.desc.layers ?? 1);
       if (dead || n <= 0) return true;
+      b.version++;
       const enc = device.createCommandEncoder({ label: 'copy layers' });
       enc.copyTextureToTexture({ texture: a.tex }, { texture: b.tex }, [Math.min(a.desc.width, b.desc.width), Math.min(a.desc.height, b.desc.height), n]);
       device.queue.submit([enc.finish()]);
@@ -175,7 +178,7 @@ export async function createWebGPU(canvas: HTMLCanvasElement | OffscreenCanvas, 
     },
     layerTarget(texture: GTexture, layer: number) {
       const tx = texture as PTex;
-      const t: PTarget = { width: tx.desc.width, height: tx.desc.height, layerView: tx.tex.createView({ dimension: '2d', baseArrayLayer: layer, arrayLayerCount: 1 }), destroy() { if (owned.delete(t)) tally.remove('targets'); } };
+      const t: PTarget = { width: tx.desc.width, height: tx.desc.height, layerView: tx.tex.createView({ dimension: '2d', baseArrayLayer: layer, arrayLayerCount: 1 }), into: tx, destroy() { if (owned.delete(t)) tally.remove('targets'); } };
       owned.add(t); tally.add('targets');
       return t;
     },
@@ -185,8 +188,8 @@ export async function createWebGPU(canvas: HTMLCanvasElement | OffscreenCanvas, 
       const depthT = device.createTexture({ size: [W, H], format: 'depth24plus', usage: DEPTH_USAGE });
       bytes += W * H * 8; const lab = o.label ?? 'target'; held.add(lab, W * H * 8);
       // its colour as a texture draws read (the shadow map): never written from the CPU
-      const texture: PTex | undefined = o.sampled ? { id: nextId++, desc: { label: 'target', width: W, height: H, format: 'rgba8', filter: 'nearest' }, tex: color, view: color.createView(), write() { throw new AslnutError('E-GPU-003', 'a target is drawn into, not written', { fix: 'draw into it with frame({ target })' }); }, writeImage() { throw new AslnutError('E-GPU-003', 'a target is drawn into, not written', { fix: 'draw into it with frame({ target })' }); }, destroy() {} } : undefined;
-      const t: PTarget = { width: W, height: H, color, depth: depthT, texture, destroy() { if (owned.delete(t)) { gone(() => { color.destroy(); depthT.destroy(); }); bytes -= W * H * 8; held.remove(lab, W * H * 8); tally.remove('targets', W * H * 8); groups.clear(); } } };
+      const texture: PTex | undefined = o.sampled ? { id: nextId++, desc: { label: 'target', width: W, height: H, format: 'rgba8', filter: 'nearest' }, tex: color, view: color.createView(), version: 0, write() { throw new AslnutError('E-GPU-003', 'a target is drawn into, not written', { fix: 'draw into it with frame({ target })' }); }, writeImage() { throw new AslnutError('E-GPU-003', 'a target is drawn into, not written', { fix: 'draw into it with frame({ target })' }); }, destroy() {} } : undefined;
+      const t: PTarget = { width: W, height: H, color, depth: depthT, texture, into: texture, destroy() { if (owned.delete(t)) { gone(() => { color.destroy(); depthT.destroy(); }); bytes -= W * H * 8; held.remove(lab, W * H * 8); tally.remove('targets', W * H * 8); groups.clear(); } } };
       owned.add(t); tally.add('targets', W * H * 8);
       return t;
     },
@@ -256,6 +259,7 @@ export async function createWebGPU(canvas: HTMLCanvasElement | OffscreenCanvas, 
     frame(draws: DrawCall[], o: FrameOptions) {
       if (dead) return o.read ? Promise.reject(new AslnutError('E-GPU-004', 'the WebGPU device was lost', { fix: 'reload the page' })) : null;
       const tg = o.target as PTarget | undefined;
+      if (tg?.into) tg.into.version++;
       const blocks = (pass: GPURenderPassEncoder, p: PProg, d: DrawCall) => {
         const k0 = keyOf(p.id, 'b', d.blocks as unknown as PBuf[]);
         let g0 = groups.get(k0);

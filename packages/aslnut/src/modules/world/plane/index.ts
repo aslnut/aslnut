@@ -3,10 +3,12 @@
 // takes (the plane sits at lon / lat 0, where a metre is a metre on the flat map).
 //   const w = await world(canvas, { body: plane({ size: 200, grid: 5 }) });
 //   w.add(points({ data: [{ at: planeAt(10, 20) }] }));
+//   world(canvas, { body: plane({ sky: sky() }), render: { shadows: true } })   a sun that lights it and casts shadows
 import { AslnutError } from '../../../core/world/errors.ts';
+import { Element } from '../../../core/world/element.ts';
 import type { Body } from '../../../core/world/world.ts';
 import { D, R, latOfMercY, mercY, tileBounds } from '../../../core/space/geo.ts';
-import { Sky } from '../surface/sky.ts';
+import { Sky, type SkyProps } from '../surface/sky.ts';
 import { Surface } from '../surface/surface.ts';
 import { TILE, type Imagery } from '../surface/sources.ts';
 
@@ -23,6 +25,10 @@ export interface PlaneOptions {
   color?: string; lines?: string;
   /** the colour beyond the floor */
   beyond?: [number, number, number];
+  /** its sky, as the earth's: a painted one (its colours; the default), none (false), or a sky layer of your own in
+   *  its place: `sky()` of modules › earth › air › sky (the real sun over the floor at the world's time: it lights
+   *  what stands on it and, with `render.shadows`, casts their shadows on the floor, as on the earth) */
+  sky?: boolean | SkyProps | Element;
 }
 export function plane(o: PlaneOptions = {}): Body {
   const size = o.size ?? 1000, grid = o.grid === undefined ? 10 : o.grid;
@@ -53,7 +59,7 @@ export function plane(o: PlaneOptions = {}): Body {
     kind: 'plane', flat: true, bounds: [w, s, e, n],
     view: { lon: 0, lat: 0, dist: size * 1.2, tilt: 50, bearing: 340 },
     elements: () => [
-      new Sky({ horizon: [0.86, 0.88, 0.9], zenith: [0.6, 0.7, 0.82] }),
+      ...(o.sky === false ? [] : [o.sky instanceof Element ? o.sky : new Sky({ horizon: [0.86, 0.88, 0.9], zenith: [0.6, 0.7, 0.82], ...(typeof o.sky === 'object' ? o.sky : {}) })]),
       new Surface({ imagery: [floor], terrain: [], empty: o.beyond ?? [0.82, 0.84, 0.86], horizon: [0.86, 0.88, 0.9], bounds: [w, s, e, n], shade: 0 }),
     ],
   };

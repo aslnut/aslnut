@@ -35,6 +35,7 @@ import type { Made } from '../geometry/shapes/shape.ts';
 import { motionFrames } from '../runtime/frame.ts';
 import { D, R, mercY, latOfMercY, wrap } from '../space/geo.ts';
 import { rangeUnits, sizeUnits, sizeValue, type SizeOf, type SizeRange } from '../render/drawing/size.ts';
+import type { Leveled } from '../observation/presence.ts';
 
 // ── drive › data ───────────────────────────────────────────────────────────────────────────────────────────────
 export interface DataDriveOptions {
@@ -255,7 +256,7 @@ export class EntitySet extends Element<EntitySetProps> {
     this.nearLog = true;
     (this.attached?.world as { invalidate?: () => void } | undefined)?.invalidate?.();
   }
-  override setProps(p: Partial<EntitySetProps>): this {
+  override setProps(given: Partial<Leveled<EntitySetProps>>): this { const p = given as Partial<EntitySetProps>;
     const before = this.props;
     super.setProps(p);
     if ('trail' in p && (p.trail ? p.trail.seconds : 0) !== (before.trail ? before.trail.seconds : 0)) this.kDirty = true;
@@ -965,8 +966,8 @@ const hexOf = (c: Color): string => { const q = rgba(c); return `#${q.slice(0, 3
 
 /** many entities as one set: moved by data (drive: drive.data(…): drawn on the chip from their samples), or a shape
  *  placed for each feature of your data (core › geometry › shapes › instances) */
-export function entities(p: EntitySetProps): EntitySet;
-export function entities<P = Record<string, unknown>>(p: EntitiesProps<P>): Entities<P>;
-export function entities<P>(p: EntitySetProps | EntitiesProps<P>): EntitySet | Entities<P> {
+export function entities(p: Leveled<EntitySetProps>): EntitySet;
+export function entities<P = Record<string, unknown>>(p: Leveled<EntitiesProps<P>>): Entities<P>;
+export function entities<P>(p: Leveled<EntitySetProps> | Leveled<EntitiesProps<P>>): EntitySet | Entities<P> {
   return (p as EntitySetProps).drive instanceof DataDrive ? new EntitySet(p as EntitySetProps) : new Entities<P>(p as EntitiesProps<P>);
 }

@@ -36,6 +36,10 @@ export interface GTexture {
    *  with see-through parts, filtered without fringes: the same on WebGPU and WebGL2); give it a bitmap made with
    *  premultiplyAlpha: 'premultiply' */ premultiplied?: boolean }): void;
   destroy(): void;
+  /** how many times its pixels changed (written, an image put in, layers copied into it, drawn into as a target):
+   *  what a cached picture was drawn from (the sun's shadow map is kept while its casters' buffers and textures stay
+   *  as they were). Both graphics count it; a texture of your own without it is taken as never changing */
+  readonly version?: number;
 }
 export type BufferKind = 'uniform' | 'index' | 'instance' | 'vertex';
 export interface GBuffer { readonly kind: BufferKind; readonly size: number; write(data: ArrayBufferView, offsetBytes?: number): void; destroy(): void; /** a number for this buffer, and how many times it was written (what a cached picture was drawn from) */ readonly uid: number; readonly version: number }

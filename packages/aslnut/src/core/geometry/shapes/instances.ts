@@ -19,6 +19,7 @@ import { EMIT_CODE } from '../../render/look/materials.ts';
 import { RECORD, RECORD_FLOATS, Solids, type SetJoint, type SolidsProps } from './solids.ts';
 import type { Made, Shape } from './shape.ts';
 import type { SizeRange } from '../../render/drawing/size.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 export interface EntitiesProps<P = Record<string, unknown>> extends Omit<SolidsProps, 'params'> {
   /** a shape (built for each feature's params), or a made one placed as it is (a model from shapes.import) */
@@ -256,4 +257,4 @@ function centreOf(f: Feature): [number, number] | null {
   let x = 0, y = 0; for (const [a, b] of pts) { x += a; y += b; } return [x / pts.length, y / pts.length];
 }
 /** a shape for every feature: entities({ shape, data, params }) */
-export const entities = <P = Record<string, unknown>>(p: EntitiesProps<P>) => new Entities<P>(p);
+export const entities = <P = Record<string, unknown>>(p: Leveled<EntitiesProps<P>>) => new Entities<P>(p as EntitiesProps<P>);

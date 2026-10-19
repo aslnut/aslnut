@@ -15,6 +15,7 @@ import { LAMP_CODES } from '../../../../../../core/render/look/materials.ts';
 import { D } from '../../../../../../core/space/geo.ts';
 import { orientedBox, signedArea, Rng, seedOf, type P2 } from '../../../shared/plan.ts';
 import { BLOCK, HOUSE, house, isHouse, type BlockLook, type HouseLook, type RoofShape } from './index.ts';
+import type { Leveled } from '../../../../../../core/observation/presence.ts';
 
 /** a roof by kind, or a shape of your own built over the footprint's best-fit rectangle (its params: width, depth,
  *  height: metres; x along the rectangle's long side, its foot at the eaves) */
@@ -64,7 +65,9 @@ export class Buildings extends Solids {
   constructor(p: BuildingsProps) {
     const w = p.windows;
     super({ hover: { color: '#ffd166' }, ...p, windows: w === false ? undefined : w ? { lit: w.lit, interior: w.interior } : undefined } as SolidsProps);
-    this.bp = p;
+    // (its own props: those given by level as resolved now)
+    const run = this.props as unknown as Record<string, unknown>;
+    this.bp = { ...p, ...Object.fromEntries(Object.keys(this.byLevel).filter((k) => k !== 'windows').map((k) => [k, run[k]])) } as BuildingsProps;
   }
   override async attach(ctx: AttachContext): Promise<void> {
     await super.attach(ctx);
@@ -184,4 +187,4 @@ export function roofMesh(mb: MeshBuilder, box: ReturnType<typeof orientedBox>, e
   void A;
 }
 /** buildings from any source of footprints: buildings({ data, height, roofs, windows }) */
-export const buildings = (p: BuildingsProps) => new Buildings(p);
+export const buildings = (p: Leveled<BuildingsProps>) => new Buildings(p as BuildingsProps);

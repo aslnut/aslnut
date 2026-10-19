@@ -16,6 +16,7 @@ import { valueOf } from '../../../../../core/observation/presence.ts';
 import { D, R, mercY, latOfMercY, wrap } from '../../../../../core/space/geo.ts';
 import { LOOK, rgbOf, waveSet, type SeaLook, type Wave } from './look.ts';
 import { SHORE, coastFeatures, coastField, coastSegments, type SeaShore } from './shore.ts';
+import type { Leveled } from '../../../../../core/observation/presence.ts';
 
 export { LOOK, waveSet, type SeaLook, type Wave } from './look.ts';
 export { SHORE, FAR, coastField, coastSegments, coastFeatures, localFrame, type FieldGrid, type SeaShore } from './shore.ts';
@@ -222,4 +223,4 @@ export class SeaSurface extends Element<SeaProps> {
 }
 /** the sea: its level, its look (the waves the wind raises, its water by depth, the sky and the sun in it) and its
  *  shore (the waves breaking on its coast, the swash); it gives the world its sea, over water()'s plain one */
-export const sea = (p: SeaProps = {}) => new SeaSurface(p);
+export const sea = (p: Leveled<SeaProps> = {}) => new SeaSurface(p as SeaProps);

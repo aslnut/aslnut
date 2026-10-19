@@ -21,6 +21,7 @@ import { extrusion, type ExtrusionProps } from './marks/extrusion.ts';
 import { text, type TextProps } from './marks/text.ts';
 import type { Data, FeatureMark, FeatureMarkProps, Look } from './marks/features.ts';
 import type { DrapeMode } from './marks/drape.ts';
+import type { Leveled } from '../observation/presence.ts';
 
 type Sign<P> = Omit<P, 'data' | 'id' | 'when' | 'order' | 'above' | 'below' | 'label' | 'opacity'> & { opacity?: number };
 export interface LayerProps<D = Feature> extends ElementProps {
@@ -53,41 +54,62 @@ const SHARED = ['tooltip', 'hover', 'onTap', 'onHover', 'select', 'drape', 'subj
  *  follow the layer's; a pick on it is a pick on the layer) */
 export interface Owned { owner?: Element | null }
 
+/** its signs in their order in its band, each with its id's suffix (labels last: drawn in the labels' band) */
+const SIGNS = [['area', 'fill'], ['extrusion', 'extrusion'], ['line', 'line'], ['points', 'points']] as const;
+type SignKey = (typeof SIGNS)[number][0] | 'labels';
+
 export class Layer<D = Feature> extends Element<LayerProps<D>> {
-  readonly kind: Kind;
-  /** its signs drawn in its band (fill, line, points, extrusion), in that order */
+  /** its band in the stack: its first sign's (a sign added later that comes first moves it) */
+  get kind(): Kind { return this.signs[0]?.kind ?? 'label'; }
+  /** its signs drawn in its band (fill, extrusion, line, points), in that order */
   readonly signs: FeatureMark<D, FeatureMarkProps<D>>[] = [];
   /** its labels (drawn in the labels' band, owned by it) */
-  readonly labels: (FeatureMark<D, FeatureMarkProps<D>> & Owned) | null = null;
+  labels: (FeatureMark<D, FeatureMarkProps<D>> & Owned) | null = null;
+  /** signs added by setProps while it was in a world, still attaching (settled waits for them) */
+  private adding = new Set<Promise<void>>();
 
   constructor(p: LayerProps<D>) {
     if (!p || p.data === undefined) throw new AslnutError('E-DATA-001', 'layer() needs data', { fix: "layer({ id: 'suburbs', data: data.wfs(url, { typeName, extent }), area: { color }, labels: { text } })" });
     const main = p.area?.color ?? p.extrusion?.color ?? p.line?.color ?? p.points?.color;
     super({ ...p, color: main });
-    const id = this.id, shared: Record<string, unknown> = {};
-    for (const k of SHARED) if (p[k] !== undefined) shared[k] = p[k];
-    const opa = (o?: number) => (o ?? 1) * (p.opacity ?? 1);
-    const make = <S>(o: S | undefined, f: (x: S & { id: string; data: Data<D> }) => FeatureMark<D, FeatureMarkProps<D>>, suffix: string) => {
-      if (!o) return;
-      const own = o as unknown as { opacity?: number };
-      const m = f({ ...shared, ...o, id: `${id}-${suffix}`, data: p.data, opacity: opa(own.opacity) } as S & { id: string; data: Data<D> });
-      (m as unknown as { signOpacity: number }).signOpacity = own.opacity ?? 1;
-      (m as unknown as Owned).owner = this;
-      this.signs.push(m);
-    };
-    make(p.area, (x) => area(x as AreaProps<D>) as unknown as FeatureMark<D, FeatureMarkProps<D>>, 'fill');
-    make(p.extrusion, (x) => extrusion(x as ExtrusionProps<D>) as unknown as FeatureMark<D, FeatureMarkProps<D>>, 'extrusion');
-    make(p.line, (x) => line(x as LineProps<D>) as unknown as FeatureMark<D, FeatureMarkProps<D>>, 'line');
-    make(p.points, (x) => points(x as PointsProps<D>) as unknown as FeatureMark<D, FeatureMarkProps<D>>, 'points');
-    if (p.labels) {
+    for (const [k] of SIGNS) if (p[k]) this.makeSign(k);
+    if (p.labels) this.makeSign('labels');
+    if (!this.signs.length && !this.labels) throw new AslnutError('E-DATA-001', `layer '${this.id}' says nothing: give it a sign`, { where: this.id, fix: 'area: { color }, line: { color }, points: { size }, extrusion: { height } or labels: { text }' });
+  }
+  /** a sign made from its props (shared options, its data, its opacity times the layer's), in its place */
+  private makeSign(k: SignKey): FeatureMark<D, FeatureMarkProps<D>> {
+    const p = this.props, id = this.id, shared: Record<string, unknown> = {};
+    for (const x of SHARED) if (p[x] !== undefined) shared[x] = p[x];
+    const o = p[k] as Record<string, unknown> & { opacity?: number }, opacity = (o.opacity ?? 1) * (p.opacity ?? 1);
+    let m: FeatureMark<D, FeatureMarkProps<D>>;
+    if (k === 'labels') {
       // readable by default: a halo, room made for each other, 12 px
-      const l = text({ halo: 2, collide: true, size: 12, ...shared, ...p.labels, id: `${id}-labels`, data: p.data, opacity: opa(p.labels.opacity) } as TextProps<D>) as unknown as FeatureMark<D, FeatureMarkProps<D>> & Owned;
-      (l as unknown as { signOpacity: number }).signOpacity = p.labels.opacity ?? 1;
-      l.owner = this;
-      this.labels = l;
+      m = text({ halo: 2, collide: true, size: 12, ...shared, ...o, id: `${id}-labels`, data: p.data, opacity } as TextProps<D>) as unknown as FeatureMark<D, FeatureMarkProps<D>>;
+      this.labels = m as FeatureMark<D, FeatureMarkProps<D>> & Owned;
+    } else {
+      const suffix = SIGNS.find(([x]) => x === k)![1], q = { ...shared, ...o, id: `${id}-${suffix}`, data: p.data, opacity };
+      m = (k === 'area' ? area(q as AreaProps<D>) : k === 'extrusion' ? extrusion(q as ExtrusionProps<D>) : k === 'line' ? line(q as LineProps<D>) : points(q as PointsProps<D>)) as unknown as FeatureMark<D, FeatureMarkProps<D>>;
+      // (in its place: fill, extrusion, line, points)
+      const rank = (x: { id: string }) => SIGNS.findIndex(([, sf]) => x.id === `${id}-${sf}`);
+      const at = this.signs.findIndex((x) => rank(x) > rank(m));
+      this.signs.splice(at < 0 ? this.signs.length : at, 0, m);
     }
-    if (!this.signs.length && !this.labels) throw new AslnutError('E-DATA-001', `layer '${id}' says nothing: give it a sign`, { where: id, fix: 'area: { color }, line: { color }, points: { size }, extrusion: { height } or labels: { text }' });
-    this.kind = this.signs[0]?.kind ?? 'label';
+    (m as unknown as { signOpacity: number }).signOpacity = o.opacity ?? 1;
+    (m as unknown as Owned).owner = this;
+    return m;
+  }
+  /** a sign given by setProps that it did not have: made and, in a world, attached (a fill first now: the layer moves
+   *  to the fills' band; labels: added to the world with it, removed with it) */
+  private addSign(k: SignKey): void {
+    const before = this.kind, m = this.makeSign(k), ctx = this.attached;
+    if (this.props.color === undefined && k !== 'labels') this.props = { ...this.props, color: (this.props[k] as { color?: unknown }).color };
+    if (!ctx) return;
+    const w = ctx.world as unknown as { add?(...e: Element[]): unknown; elementChanged?(l: Element, keys: string[]): void };
+    if (k === 'labels') { w.add?.(m); return; }
+    m.pickNo = this.pickNo;
+    const done = m.attach(ctx).catch((e: unknown) => { m.failure = e instanceof Error ? e : new Error(String(e)); ctx.world.error(e); }).finally(() => { this.adding.delete(done); });
+    this.adding.add(done);
+    if (this.kind !== before) w.elementChanged?.(this, ['order']);
   }
   get source(): Source | null { return (this.signs[0] ?? this.labels)?.source ?? null; }
   override get fades(): boolean { return true; }
@@ -107,7 +129,7 @@ export class Layer<D = Feature> extends Element<LayerProps<D>> {
     await Promise.all(this.signs.map((m) => m.attach(ctx)));
   }
   override detach(): void { for (const m of this.signs) m.detach(); super.detach(); }
-  override setProps(p: Partial<LayerProps<D>>): this {
+  override setProps(given: Partial<Leveled<LayerProps<D>>>): this { const p = given as Partial<LayerProps<D>>;
     super.setProps(p);
     const pass: Record<string, unknown> = {};
     if ('data' in p) pass.data = p.data;
@@ -117,10 +139,11 @@ export class Layer<D = Feature> extends Element<LayerProps<D>> {
       if ('opacity' in p) q.opacity = ((m as unknown as { signOpacity?: number }).signOpacity ?? 1) * (p.opacity ?? 1);
       if (Object.keys(q).length) m.setProps(q as never);
     }
-    // a sign's own options (its own opacity, times the layer's)
-    const sign = (k: 'area' | 'line' | 'points' | 'extrusion' | 'labels', suffix: string) => {
+    // a sign's own options (its own opacity, times the layer's); a sign it did not have is added
+    const sign = (k: SignKey, suffix: string) => {
       const o = p[k] as { opacity?: number } | undefined; if (!o) return;
-      const m = suffix === 'labels' ? this.labels : this.signs.find((x) => x.id === `${this.id}-${suffix}`); if (!m) return;
+      const m = suffix === 'labels' ? this.labels : this.signs.find((x) => x.id === `${this.id}-${suffix}`);
+      if (!m) { this.addSign(k); return; }
       if (o.opacity !== undefined) (m as unknown as { signOpacity: number }).signOpacity = o.opacity;
       m.setProps({ ...o, ...(o.opacity !== undefined ? { opacity: o.opacity * (this.props.opacity ?? 1) } : {}) } as never);
     };
@@ -137,6 +160,7 @@ export class Layer<D = Feature> extends Element<LayerProps<D>> {
   override status(): ElementStatus {
     const st: ElementStatus = { ready: true, pending: [], failed: this.failure ? [{ what: this.id, error: this.failure.message }] : [], missing: [] };
     for (const m of this.signs) { const s = m.status(); st.ready &&= s.ready; st.pending.push(...s.pending); st.failed.push(...s.failed); st.missing.push(...s.missing); }
+    if (this.adding.size) { st.ready = false; st.pending.push(`layer '${this.id}': a sign added`); }
     return st;
   }
   override wantsFrames(s: State): number { let n = 0; for (const m of this.signs) n = Math.max(n, m.wantsFrames(s)); return n; }
@@ -153,4 +177,4 @@ export class Layer<D = Feature> extends Element<LayerProps<D>> {
   get size(): number { return (this.signs[0] ?? this.labels)?.size ?? 0; }
 }
 /** a layer: one dataset said one way (its signs, its labels inside, its legend, its place in the stack) */
-export const layer = <D = Feature>(p: LayerProps<D>) => new Layer<D>(p);
+export const layer = <D = Feature>(p: Leveled<LayerProps<D>>) => new Layer<D>(p as LayerProps<D>);

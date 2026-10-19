@@ -39,6 +39,7 @@ import { RemoteLog, type RemoteLogOptions } from '../runtime/telemetry/index.ts'
 import { frameOpen, msPer, sunFrames, type FrameWant, type FramesOptions } from '../runtime/frame.ts';
 import type { CameraController, Controller, Entity } from '../entities/index.ts';
 import { scenarioApi, type ScenarioApi } from '../data/scenarios.ts';
+import { constants, type Constants } from '../simulation/constants.ts';
 import { standOn, type Stands } from '../space/stands.ts';
 import { ThemeState, type Theme, type ThemeNow } from '../render/style/theme.ts';
 
@@ -65,8 +66,10 @@ export interface WorldOptions {
    *  zoom, a toggle); 'auto' (the default): the device's (lite on WebGL2, touch screens and low tiers), then held to
    *  the budget by the governor */
   quality?: Quality | 'auto' | ((s: State) => Quality);
-  /** how a zoom frames a portrait screen: 'auto' (default) sees as much across as a landscape screen; 'height' the same height on every screen */
-  frame?: 'auto' | 'height';
+  /** how a zoom frames a screen: 'auto' (default) a portrait screen sees as much across as a landscape one; 'height'
+   *  the same height on every screen; 'pixels' the web map's zoom at the canvas's own pixels (a level's 256 px tiles
+   *  drawn 256 CSS px across: the same scale as a 2D web map at that zoom, whatever the canvas's size) */
+  frame?: 'auto' | 'height' | 'pixels';
   /** the world's time: a date, or 'now' */
   time?: Date | 'now';
   /** the time zone of the world's clocks (s.time.local): an IANA name ('Australia/Melbourne'), 'auto' (the place's
@@ -167,9 +170,13 @@ export interface PickOptions { /** CSS px round the point that still count (defa
 /** what changed in the world's layers (a layer list keeps in step with it): added, removed, the draw order, shown or
  *  hidden (by hand or by its `when`), its opacity or other props */
 export interface ElementChange { what: 'add' | 'remove' | 'order' | 'shown' | 'opacity' | 'props'; ids: string[] }
+/** the view moving (w.on('view')): it began to move ('start'), moved this frame ('change'), came to rest ('end');
+ *  `zoomed`: its distance changed since it began; `by`: a person's hands moved it (a drag, a pinch, the wheel, a
+ *  glide) or the app (a jump, a flight, keys, a follow); `view`: the view now */
+export interface ViewEvent { phase: 'start' | 'change' | 'end'; zoomed: boolean; by: 'hands' | 'app'; view: Required<View> }
 type Events = WorldEvents;
 /** what a world tells (w.on(name, fn)): each event's name and what its listener gets */
-export type WorldEvents = { /** the elements changed (core › world › elements: a layer list keeps in step) */ elements: [ElementChange]; /** the observation level changed (core › observation › levels) */ level: [LevelChange]; tap: [Picked | null, PointerInfo]; hover: [Picked | null, PointerInfo | null]; select: [string[]]; frame: [{ n: number; dt: number }]; error: [unknown]; /** a frame came late (> 50 ms after the one before): the gap, and what the last frame did */ long: [{ gapMs: number; profile: FrameProfile }]; /** the governor stepped detail down or up (a budget is set) */ governor: [GovernorEvent] };
+export type WorldEvents = { /** the elements changed (core › world › elements: a layer list keeps in step) */ elements: [ElementChange]; /** the observation level changed (core › observation › levels) */ level: [LevelChange]; tap: [Picked | null, PointerInfo]; hover: [Picked | null, PointerInfo | null]; select: [string[]]; frame: [{ n: number; dt: number }]; error: [unknown]; /** a frame came late (> 50 ms after the one before): the gap, and what the last frame did */ long: [{ gapMs: number; profile: FrameProfile }]; /** the governor stepped detail down or up (a budget is set) */ governor: [GovernorEvent]; /** the view began to move, moved, came to rest (core › interaction › events) */ view: [ViewEvent] };
 /** where a frame's time went (`w.profile()`, the 'long' event): the main thread's ms by part, and what reached the graphics */
 export interface FrameProfile {
   /** ms of the last frame: collecting draw calls (the layers' own work: tiles, uploads, labels…), handing them to the graphics */
@@ -209,6 +216,9 @@ export interface Telemetry {
   elements: { id: string; kind: string; shown: number; draws: number; triangles: number; ms: number; gpuMB: number; wants: number }[];
   /** graphics memory by layer (and '(world)': the world's own and what no layer names), the largest first */
   memory: { id: string; MB: number }[];
+  /** epochs held by the layers they feed (core › data › history › epochs): how many of how many, their memory (MB),
+   *  those loading, the pair shown and its share */
+  epochs: { id: string; of: string; epochs: number; held: number; MB: number; loading: number; shown: [number, number, number] }[];
 }
 const ID = /^[A-Za-z0-9_-]+$/;
 const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
@@ -219,6 +229,9 @@ export class World implements WorldLike {
   readonly camera: Camera;
   readonly body: Body | null;
   readonly loader: Loader;
+  /** this world's citable tables (core › simulation › constants): the process's, with what is added here kept to this
+   *  world (`w.constants.add`: no other world sees it) */
+  readonly constants: Constants = constants.scope();
   readonly renderer: Renderer | null;
   readonly graphics: Graphics | null;
   readonly profile: Profile | null;
@@ -538,7 +551,9 @@ export class World implements WorldLike {
     this.governorOpts = o.opts.governor; this.prio = o.opts.priorities ?? {}; if (budget) this.setBudget(budget);
     if (o.opts.theme) this.themeS.set(o.opts.theme, 0);
     if (o.graphics) void o.graphics.lost.then((why) => { if (!this.disposed) this.error(new AslnutError('E-GPU-004', `${this.api === 'webgpu' ? 'WebGPU' : 'WebGL2'}: ${why}`, { fix: 'reload the page' })); });
-    if (o.canvas && 'addEventListener' in o.canvas && o.opts.controls !== false && typeof window !== 'undefined') {
+    // (controls on a canvas in a page only: an OffscreenCanvas, here or in a worker, has no element to take a pointer,
+    // its host sends the input (w.go, w.fly))
+    if (o.canvas && inPage(o.canvas) && o.opts.controls !== false && typeof window !== 'undefined') {
       const el = o.canvas as HTMLCanvasElement; this.canvasEl = el;
       if (typeof o.opts.controls === 'object') this.camera.interrupt = o.opts.controls.interrupt ?? true;
       let touch = false;
@@ -594,8 +609,10 @@ export class World implements WorldLike {
       if (!l || typeof l.frame !== 'function') throw new AslnutError('E-WORLD-001', 'w.add() takes elements', { fix: 'pass points({ … }), layer({ … }), custom({ … }) or your own Element' });
       if (this.elements.some((x) => x.id === l.id)) throw new AslnutError('E-WORLD-001', `two elements with id '${l.id}'`, { where: l.id, fix: 'give each element its own id' });
       // an element asking for a level turns the default ladder on (a world with none had nothing to ask)
-      const wl = l.props.when as { level?: unknown } | undefined;
-      if (!this.levelsObj && wl && typeof wl === 'object' && wl.level !== undefined) this.observe({ levels: 'default' });
+      const wl = l.props.when as { level?: unknown } | undefined, leveled = Object.keys(l.byLevel).length > 0;
+      if (!this.levelsObj && ((wl && typeof wl === 'object' && wl.level !== undefined) || leveled)) this.observe({ levels: 'default' });
+      // its props by level, resolved for the level now before it is built (a rung not on the ladder throws here)
+      if (this.levelsObj) l.atLevel(this.levelsObj.names, this.levelsObj.index);
       l.added = this.seq++; l.detailPinned = !!this.prio.keep?.includes(l.id);
       const used = new Set(this.elements.map((x) => x.pickNo));
       l.pickNo = 0; for (let k = 1; k < 256; k++) if (!used.has(k)) { l.pickNo = k; break; }
@@ -651,7 +668,7 @@ export class World implements WorldLike {
    *  own `when` says, with no level) */
   observe(o: ObservationOptions | null): this {
     if (o === null) { this.levelsObj = null; this.gates = null; }
-    else { this.levelsObj = new Levels(o, this.camera.zoom, this.levelsObj ? undefined : undefined); this.gates = new Gates(this.levelsObj); }
+    else { this.levelsObj = new Levels(o, this.camera.zoom, this.levelsObj ? undefined : undefined); this.gates = new Gates(this.levelsObj); this.applyLevel(); }
     this.stateCache = null; this.invalidate();
     return this;
   }
@@ -664,9 +681,18 @@ export class World implements WorldLike {
   }
   private levelChanged(ch: LevelChange): void {
     this.stateCache = null;
+    this.applyLevel();
     this.gates!.begin(ch, this.sorted, this.state, this.nowMs);
     this.invalidate();
     this.emit('level', ch);
+  }
+  /** props by level (core › observation › presence): every element's resolved for the level now and applied through
+   *  its own setProps where they changed (once a level change, the moment `when` turns) */
+  private applyLevel(): void {
+    const L = this.levelsObj; if (!L) return;
+    for (const l of this.elements) {
+      try { if (l.atLevel(L.names, L.index).length && this.gates) this.gates.counts.applied++; } catch (e) { this.error(e); }
+    }
   }
   /** what work between frames is given (prepare, a swap): the frame's context without a frame drawn */
   private prepCtx(s: State, dt: number): FrameContext {
@@ -712,6 +738,8 @@ export class World implements WorldLike {
   /** a layer's props changed (its setProps): sorted again where its place may have moved; a layer list told */
   elementChanged(l: Element, keys: string[]): void {
     if (!this.elements.includes(l)) return;
+    // a prop given by level in a world with no levels: the default ladder turns on (as a `when: { level }` does)
+    if (!this.levelsObj && keys.some((k) => k in l.byLevel)) this.observe({ levels: 'default' });
     if (keys.some((k) => k === 'order' || k === 'above' || k === 'below' || k === 'drape' || k === 'over' || k === 'occlude')) this.resort();
     this.emit('elements', { what: keys.length === 1 && keys[0] === 'opacity' ? 'opacity' : 'props', ids: [l.id] });
   }
@@ -877,6 +905,10 @@ export class World implements WorldLike {
       return this;
     }
     cam.gestures = { ...(cc?.gestures ?? { pan: true, rotate: true, tilt: true, zoom: true }) }; cam.drag = cc?.drag ?? 'pan';
+    cam.zoomInputs = { ...(cc?.zoomInputs ?? { wheel: true, pinch: true, keys: true }) }; cam.bounds = cc?.bounds ?? null; cam.viscosity = cc?.viscosity ?? 1;
+    cam.snap = cc?.snap ?? 0; cam.step = cc?.step ?? 1; cam.keys = cc?.keys ?? false; cam.focusable();
+    // (the view now inside the box)
+    if (cam.bounds) { const [bw, bs, be, bn] = cam.bounds; cam.lon = Math.min(be, Math.max(bw, cam.lon)); cam.lat = Math.min(bn, Math.max(bs, cam.lat)); }
     const z = cc?.zoomRange, t = cc?.tiltRange;
     cam.minDist = z ? distForZoom(z[1], cam.lat) * cam.frameK : this.camLimits.minDist; cam.maxDist = z ? distForZoom(z[0], cam.lat) * cam.frameK : this.camLimits.maxDist; cam.zoomLimited = !!z;
     cam.pitchRange = t ? [(90 - Math.min(TILT_MAX, t[1])) * D, Math.min(Math.PI / 2 - 1e-4, (90 - t[0]) * D)] : [(90 - TILT_MAX) * D, Math.PI / 2 - 1e-4];
@@ -909,6 +941,13 @@ export class World implements WorldLike {
       if (!Number.isNaN(g) && g > y + 2) return false;
     }
     return true;
+  }
+  /** a point on the canvas (CSS px) → the place on the ground there, [lon, lat]: the camera's ray down to the terrain
+   *  (the inverse of project, on the flat map, the globe and a tilted view alike); null: the sky */
+  unproject(xy: readonly [number, number]): [number, number] | null {
+    if (!Array.isArray(xy) || xy.length < 2 || !Number.isFinite(xy[0]) || !Number.isFinite(xy[1])) throw new AslnutError('E-VIEW-001', `unproject(${JSON.stringify(xy)}): not a point`, { where: 'unproject', fix: 'give [x, y] in CSS px on the canvas' });
+    const ll = this.groundUnder(xy[0]!, xy[1]!);
+    return ll ? [ll[0], ll[1]] : null;
   }
   private groundOf(p: LonLatH): number { if (p[2] !== undefined) return p[2] * this.exaggeration; const g = this.heightAt(p[0], p[1]); return Number.isNaN(g) ? 0 : g * this.exaggeration; }
 
@@ -965,6 +1004,7 @@ export class World implements WorldLike {
     if (c.morph > 0.5) { const e = c.eye, ll = lonLatOf(c, e[0]!, e[1]!, e[2]!), ge = this.heightAt(ll[0], ll[1]) * ex; c.clearance = Math.max(0, e[1]! - (Number.isNaN(ge) ? c.groundY : Math.max(c.groundY, ge))); }
     else c.clearance = 0;
     this.poseCheck();
+    this.viewStep();
     this.stateCache = null;
     // the observation level: the orbit through the margin and the dwell; a change swaps once (core › observation)
     this.observeStep();
@@ -1143,8 +1183,9 @@ export class World implements WorldLike {
   get light(): Light | null { return this.lightNow; }
   /** turn the sun's shadows on (options) or off (false) */
   setShadows(o: boolean | ShadowOptions): this { this.shadowOpts = o ? (o === true ? {} : o) : null; this.invalidate(); return this; }
-  /** the shadow map's last frame: on, its size, casters drawn, ms on the main thread, the box's half side (m) */
-  shadowReport(): { on: boolean; size: number; casters: number; ms: number; radius: number } { return { ...this.shadowStats }; }
+  /** the shadow map's last frame: on, its size, casters drawn, ms on the main thread, the box's half side (m), kept (not
+   *  drawn again: its casters as they were) */
+  shadowReport(): { on: boolean; size: number; casters: number; ms: number; radius: number; kept: boolean } { return { ...this.shadowStats }; }
   private shadowsFor(light: Light | null): (ReturnType<typeof shadowBox> & { size: number }) | null {
     const o = this.shadowOpts; if (!o || !light || !light.shadows || light.dir[1] < 0.03 || !this.graphics || this.camera.morph < 0.98) return null;
     if (this.shadowDrop >= 3) return null;
@@ -1173,12 +1214,15 @@ export class World implements WorldLike {
     // centre, nothing moving, draws it once)
     let sig = `${box.size}|${Array.prototype.join.call(box.viewProj, ',')}|${f[24]},${f[25]},${f[26]}`;
     const bv = (b: GBuffer | undefined) => (b ? `${b.uid}.${b.version}` : '-');
+    // (its textures too: a caster's per-copy records (where each stands, how far it has faded in) live in one; the
+    // map drawn while a copy was dissolving in and kept after left it speckled)
+    const tv = (t: GTexture) => (t === real ? 's' : `${this.progNo(t)}.${t.version ?? 0}`);
     for (const d of draws) {
       if (!d.cast || !d.pickProgram) continue;
       if (d.bounds && !inView(box.viewProj, d.bounds)) continue;
       const pg = d.pickProgram();
       list.push({ ...d, program: pg, blocks: [this.shadowBuf, ...d.blocks.slice(1)], textures: d.textures?.map((x) => (x === real ? blank : x)), pickProgram: undefined });
-      sig += `;${this.progNo(pg)}:${d.blocks.slice(1).map(bv).join(',')}:${bv(d.instances)}:${bv(d.vertices)}:${d.count}:${d.instanceCount ?? 1}:${d.first ?? 0}`;
+      sig += `;${this.progNo(pg)}:${d.blocks.slice(1).map(bv).join(',')}:${d.textures?.map(tv).join(',') ?? ''}:${bv(d.instances)}:${bv(d.vertices)}:${d.count}:${d.instanceCount ?? 1}:${d.first ?? 0}`;
     }
     if (sig === this.shadowSig && this.shadowTarget === tg) { this.shadowStats = { ...this.shadowStats, on: true, ms: 0, kept: true }; return; }
     this.shadowSig = sig;
@@ -1231,6 +1275,31 @@ export class World implements WorldLike {
   /** a number that is not finite written straight into the camera (its fields are its pose: w.go and w.fly check what
    *  they are given, nothing checks a field): said once (E-VIEW-001), never repaired; nothing more is drawn until a view
    *  is set (the loop rests) */
+  /** the view's moving told (w.on('view')): its pose last frame, whether it is moving, how far it stood and the
+   *  hands' count last frame */
+  private viewSeen: number[] | null = null; private viewRun: { dist: number; zoomed: boolean; byHands: boolean } | null = null;
+  private viewStep(): void {
+    const c = this.camera, v = [c.lon, c.lat, c.dist, c.yaw, c.pitch], was = this.viewSeen;
+    this.viewSeen = v;
+    if (!was) return;
+    let changed = false; for (let i = 0; i < 5; i++) if (v[i] !== was[i] && !(Number.isNaN(v[i]!) && Number.isNaN(was[i]!))) { changed = true; break; }
+    const hands = c.hands.pan + c.hands.turn + c.hands.zoom;
+    let run = this.viewRun;
+    if (changed) {
+      const first = !run;
+      if (!run) run = this.viewRun = { dist: was[2]!, zoomed: false, byHands: false };
+      run.zoomed ||= Math.abs(c.dist - run.dist) > 1e-9 * Math.max(1, run.dist);
+      run.byHands ||= hands !== this.handsSeen;
+      const ev = (phase: ViewEvent['phase']): ViewEvent => ({ phase, zoomed: run!.zoomed, by: run!.byHands ? 'hands' : 'app', view: c.view });
+      if (first) this.emit('view', ev('start'));
+      this.emit('view', ev('change'));
+    } else if (run && !c.moving) {
+      this.viewRun = null;
+      this.emit('view', { phase: 'end', zoomed: run.zoomed, by: run.byHands ? 'hands' : 'app', view: c.view });
+    }
+    this.handsSeen = hands;
+  }
+  private handsSeen = 0;
   private poseBad = false;
   private poseCheck(): void {
     const c = this.camera, k = (['lon', 'lat', 'dist', 'yaw', 'pitch', 'groundY'] as const).find((f) => !Number.isFinite(c[f]));
@@ -1554,6 +1623,8 @@ export class World implements WorldLike {
       quality: { now: s.render.quality, auto: this.profile?.quality ?? null, tier: this.profile?.tier ?? null, why: this.qualityWhy() },
       frames: { fps: r?.fps ?? 0, wants: want.rate, who: want.who, resting: r?.resting ?? false, restedMs: Math.round(r?.rested ?? 0), drawn: r?.drawn ?? 0, every: this.everies.map((e) => ({ id: e.id, fps: e.fps, ms: +e.ms.toFixed(2), budgetMs: e.budgetMs })) },
       elements, memory: [...byLayer].map(([id, b]) => ({ id, MB: +(b / MB).toFixed(1) })).sort((a, b) => b.MB - a.MB),
+      epochs: this.elements.flatMap((l) => (l as unknown as { epochStats?: () => { id: string; of: string; epochs: number; held: number; bytes: number; loading: number; shown: [number, number, number] }[] }).epochStats?.() ?? [])
+        .map((e) => ({ id: e.id, of: e.of, epochs: e.epochs, held: e.held, MB: +(e.bytes / MB).toFixed(2), loading: e.loading, shown: e.shown })),
     };
   }
   /** why the quality is what it is now, in words */
@@ -1806,6 +1877,8 @@ export class World implements WorldLike {
 }
 
 /** make a world on a canvas (null: headless) */
+/** a canvas in a page (an element: it has a style and a box on the page), not an OffscreenCanvas */
+const inPage = (c: HTMLCanvasElement | OffscreenCanvas): c is HTMLCanvasElement => 'style' in c && 'getBoundingClientRect' in c;
 export async function world(canvas: HTMLCanvasElement | OffscreenCanvas | null, o: WorldOptions = {}): Promise<World> {
   const body = o.body ?? null;
   const own = !(o.loader instanceof Loader);

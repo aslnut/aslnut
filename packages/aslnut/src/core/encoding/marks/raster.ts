@@ -1,6 +1,7 @@
 // core › geometry › marks › raster: a picture of data painted into the ground (it drapes on the terrain by being
 // part of it), in its place in the draw order among other rasters (later on top), with its opacity, blend and `when`
-// (a change re-paints the tiles, crossfading). Rasters cannot be picked: data you want to hover is a vector layer.
+// (a change re-paints the tiles, crossfading). Painted rasters cannot be picked: data you want to hover is a vector
+// layer; a picture over a box can be (`pickable: true`: its box answers a tap or a hover, as the feature 'picture').
 //   raster({ id: 'solar', source: raster.field({ value: ghi, ramp: 'inferno', domain: [3, 7] }), opacity: .6 })
 //   raster({ id: 'night', source: raster.wms('https://…/wms', { layers: 'VIIRS' }), blend: 'screen', when: s => s.time.hour >= 18 })
 //   raster({ id: 'canopy', source: raster.image({ url: '/canopy.png', bounds }), opacity: .8 })   one picture over a box,
@@ -15,10 +16,11 @@ import type { BBox } from '../../space/geo.ts';
 import type { Feature } from '../../data/features.ts';
 import type { Legend } from '../scales.ts';
 import { Area, type AreaProps } from './area.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 export interface RasterProps extends ElementProps { source: RasterSource; opacity?: number; blend?: RasterBlend }
-/** a picture over a box (raster.image): an area's props (drape, opacity, when, order, reveal), and its legend for a
- *  layer list */
+/** a picture over a box (raster.image): an area's props (drape, opacity, when, order, reveal; `pickable: true` with
+ *  `onTap`, `onHover`, `tooltip`: its box answers a pick, as its feature 'picture'), and its legend for a layer list */
 export interface ImageRasterProps extends Omit<AreaProps<Feature>, 'data' | 'color' | 'height' | 'value'> { source: ImageSource | ViewSource; /** what its colours mean (a layer list shows it) */ legend?: Legend }
 
 export class Raster extends Element<RasterProps> {
@@ -150,7 +152,7 @@ export class ImageRaster extends Area<Feature> {
 const boxFeature = ([w, s, e, n]: BBox): Feature => ({ id: 'picture', props: {}, geometry: { type: 'Polygon', coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] } });
 /** raster(props) makes the layer (a picture over a box: an ImageRaster on the chip); raster.xyz / wms / field /
  *  custom / image make its source */
-function rasterOf(p: RasterProps): Raster;
-function rasterOf(p: ImageRasterProps): ImageRaster;
-function rasterOf(p: RasterProps | ImageRasterProps): Raster | ImageRaster { const k = (p.source as { kind?: string })?.kind; return k === 'image' || k === 'view' ? new ImageRaster(p as ImageRasterProps) : new Raster(p as RasterProps); }
+function rasterOf(p: Leveled<RasterProps>): Raster;
+function rasterOf(p: Leveled<ImageRasterProps>): ImageRaster;
+function rasterOf(p: Leveled<RasterProps> | Leveled<ImageRasterProps>): Raster | ImageRaster { const k = (p.source as { kind?: string })?.kind; return k === 'image' || k === 'view' ? new ImageRaster(p as ImageRasterProps) : new Raster(p as RasterProps); }
 export const raster = Object.assign(rasterOf, sources);

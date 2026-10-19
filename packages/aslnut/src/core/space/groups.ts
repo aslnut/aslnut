@@ -24,6 +24,7 @@ import { inLevels } from '../observation/levels.ts';
 import { shown, type When } from '../observation/presence.ts';
 import { D } from './geo.ts';
 import { text } from '../encoding/marks/text.ts';
+import type { Leveled } from '../observation/presence.ts';
 
 /** how members are put in groups: areas (each in the one its place lies in; its name from `name`, default its props'
  *  `name`), square cells of so many metres, or your key of each member */
@@ -308,4 +309,4 @@ function defaultMark<D>(src: GroupsSource, values: Record<string, GroupValue<D>>
   return text({ id: `${src.id}-labels`, data: src, text: (d: Feature) => (first ? `${d.props.name}\n${Math.round(Number(d.props[first]) * 10) / 10}` : String(d.props.name)), priority: (d: Feature) => Number(first ? d.props[first] : d.props.members) || 0, size: 13, color: '#1f2937', halo: { width: 3, color: '#ffffffe6' } }) as unknown as Element;
 }
 /** things rolled up into groups per level, with values over time: groups({ of, by, values, show }) */
-export function groups<D = unknown>(p: GroupsProps<D>): Groups<D> { return new Groups<D>(p); }
+export function groups<D = unknown>(p: Leveled<GroupsProps<D>>): Groups<D> { return new Groups<D>(p as GroupsProps<D>); }

@@ -98,9 +98,9 @@ export class RegionTree {
   rollup(rows: Source<any>, o: RollupOptions): Rows {   // eslint-disable-line @typescript-eslint/no-explicit-any
     const from = o.from ?? this.levels[this.levels.length - 1]!, fi = this.levels.indexOf(from), ti = this.levels.indexOf(o.to);
     if (fi < 0 || ti < 0 || ti > fi) throw new AslnutError('E-DATA-001', `cannot roll '${from}' up to '${o.to}'`, { fix: `roll a lower level up to a higher one of ${this.levels.join(' → ')}` });
-    // a layer showing the rolled-up rows starts what they come from: the rows and every level's shapes
-    const out = new Rolled([rows, ...this.levels.map((l) => this.o.sources[l]!)]);
-    const run = () => {
+    // a layer showing the rolled-up rows starts what they come from: the rows and every level's shapes; it follows them
+    // while used (closed with the last layer using it: core › world › element), and catches up when read closed
+    return new Rolled([rows, ...this.levels.map((l) => this.o.sources[l]!)], (out) => {
       this.build();
       const groups = new Map<string, { region: Region; rows: Props[] }>();
       for (const f of rows.features()) {
@@ -116,16 +116,25 @@ export class RegionTree {
         if (o.count) p.count = rs.length;
         return o.fn ? { ...p, ...o.fn(rs, region) } : p;
       }));
-    };
-    rows.watch(run); for (const l of this.levels) this.o.sources[l]!.watch(run);
-    run();
-    return out;
+    });
   }
 }
-/** rolled-up rows: loading them loads their inputs */
+/** rolled-up rows: loading them loads their inputs; they follow their inputs while open (from the start, and again
+ *  when a layer takes them up), and let go of them closed */
 class Rolled extends Rows<Props> {
   private deps: Source<any>[];   // eslint-disable-line @typescript-eslint/no-explicit-any
-  constructor(deps: Source<any>[]) { super([], { id: 'id' }); this.deps = deps; }   // eslint-disable-line @typescript-eslint/no-explicit-any
+  private make: (out: Rolled) => void; private offs: (() => void)[] = []; private seen = '';
+  constructor(deps: Source<any>[], make: (out: Rolled) => void) { super([], { id: 'id' }); this.deps = deps; this.make = make; this.reopen(); }   // eslint-disable-line @typescript-eslint/no-explicit-any
   protected override async load(ctx: SourceContext): Promise<void> { await Promise.all(this.deps.map((d) => d.start(ctx))); }
+  /** worked out again when an input changed since */
+  private run(): void { const v = this.deps.map((d) => d.version).join(','); if (v === this.seen) return; this.seen = v; this.make(this); }
+  override inputs(): readonly Source[] { return this.deps; }
+  override reopen(): void { if (!this.offs.length) this.offs = this.deps.map((d) => d.watch(() => this.run())); this.run(); }
+  override close(): void { for (const off of this.offs) off(); this.offs = []; }
+  /** following its inputs now (false: closed) */
+  get open(): boolean { return this.offs.length > 0; }
+  override features(): readonly Feature<Props>[] { if (!this.offs.length) this.run(); return super.features(); }
+  override get(id: string | number): Feature<Props> | undefined { if (!this.offs.length) this.run(); return super.get(id); }
+  override get size(): number { if (!this.offs.length) this.run(); return super.size; }
 }
 export const regions = { tree: (o: TreeOptions) => new RegionTree(o) };

@@ -10,6 +10,7 @@ import { Solids, type SolidsChunk, type SolidsProps } from '../../../core/geomet
 import type { AttachContext, FrameContext, ElementStatus } from '../../../core/world/element.ts';
 import { D } from '../../../core/space/geo.ts';
 import type { WorkerLane } from '../../../core/runtime/workers.ts';
+import type { Leveled } from '../../../core/observation/presence.ts';
 
 /** a tiled area: the tiles' side (m), the origin [lon, lat] of their metric frame, which tiles exist */
 export interface DetailIndex { size: number; origin: [number, number]; tiles: [number, number][]; attribution?: string; sources?: Record<string, { title: string; licence: string; url: string }> }
@@ -192,4 +193,4 @@ export class StreetDetail<T = unknown, E = unknown> extends Solids {
     return { loading, ready, built, available: this.avail.size };
   }
 }
-export const streetDetail = <T, E>(p: StreetDetailProps<T, E>) => new StreetDetail<T, E>(p);
+export const streetDetail = <T, E>(p: Leveled<StreetDetailProps<T, E>>) => new StreetDetail<T, E>(p as StreetDetailProps<T, E>);

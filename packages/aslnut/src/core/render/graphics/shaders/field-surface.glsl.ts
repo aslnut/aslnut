@@ -8,12 +8,19 @@ uniform highp sampler2D state;
 uniform highp sampler2D base;
 uniform highp sampler2D lut;
 ${LIGHT_GLSL(3)}
+uniform highp sampler2D next;
 ivec2 cellOf(int i, int j) {
   return clamp(ivec2(i, j), ivec2(0, 0), ivec2(int(s.m.y) - 1, int(s.m.z) - 1));
 }
-float cellValue(int i, int j) {
-  vec4 c = texelFetch(state, cellOf(i, j), 0);
+float channelOf(vec4 c) {
   return s.m.w > 2.5 ? c.w : s.m.w > 1.5 ? c.z : s.m.w > 0.5 ? c.y : c.x;
+}
+float cellValue(int i, int j) {
+  float a = channelOf(texelFetch(state, cellOf(i, j), 0));
+  if (s.e.z <= 0.0) {
+    return a;
+  }
+  return mix(a, channelOf(texelFetch(next, cellOf(i, j), 0)), s.e.z);
 }
 float cellTop(int i, int j) {
   return (texelFetch(base, cellOf(i, j), 0).x + cellValue(i, j) * (1.0 - s.e.x)) * s.m.x + s.e.y;
@@ -60,7 +67,8 @@ void main() {
   vec3 v = normalize(frame.eye.xyz - v_world);
   float fres = pow(1.0 - max(dot(v, normalize(v_n)), 0.0), 3.0);
   c = airFog(mix(themed(c, 0.0), frame.haze.rgb, fres * 0.5), v_world);
-  float a = s.l.w * col.a * smoothstep(s.l.z, s.l.z * 3.0 + 0.0001, v_v);
+  float fade = s.l.z > -1.0e29 && s.e.x < 0.5 ? smoothstep(s.l.z, s.l.z * 3.0 + 0.0001, v_v) : 1.0;
+  float a = s.l.w * col.a * fade;
   outColor = vec4(c, a);
 }
 `,

@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.3
+
+- **Params by level:** any prop of any element can be given per observation level, `size: { level: { district: 6, street: 14 } }` (a rung not named takes the nearest named coarser one, else the nearest finer), applied once a level change through the element's own `setProps` (only what changed; `el.byLevel` keeps the specs, `E-LEVEL-002` for a rung not on the ladder); a raster field's `res` and `area` can now change after it is made (by level or `setProps`): a new grid, its state carried over, on WebGPU, WebGL2 and the CPU.
+- **Surface fields:** `field({ kind: 'surface', on, values })` shows a value at every point of walls and roofs, drawn by the buildings' or solids' own draws (no extra draw), on WebGPU and WebGL2; values per vertex or your function of the thing, its facet, its normal and its place (asked once when a mesh is made); `.set` writes only the chunks that changed; `.at`, probes and a legend.
+- **Epochs:** `data.epochs([{ at, source }], { blend })` plays one dataset per time on the world's clock (replay, seek, a time slider): features, raster grids and surface values; `'morph'` blends grids and surface values on the chip; loaded near the time, a few held, shown in `w.telemetry().epochs`. Raster fields take `data: epochs` instead of a rule.
+- **Field surfaces lying on the ground** with no least value drawn are no longer see-through.
+- **OffscreenCanvas:** a world runs on an `OffscreenCanvas` on the page (it threw: controls were put on it) and in a worker, on WebGPU and WebGL2; `examples/offscreen` shows both, `tools/checks.mjs offscreen` checks them.
+- **A sign added later:** `layer.setProps({ line: { … } })` adds a sign the layer did not have (it was ignored): made from its data, in its place, attached at once; labels added later join the world with it.
+- **Roll-ups and joins let go:** `tree.rollup` and `shapes.join` stop following their inputs when the last layer using them is removed or the world disposed (they were followed for ever), follow again when a layer takes them up, and catch up when read meanwhile; `source.close()` for one used without a layer; `source.watching` counts what follows a source. A layer's sources open and close with what they are made from (a stream inside a roll-up too).
+- **Constants per world:** `w.constants` is a world's scope of the citable tables: what is added there stays that world's (`constants.add` stays the process's, as documented); `constants.scope()` makes one of your own; `cityHeat(tiles, { constants })` takes a scope's materials. An entry added in part keeps its other values.
+- **Houses:** the neutral house's garage is checked at every level for every side, roof and size (a flat-roofed two-storey house with its garage at its left drew it; it stood behind the house in a view of its back). The docs say which way its front faces (the heading: 0 is north).
+- **Sun shadows on a flat floor:** `plane({ sky })` takes a sky of yours as `earth({ sky })` does (`sky()`: the sun lights the floor and casts shadows on it). The sun's shadow map is drawn again when a caster's texture changes (textures count their changes: `GTexture.version`, on WebGPU and WebGL2); a map drawn while copies were fading in was kept speckled, so shadows of shapes barely showed.
+- **`w.unproject([x, y])`:** a point on the canvas to the place on the ground (the inverse of `project`, on the flat map, the globe and a tilted view).
+- **`w.on('view')`:** the view began to move, moved, came to rest; whether it zoomed, and whether a person's hands or the app moved it.
+- **Each feature's order inside its layer:** `feature: { order }` on points, icons, lines and areas.
+- **Rows of any shape:** `rows.upsert` and `rows.patch` take features `{ id, props, geometry }`; a patch keeps the geometry it does not give.
+- **Icons:** an anchor on the place, a size per axis (or by the picture), an atlas that grows (`atlas.add`).
+- **Tile URLs:** `raster.xyz` takes `subdomains`, `tileSize: 512`, `zoomOffset`, a URL function and `errorUrl`.
+- **The map's hands:** `controllers.orbit({ bounds, viscosity, zoom: { wheel, pinch, keys }, snap, step, keys })`.
+- **Lines:** dashes and their offset per feature (up to two pairs), caps and round joins on the ground.
+- **Points:** each feature's own outline colour and width.
+- **Pictures over a box** answer taps when `pickable: true`.
+- **`frame: 'pixels'`:** a zoom is a 2D web map's at the canvas's own pixels.
+- **A settled view stays still:** `settled()` waits for the ground the view falls back on (its tiles' coarser ancestors) while it loads or its heights are on the way; they came up to a second after the view settled, and the next frame drawn for anything (your `everyFrame` work) had the water read the ground again for several frames. It also waits for draped areas and lines measuring their pieces' ground ranges (they did that up to a second after it settled, a few frames on a still view).
+
 ## 0.1.2
 
 - **Streams close with their world:** `dispose()` (and removing the last layer that uses a stream) closes a `data.stream`, its socket and its reconnect timer; a layer that takes the stream up again opens it again.

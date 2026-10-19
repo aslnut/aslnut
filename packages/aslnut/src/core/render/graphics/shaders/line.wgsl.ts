@@ -4,7 +4,8 @@
 // Vertex: a, b (place rel. to the origin: lon rad, Mercator y, height m, fraction along) · p0, p3 (the points before
 // a and after b; w: 1 when there is one) · x (feature index, length of its line m, which end 0 / 1, which side -1 / 1).
 // Not instanced: software renderers (and the WebGL2 fallback on blocklisted chips) draw many instances slowly.
-// The mark's own: a (width px, from the feature 0 / 1, dash on px, dash off px) · b (glow, dash flow px/s, depth bias px,
+// The mark's own: a (width px, from the feature 0 / 1, caps, joins: the draped routes') · b (glow, dash flow px/s, depth bias px,
+// (each feature's dashes: the mark's own plane, their offset the numbers' fourth)
 // outline mode) · c (outline colour; a trail's now, window, on, head). Hooks: /*@color*/, /*@alpha*/, /*@reveal*/ (fragment). Twin: line.glsl.ts.
 import { FEATURE_WGSL } from './feature.wgsl.ts';
 
@@ -117,10 +118,8 @@ fn clipAt(rel: vec2f, h: f32) -> vec4f {
   let position = i.world;
   let reveal = i.state.z;
   let mode = u.reveal.x;
-  // dashes, flowing along at u.b.y px a second (0: still)
-  let dashP = max(u.a.z + u.a.w, 0.0001);
-  let dashAt = i.alongPx - time * u.b.y;
-  if (u.a.z > 0.0 && (dashAt - floor(dashAt / dashP) * dashP) > u.a.z) {
+  // dashes (the feature's own pattern and offset), flowing along at u.b.y px a second (0: still)
+  if (!dashOn(i.alongPx + featAt(i.idx, 3).w - time * u.b.y, featAt(i.idx, 6))) {
     discard;
   }
   if (mode == 1.0 || mode == 3.0) {

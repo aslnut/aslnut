@@ -18,6 +18,7 @@ import { fillRanges, GW, lineDrapeProgram, lineTileProgram, pieceTexture, RangeJ
 import type { GTexture, Program } from '../../render/graphics/interface.ts';
 import { motionFrames } from '../../runtime/frame.ts';
 import { sizeUnits, sizeValue, type SizeOf, type SizeUnits } from '../../render/drawing/size.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 export interface LineProps<D> extends FeatureMarkProps<D> {
   /** CSS px (default 2), or `{ m, min, max }` metres kept within a range of CSS px (core › render › drawing › size) */
@@ -25,11 +26,20 @@ export interface LineProps<D> extends FeatureMarkProps<D> {
   color?: PerFeature<Color, D>;
   /** the number hooks read as `value` */
   value?: PerFeature<number, D>;
-  /** [on, off] CSS px */
-  dashes?: [number, number];
+  /** dashes: [on, off] CSS px, or [on, off, on, off] (an odd list is doubled, as SVG's is, then its first four); one
+   *  for every line or each feature's own (a restyle: nothing built again) */
+  dashes?: PerFeature<readonly number[], D>;
+  /** CSS px the dash pattern starts into the line (default 0); one for all or each feature's own */
+  dashOffset?: PerFeature<number, D>;
   /** the dashes move along the line, CSS px a second (from its start towards its end; negative: back); 0 or unset:
    *  they hold still and nothing is redrawn for them. Needs `dashes`. */
   flow?: number;
+  /** its ends, drawn on the ground: 'round' (default), 'butt' (flat at the end) or 'square' (half its width past it)
+   *  (a line floating free of the ground: flat ends) */
+  caps?: 'round' | 'butt' | 'square';
+  /** its bends, drawn on the ground: 'bevel' (default: cut at the corner) or 'round' ('miter' is drawn as 'bevel'
+   *  there) (a line floating free of the ground: mitred) */
+  joins?: 'bevel' | 'round' | 'miter';
   /** pulse brightness */
   glow?: number;
   /** drawn over the world: nothing in front hides it (flows between places, a route to follow); the same as
@@ -69,15 +79,17 @@ export class Line<D = Feature> extends FeatureMark<D, LineProps<D>> {
     return this.tileProg;
   }
   // the pieces' own ranges only make the prisms shorter (fewer pixels to fill); the drape is exact with the layer's
-  // range meanwhile: never waited for (settled), measured while frames go on (a few ms over the next frames)
+  // range meanwhile: measured while frames go on (a few ms over the next frames), and waited for (settled: its frames
+  // come by themselves, a still view that settled draws none)
   // (frames while a run goes on; a run waiting for its turn asks for one frame when its turn comes)
   override animating(s: State): boolean { return super.animating(s) || this.rangeJob.running || this.flowing(); }
+  protected override measuring(): boolean { return this.draped && this.rangeJob.busy; }
   /** its frames (core › runtime › frame): the ranges being measured, a shader reading the clock every display frame;
    *  dashes that flow by their pace (at most a pixel a frame: 28 px a second, 30 frames a second) */
   override wantsFrames(s: State): number { return super.animating(s) || this.rangeJob.running ? Infinity : this.flowing() ? motionFrames(Math.abs(this.props.flow!)) : 0; }
   /** dashes that move: the frames keep coming while it is shown and has something to draw (hidden or empty: none) */
   flowing(): boolean { return this.flows() && this.shown > 0 && this.entries.length > 0; }
-  private flows(): boolean { const p = this.props; return !!p.dashes && p.dashes[0] > 0 && !!p.flow; }
+  private flows(): boolean { const p = this.props; return !!p.dashes && (typeof p.dashes === 'function' || (p.dashes[0] ?? 0) > 0) && !!p.flow; }
   /** flowing dashes change it every frame: never into the ground's tiles */
   protected override selfMoving(): boolean { return super.selfMoving() || this.flows(); }
   protected override rangesStale(): boolean { return this.rangeJob.busy || !this.piecesOwn; }
@@ -91,10 +103,17 @@ export class Line<D = Feature> extends FeatureMark<D, LineProps<D>> {
     this.upperProg?.destroy(); this.upperFor = this.progs;
     return (this.upperProg = lineDrapeProgram(this.g!, this.id, this.code(), this.paramBlock!, this.props.blend, false, true));
   }
-  protected styleProps(): unknown[] { return [this.props.color, sizeValue(this.props.width), this.props.value]; }
+  protected styleProps(): unknown[] { return [this.props.color, sizeValue(this.props.width), this.props.value, this.props.dashes, this.props.dashOffset]; }
+  /** a feature's dashes (on, off, on, off), read into one array */
+  private dash: [number, number, number, number] = [0, 0, 0, 0];
   protected override sizeUnits(): SizeUnits { return sizeUnits(this.props.width, `${this.mark} '${this.id}' width`); }
   protected style(e: Entry<D>, s: State): Styled {
     const st = this.st; this.colourInto(val(this.props.color, e.d, s, '#ffb000' as Color)); st.number = val(sizeValue(this.props.width), e.d, s, 2); st.value = val(this.props.value, e.d, s, 0);
+    // its dashes (the mark's own plane) and their offset (the numbers' fourth): each feature's, or uniforms when the same
+    const ds = val(this.props.dashes, e.d, s, null as readonly number[] | null), dash = this.dash;
+    const list = ds && ds.length % 2 ? [...ds, ...ds] : ds ?? [];
+    for (let k = 0; k < 4; k++) { const x = Number(list[k]); dash[k] = Number.isFinite(x) && x > 0 ? x : 0; }
+    st.extra = dash; st.base = val(this.props.dashOffset, e.d, s, 0);
     return st;
   }
   /** a build under way (its lines read, then its arrays filled, a slice a frame) and the entries it is for */
@@ -102,8 +121,9 @@ export class Line<D = Feature> extends FeatureMark<D, LineProps<D>> {
   /** ms of a frame a build may take (the rest of it goes on in the next frames; what was built before draws meanwhile) */
   static buildSliceMs = 8;
   protected build(ctx: FrameContext): void | false {
-    if (this.job && this.job.of !== this.entries) this.job = null;
-    if (!this.job) { const next = new Segments(); this.job = { of: this.entries, next, run: this.startBuild(next) }; }
+    const list = this.buildList();
+    if (this.job && this.job.of !== list) this.job = null;
+    if (!this.job) { const next = new Segments(); this.job = { of: list, next, run: this.startBuild(next) }; }
     if (!this.job.run.run(Line.buildSliceMs)) return false;
     this.segs = this.job.next; this.job = null;
     this.built2();
@@ -114,7 +134,7 @@ export class Line<D = Feature> extends FeatureMark<D, LineProps<D>> {
   protected startBuild(next: Segments): SegmentsJob {
     const from = typeof this.props.reveal === 'object' ? this.props.reveal.from : undefined;
     const lines: SegmentLine[] = [];
-    for (const e of this.entries) {
+    for (const e of this.buildList()) {
       const g = e.geometry, closed = g?.type === 'Polygon' || g?.type === 'MultiPolygon';
       const cuts = e.cuts?.flat(), parts = linesOf(g);
       for (let k = 0; k < parts.length; k++) {
@@ -160,7 +180,8 @@ export class Line<D = Feature> extends FeatureMark<D, LineProps<D>> {
   }
   protected override uniforms(_ctx: FrameContext): void {
     const p = this.props, d = p.dashes;
-    this.L.set([1, 1, d?.[0] ?? 0, d?.[1] ?? 0], 28);
+    // a (width from the feature, its caps and joins: 0 round / 1 butt / 2 square, 0 bevel / 1 round)
+    this.L.set([1, 1, p.caps === 'butt' ? 1 : p.caps === 'square' ? 2 : 0, p.joins === 'round' ? 1 : 0], 28);
     this.L.set([p.glow ?? 0.5, d ? p.flow ?? 0 : 0, p.depthBias ?? 2, 0], 32);
     this.L.set([0, 0, 0, 0], 36);
   }
@@ -197,4 +218,4 @@ export class Line<D = Feature> extends FeatureMark<D, LineProps<D>> {
   protected freeGeometry(): void { this.job = null; this.inst?.destroy(); this.ibuf?.destroy(); this.segTex?.destroy(); this.inst = this.ibuf = null; this.segTex = null; this.cap = 0; this.tilePieces.destroy(); this.tileProg?.destroy(); this.tileProg = null; this.upperProg?.destroy(); this.upperProg = null; this.upperFor = null; }
   override readouts() { return { count: () => this.size, segments: () => this.segs.count }; }
 }
-export const line = <D = Feature>(p: LineProps<D>) => new Line<D>(p);
+export const line = <D = Feature>(p: Leveled<LineProps<D>>) => new Line<D>(p as LineProps<D>);

@@ -19,6 +19,7 @@ import { rgba, type Color } from '../../render/style/color.ts';
 import { FeatureMark, LFLOATS, Prog, type Entry, type FeatureMarkProps, type PerFeature, type Styled } from './features.ts';
 import { BEHIND } from './drape.ts';
 import { sizeUnits, sizeValue, type SizeOf, type SizeUnits } from '../../render/drawing/size.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 /** an item of an array of points; a source's features come as features ({ id, props, geometry }) */
 export interface PointDatum { at: LonLatH; value?: number; id?: string | number; [k: string]: any }   // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -31,7 +32,9 @@ export interface PointsProps<D = PointDatum> extends FeatureMarkProps<D> {
   color?: PerFeature<Color, D>;
   /** the number hooks read as `value` */
   value?: PerFeature<number, D>;
-  outline?: { color?: string; width?: number };
+  /** a ring round each point: its colour and width (CSS px), one for all or each feature's own (default '#00000080',
+   *  1.5) */
+  outline?: { color?: PerFeature<Color, D>; width?: PerFeature<number, D> };
   /** moving points: each feature's line is its path, `times` the time at each of its points (ms since 1970 or
    *  Dates); the point is where the world's time (or `clock`) puts it, every frame, with no rebuild and nothing per
    *  frame from you (a replay of vehicles, ships, people) */
@@ -79,11 +82,17 @@ export class Points<D = PointDatum> extends FeatureMark<D, PointsProps<D>> {
     if (at) for (const e of list) { const p = at(e.d); e.geometry = { type: 'Point', coordinates: [p[0], p[1], ...(p[2] !== undefined ? [p[2]] : [])] as [number, number] } as Geometry; }
     return list;
   }
-  protected styleProps(): unknown[] { return [this.props.color, sizeValue(this.props.size), this.props.value]; }
+  protected styleProps(): unknown[] { return [this.props.color, sizeValue(this.props.size), this.props.value, this.props.outline?.color, this.props.outline?.width]; }
+  /** its outline's colour, read as a colour is (one object, no allocation per feature) */
+  private oc: [number, number, number, number] = [0, 0, 0, 0.5];
   protected override sizeUnits(): SizeUnits { return sizeUnits(this.props.size, `points '${this.id}' size`); }
   protected style(e: Entry<D>, s: State): Styled {
     const d = e.d as unknown as PointDatum;
     const st = this.st; this.colourInto(val(this.props.color, e.d, s, '#ffb000' as Color)); st.number = val(sizeValue(this.props.size), e.d, s, 8); st.value = val(this.props.value, e.d, s, typeof d?.value === 'number' ? d.value : 0);
+    // its outline (each feature's own: the numbers' fourth, the mark's own plane; the same for all: uniforms)
+    const o = this.props.outline, oc = val(o?.color, e.d, s, '#00000080' as Color), r = typeof oc === 'string' ? rgba(oc) : oc;
+    this.oc[0] = r[0] ?? 0; this.oc[1] = r[1] ?? 0; this.oc[2] = r[2] ?? 0; this.oc[3] = r[3] ?? 1;
+    st.base = val(o?.width, e.d, s, 1.5); st.extra = this.oc;
     return st;
   }
   protected build(): void {
@@ -124,15 +133,16 @@ export class Points<D = PointDatum> extends FeatureMark<D, PointsProps<D>> {
   protected override uniforms(ctx: FrameContext): void {
     const p = this.props, L = this.L;
     const hv = p.hover === false ? null : p.hover ?? (p.tooltip || p.onHover ? { color: '#ffffff' } : null), sl = p.selected === false ? null : p.selected ?? { color: '#ffd166', outline: 2 };
-    const hc = rgba(hv?.color ?? '#ffffff'), sc = rgba(sl?.color ?? '#ffd166'), oc = rgba(p.outline?.color ?? '#00000080');
+    const hc = rgba(hv?.color ?? '#ffffff'), sc = rgba(sl?.color ?? '#ffd166');
     L[2] = ctx.world.exaggeration;
     // its looks: a hovered / selected colour mixed into the fill (none unless asked), an outline added (px), a size ×
     L[12] = hc[0]; L[13] = hc[1]; L[14] = hc[2]; L[15] = hv?.mix ?? 0;
     L[17] = hv ? hv.outline ?? 1.5 : 0;
     L[20] = sc[0]; L[21] = sc[1]; L[22] = sc[2]; L[23] = sl?.mix ?? 0;
     L[25] = sl ? sl.outline ?? 2 : 0;
-    L[28] = p.outline?.width ?? 1.5; L[29] = p.depthBias !== undefined ? p.depthBias * 1e-5 : 0.00002; L[30] = hv ? 1.25 : 1; L[31] = sl ? 1.15 : 1;
-    L[32] = oc[0]; L[33] = oc[1]; L[34] = oc[2]; L[35] = oc[3];
+    // (the outline's width and colour are each feature's: its numbers' fourth and the mark's own plane)
+    L[28] = 0; L[29] = p.depthBias !== undefined ? p.depthBias * 1e-5 : 0.00002; L[30] = hv ? 1.25 : 1; L[31] = sl ? 1.15 : 1;
+    L[32] = L[33] = L[34] = L[35] = 0;
     L[36] = L[37] = L[38] = L[39] = 0;
   }
   protected draws(ctx: FrameContext): DrawCall[] {
@@ -156,16 +166,18 @@ export class Points<D = PointDatum> extends FeatureMark<D, PointsProps<D>> {
       while (this.hNext < n) { ground(this.hNext++); if ((this.hNext & 255) === 0 && performance.now() - t0 > 2) break; }
       if (this.hNext >= n) { this.hNext = -1; this.hVer = this.hPass; this.hAt = ctx.now; this.key = ''; }
     }
-    const key = `${this.hVer}|${n}|${this.entries.length}`;
+    const key = `${this.hVer}|${n}|${this.entries.length}|${this.orderVer}`;
     if (moving || key !== this.key || this.placed !== ll) {
       this.key = key; this.placed = ll;
       const f = this.data, o = this.origin;
       const clock = moving ? (() => { const c = p.along!.clock ? p.along!.clock(ctx.s) : ctx.s.time.now; return typeof c === 'number' ? c : c.getTime(); })() : 0;
-      for (let q = 0; q < n; q++) {
-        const path = this.paths[q];
+      // (each feature's own order: its places written in it, drawn in it; else as the data gives them)
+      const seq = this.drawOrder(n);
+      for (let k = 0; k < n; k++) {
+        const q = seq ? seq[k]! : k, path = this.paths[q];
         // a moving point: where its times put it now (a binary search, then between the two points)
         if (path) { const at = this.whereAt(path, clock); ll[2 * q] = at[0]; ll[2 * q + 1] = at[1]; ground(q); }
-        const r = q * STRIDE;
+        const r = k * STRIDE;
         f[r] = o.x(ll[2 * q]!); f[r + 1] = o.y(ll[2 * q + 1]!); f[r + 2] = this.hts[q]!; f[r + 3] = this.fi[q]!;
       }
       this.count = n;
@@ -180,6 +192,18 @@ export class Points<D = PointDatum> extends FeatureMark<D, PointsProps<D>> {
     }
     return out;
   }
+  /** the places in their drawing order (feature.order: lower first, the data's between equals); null: as they are */
+  private seq: { ver: number; n: number; fi: Float32Array; list: Uint32Array } | null = null;
+  private drawOrder(n: number): Uint32Array | null {
+    if (!this.props.feature?.order) return null;
+    const c = this.seq; if (c && c.ver === this.orderVer && c.n === n && c.fi === this.fi) return c.list;
+    const o = this.orders, fi = this.fi, list = new Uint32Array(n); for (let q = 0; q < n; q++) list[q] = q;
+    list.sort((a, b) => (o[fi[a]!]! - o[fi[b]!]!) || a - b);
+    this.seq = { ver: this.orderVer, n, fi, list };
+    return list;
+  }
+  /** a feature's order changed: its places written again in it (nothing built again) */
+  protected override reordered(): void { this.key = ''; }
   /** the places the records were last written from */
   private placed: Float64Array | null = null;
   private at2: [number, number] = [0, 0];
@@ -204,4 +228,4 @@ export class Points<D = PointDatum> extends FeatureMark<D, PointsProps<D>> {
   /** places shown now (their feature's own gate lets them) */
   override readouts() { return { count: () => this.size, shown: () => { let k = 0; for (let q = 0; q < this.count; q++) if (this.featData[this.at(this.fi[q]!, 2) + 3]! > 0) k++; return k; } }; }
 }
-export const points = <D = PointDatum>(p: PointsProps<D>) => new Points<D>(p);
+export const points = <D = PointDatum>(p: Leveled<PointsProps<D>>) => new Points<D>(p as PointsProps<D>);

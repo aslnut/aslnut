@@ -64,6 +64,17 @@ export abstract class Source<P = Props> {
    *  (your everyFrame work): told once that frame is drawn, once however often it changed (a layer draws what it was
    *  made of); `now`: told at once, each change (a recorder of every row: drive.data) */
   watch(fn: () => void, o: { now?: boolean } = {}): () => void { const s = o.now ? this.recorders : this.watchers; s.add(fn); return () => s.delete(fn); }
+  /** how many are told of its changes now (watchers and recorders): what holds on to it (0: nothing does) */
+  get watching(): number { return this.watchers.size + this.recorders.size; }
+  /** the sources it is made from (a join's shapes and rows, a roll-up's rows and every level's shapes): the layers that
+   *  use it use them too (core › world › element: opened with its first layer, closed with its last) */
+  inputs(): readonly Source[] { return []; }
+  /** taken up again by a layer after close(): what it follows (its inputs, a stream's socket) followed again */
+  reopen(): void {}
+  /** let go of what it holds while no layer uses it (its subscriptions to its inputs; a stream's socket). The world
+   *  closes it when the last layer using it is removed or the world disposed; a source you use without a layer you
+   *  close yourself. Read while closed, it catches up with its inputs then */
+  close(): void {}
   /** replace every feature */
   protected replace(list: Feature<P>[], shapes = true): void {
     this.list = list; this.byId = new Map(list.map((f) => [f.id, f]));
@@ -92,9 +103,19 @@ export class Joined<P = Props, R = Props> extends Source<P & Partial<R>> {
     this.keyOf = k(o.on as never) as (f: Feature<P>) => unknown;
     this.rowKeyOf = k((o.rowsOn ?? o.on) as never) as (f: Feature<R>) => unknown;
     // (joined at once, each change: what records its rows sees every one; its layers told as any source's)
-    shapes.watch(() => this.sync(), { now: true }); rows.watch(() => this.sync(), { now: true });
+    this.reopen();
+  }
+  private offs: (() => void)[] = [];
+  override inputs(): readonly Source[] { return [this.shapes as unknown as Source, this.rows as unknown as Source]; }
+  override reopen(): void {
+    if (!this.offs.length) this.offs = [this.shapes.watch(() => this.sync(), { now: true }), this.rows.watch(() => this.sync(), { now: true })];
     this.sync();
   }
+  override close(): void { for (const off of this.offs) off(); this.offs = []; }
+  // (closed: what it reads catches up with its shapes and rows first)
+  override features(): readonly Feature<P & Partial<R>>[] { if (!this.offs.length) this.sync(); return super.features(); }
+  override get(id: string | number): Feature<P & Partial<R>> | undefined { if (!this.offs.length) this.sync(); return super.get(id); }
+  override get size(): number { if (!this.offs.length) this.sync(); return super.size; }
   protected async load(ctx: SourceContext): Promise<void> { await Promise.all([this.shapes.start(ctx), this.rows.start(ctx)]); this.sync(); }
   override frame(s: State, ctx: SourceContext): void { this.shapes.frame(s, ctx); this.rows.frame(s, ctx); }
   override status(): SourceStatus { const a = this.shapes.status(), b = this.rows.status(); return { pending: [...a.pending, ...b.pending], failed: [...a.failed, ...b.failed] }; }

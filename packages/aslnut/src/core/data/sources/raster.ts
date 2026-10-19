@@ -38,6 +38,17 @@ export interface RasterSource {
   urlFor?(tile: RasterTile): string | null;
 }
 export interface RasterSourceOptions { id?: string; attribution?: string; terms?: Partial<Terms>; minZoom?: number; maxZoom?: number; where?: BBox }
+/** picture tiles at a URL, as web maps write them */
+export interface XYZOptions extends RasterSourceOptions {
+  /** the hosts `{s}` stands for: letters ('abc') or names; each tile asks one, spread by its x and y (default a, b, c) */
+  subdomains?: string | readonly string[];
+  /** the service's tiles' size in pixels (default 256; 512: each covers what four 256 px tiles of the next level do) */
+  tileSize?: number;
+  /** added to the zoom written in the URL (default 0; -1 for 512 px tiles counted from level 0) */
+  zoomOffset?: number;
+  /** a picture for a tile that fails to load (drawn over the whole tile) */
+  errorUrl?: string;
+}
 /** one picture over a box [w, s, e, n] (plain lon/lat, north up): a URL, or a picture you made (a canvas, a bitmap) */
 export interface ImageSource {
   readonly kind: 'image';
@@ -77,20 +88,35 @@ const base = (o: RasterSourceOptions, id: string): Omit<RasterSource, 'draw'> =>
 const T = 256;
 
 export const raster = {
-  /** picture tiles from a {z}/{x}/{y} URL (past its last level: the last level's piece, scaled up) */
-  xyz(url: string, o: RasterSourceOptions = {}): RasterSource {
-    if (typeof url !== 'string' || !/\{z\}/.test(url)) throw new AslnutError('E-DATA-001', `raster.xyz needs a URL with {z}, {x}, {y} (got ${JSON.stringify(url)})`, { fix: "raster.xyz('https://…/{z}/{x}/{y}.png')" });
+  /** picture tiles from a {z}/{x}/{y} URL, or your function of a tile (past its last level: the last level's piece,
+   *  scaled up). Tile URLs as other web maps write them: `{s}` spread over `subdomains`, `{-y}` counted from the south
+   *  (TMS), tiles of 512 px (`tileSize`: one covers four of the next level's 256 px), the zoom in the URL moved by
+   *  `zoomOffset`, a picture for a tile that fails (`errorUrl`) */
+  xyz(url: string | ((z: number, x: number, y: number) => string), o: XYZOptions = {}): RasterSource {
+    if (typeof url !== 'function' && (typeof url !== 'string' || !/\{z\}/.test(url))) throw new AslnutError('E-DATA-001', `raster.xyz needs a URL with {z}, {x}, {y} (got ${JSON.stringify(url)})`, { fix: "raster.xyz('https://…/{z}/{x}/{y}.png') or raster.xyz((z, x, y) => `https://…/${z}/${x}/${y}.png`)" });
+    const size = o.tileSize ?? T, k = size / T, off = o.zoomOffset ?? 0;
+    if (!(Number.isInteger(Math.log2(k)) && k >= 1)) throw new AslnutError('E-DATA-001', `raster.xyz: tileSize ${size} is not 256 times a power of two`, { fix: 'tileSize: 256 or 512' });
+    if (!Number.isInteger(off)) throw new AslnutError('E-DATA-001', `raster.xyz: zoomOffset ${off} is not a whole number`, { fix: 'zoomOffset: -1 for 512 px tiles counted from level 0, else 0' });
+    const subs = typeof o.subdomains === 'string' ? o.subdomains.split('') : o.subdomains ?? ['a', 'b', 'c'];
     const s = base(o, 'xyz'), max = o.maxZoom ?? 18;
-    const urlOf = (z: number, x: number, y: number) => url.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y)).replace('{-y}', String(2 ** z - 1 - y));
+    /** the service's tile under a 256 px tile: its zoom in the URL, its x and y, and where the 256 px tile is in it */
+    const tileOf = (t: RasterTile) => {
+      const zn = Math.min(t.z, max), per = 2 ** (t.z - zn) * k, tx = Math.floor(t.x / per), ty = Math.floor(t.y / per);
+      return { z: zn + off, x: tx, y: ty, n: Math.max(1, 2 ** zn / k), per, ix: t.x - tx * per, iy: t.y - ty * per };
+    };
+    const urlOf = (q: ReturnType<typeof tileOf>) => typeof url === 'function' ? url(q.z, q.x, q.y)
+      : url.replace('{s}', subs.length ? subs[Math.abs(q.x + q.y) % subs.length]! : '').replace('{z}', String(q.z)).replace('{x}', String(q.x)).replace('{y}', String(q.y)).replace('{-y}', String(q.n - 1 - q.y));
     return {
       ...s, maxZoom: max,
-      urlFor: (t) => { const zz = Math.min(t.z, max), k = 2 ** (t.z - zz); return urlOf(zz, Math.floor(t.x / k), Math.floor(t.y / k)); },
+      urlFor: (t) => urlOf(tileOf(t)),
       async draw(g, t, ctx) {
         if (t.z < s.minZoom) return false;
-        const zz = Math.min(t.z, max), k = 2 ** (t.z - zz), px = Math.floor(t.x / k), py = Math.floor(t.y / k);
-        const im = await ctx.loader.get<ImageBitmap>(urlOf(zz, px, py), { kind: 'image', priority: ctx.priority, prefetch: ctx.prefetch });
+        const q = tileOf(t), opts = { kind: 'image' as const, priority: ctx.priority, prefetch: ctx.prefetch };
+        let im: ImageBitmap | null = null;
+        try { im = await ctx.loader.get<ImageBitmap>(urlOf(q), opts); } catch (e) { if (!o.errorUrl) throw e; }
+        if (!im && o.errorUrl) { const e = await ctx.loader.get<ImageBitmap>(o.errorUrl, opts); if (e) { g.drawImage(e, 0, 0, T, T); return true; } }
         if (!im) return false;
-        const sz = im.width / k; g.drawImage(im, (t.x - px * k) * sz, (t.y - py * k) * sz, sz, sz, 0, 0, T, T);
+        const sz = im.width / q.per; g.drawImage(im, q.ix * sz, q.iy * sz, sz, sz, 0, 0, T, T);
         return true;
       },
     };

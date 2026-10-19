@@ -18,6 +18,7 @@ import { roadGraph } from './graph.ts';
 import { CLS, clsOf } from './profiles.ts';
 import { profileFor, VIC_STREETS } from './street-profiles.ts';
 import { junctionMesh, sectionMesh, STREETS_LOOK, type StreetsLook } from './index.ts';
+import type { Leveled } from '../../../../../../core/observation/presence.ts';
 
 export interface RoadsProps extends SolidsProps {
   /** centre lines (LineStrings) with their tags in props (OSM's: highway, lanes, width, sidewalk …; `nodes`: their
@@ -43,9 +44,11 @@ const isRoad = (t: Record<string, unknown>) => { const h = String(t.highway ?? '
 export class Roads extends Solids {
   // (it lies on the ground: a mark on the ground paints it)
   override readonly stands = false;
-  private rp: RoadsProps; private src: Source | null = null; private seen = -1; private off: (() => void) | null = null;
+  /** its props as it runs (given by level: the values for the level now) */
+  private get rp(): RoadsProps { return this.props as unknown as RoadsProps; }
+  private src: Source | null = null; private seen = -1; private off: (() => void) | null = null;
   private secs: Section[] = []; private juncs: Junction[] = []; private net: Network<{ cls: number; name: string }> | null = null; private lines: { line: [number, number][]; props: { cls: number; name: string } }[] = [];
-  constructor(p: RoadsProps) { super({ hover: { color: '#ffd166' }, ...p }); this.rp = p; }
+  constructor(p: RoadsProps) { super({ hover: { color: '#ffd166' }, ...p }); }
   override async attach(ctx: AttachContext): Promise<void> {
     await super.attach(ctx);
     const d = this.rp.data;
@@ -127,4 +130,4 @@ export class Roads extends Solids {
   }
 }
 /** streets from any source of centre lines with OSM-style tags: roads({ data }) */
-export const roads = (p: RoadsProps) => new Roads(p);
+export const roads = (p: Leveled<RoadsProps>) => new Roads(p as RoadsProps);

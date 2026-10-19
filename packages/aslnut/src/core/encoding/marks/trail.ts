@@ -10,6 +10,7 @@ import { linesOf, type Feature } from '../../data/features.ts';
 import { Line, type LineProps } from './line.ts';
 import type { Entry } from './features.ts';
 import type { Segments, SegmentsJob } from '../../geometry/build/segments.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 export interface TrailProps<D> extends LineProps<D> {
   /** the time of each point of the feature's line: ms since 1970 or Dates (default d.props.times) */
@@ -24,9 +25,10 @@ export interface TrailProps<D> extends LineProps<D> {
 const ms = (t: number | Date) => (typeof t === 'number' ? t : t.getTime());
 
 export class Trail<D = Feature> extends Line<D> {
-  private tp: TrailProps<D>;
+  /** its props as it runs (given by level: the values for the level now) */
+  private get tp(): TrailProps<D> { return this.props; }
   private t0 = 0; private t1 = 1;
-  constructor(p: TrailProps<D>) { super(p); this.tp = p; }
+  constructor(p: TrailProps<D>) { super(p); }
   /** a feature's times as given (ms or Dates), or none */
   private timesOf(e: Entry<D>): readonly (number | Date)[] | null {
     const t = this.tp.times ? this.tp.times(e.d) : ((e.d as unknown as Feature).props?.times as (number | Date)[] | undefined);
@@ -70,4 +72,4 @@ export class Trail<D = Feature> extends Line<D> {
   override animating(s: State): boolean { return !!this.tp.clock || (this.attached?.world as { timeRunning?: boolean } | undefined)?.timeRunning === true || super.animating(s); }
   override wantsFrames(s: State): number { return !!this.tp.clock || (this.attached?.world as { timeRunning?: boolean } | undefined)?.timeRunning === true ? Infinity : super.wantsFrames(s); }
 }
-export const trail = <D = Feature>(p: TrailProps<D>) => new Trail<D>(p);
+export const trail = <D = Feature>(p: Leveled<TrailProps<D>>) => new Trail<D>(p as TrailProps<D>);

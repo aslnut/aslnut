@@ -507,83 +507,86 @@ from 'aslnut':
   bakedMesh, bakedRoads, BakedRoads, bakedRoadsWorker, bboxOf, BEHIND, bins, blackbody, BLOCK, branching, Builder,
   buildings, Buildings, Camera, cards, Cards, catalogues, centreOf, channels, charger, chargers, checkDamping, checkView,
   choice, CITY, CITY_KINDS, cityHeat, cityRasters, cityTile, clampTerrain, CLEAR, coastField, coastSegments, codeOf,
-  collision, color, colours, composeHeights, constants, contains, control, controllers, convection, CSV, cubicBezier,
-  custom, Custom, CUSTOM_SCOPE, CustomMaterial, CustomMesh, DAMPING, data, dataDrive, DataDrive, decodeHeight, decodeMVT,
-  DEFAULT_HEAT_OPTIONS, DEFAULT_LADDER, distForZoom, DQ_FLOATS, DRAPE_DEFAULTS, drapeOf, drive, driveway, earcut, earth,
-  earthLite, EarthSky, ease, EASE_PRESETS, EASES, easing, Element, encodeMVT, entities, Entities, entity, Entity,
-  entityElement, EntityElement, EntityKind, EntitySet, epsgOf, exceptionOf, extrusion, Extrusion, FeatureMark, fence,
-  field, figure, flag, Flight, followEntity, Follower, footprint, footprintOf, form, Gates, GATES, geo, GeoJSON, gmst,
-  Governor, grammar, GraphicsUnavailable, greatCircle, gridSampler, GROUND_WITHIN, groundSun, groups, Groups, groupsJob,
-  GroupsSource, HALF_LIFE_K, heat, Heat, HEAT_DIFF_RAMP, HEAT_METRICS, HEAT_OPTION_INFO, HEAT_RAMP, heatModel, heatRaster,
-  hex, history, HOOK_POINTS, HOT_HOUR, house, HOUSE, housePlan, icon, Icon, IconAtlas, icons, icosphere, ImageRaster,
-  imagery, importShape, impostor, inLevels, INSTANCE_FLOATS, int, isHouse, isImpostor, isMiss, isScale, isTheme,
-  jenksBreaks, Join, Joined, junctionMesh, kernel, keys, kind, KIND_ORDER, kinds, kitbash, ladderOf, LAMP_CODES, layer,
-  Layer, layers, LEAF_FILL, leg, legCost, legend, Levels, line, Line, LINE_CODE, linesOf, liveGraphics, loader, Loader,
-  LoaderMiss, localFrame, localTime, locomotion, Log, lookAt, LOT, makeState, material, MATERIAL_CODES, MATERIALS,
-  MATERIALS_LOOK, MESH_FLOATS, MeshBuilder, meshCode, MODES, moonAt, motionFrames, motions, move, moves, network, Network,
-  NO_OBSERVATION, normalize, num, openGraphics, openMeteo, packNormal, parseCSV, parseStars, partOf, PATHS, phaseName,
-  pitchFloor, placement, Placement, PLAN, plane, planeAt, planeXY, PMTiles, PMTilesReader, PMTilesWriter, points, Points,
-  pointsOf, poles, POLES, polygonsOf, poseOf, preset, PRESET_NOTES, presetCurve, prettyBreaks, preview, profileFor,
-  profileOf, propertyLine, qaxis, qmul, Query, rain, Rain, ramp, RAMPS, raster, Raster, RasterField, reachInto,
-  readWFSCapabilities, readWFSDescribe, readWMSCapabilities, readXML, recipes, rectInside, regions, RegionTree, Relations,
-  RemoteLog, Renderer, replay, reveal, rgba, rgbOf, rigFrom, rigPose, ROAD_CLASS, roads, Roads, roadSection, ROOF_FORMS,
-  roofFaces, roofMeasure, roofMesh, roofOf, roofRise, rotateBone, Rows, rowTexels, ruleOf, rules, saturationVapour, scale,
-  scenarioApi, Scenarios, Scope, sea, SEA_LOOK, SeaSurface, sectionMesh, serve, ShaderError, shadowBox, shape, Shape,
-  SHAPE_FLOATS, shapeCode, shapeOf, shapePackage, ShapePackage, shapes, ShapeShelf, shell, SHORE, Shot, shown, sidewalks,
-  sizePxAt, sizeUnits, sizeValue, skeleton, Skeleton, SKIN_FLOATS, SKIN_INSTANCE_FLOATS, SKIN_SLOTS, SkinDraw, skinMesh,
-  skinPoint, sky, Sky, skyDir, skyLongwave, skyNow, skyTurn, skyViewFactor, smallest, smoothNormals, solids, Solids,
-  solveSteady, sortElements, Source, SPECIES, speciesOf, splitParts, spring, springStep, starData, STATE_SCHEMA, states,
-  stats, Stats, stepSurface, still, stream, Stream, STREET, streetBands, streetDetail, StreetDetail, streets, Streets,
-  STREETS_LOOK, streetsWorker, sunAt, sunFrames, sunTest, sunTimes, supported, Surface, surfaceCapacity, terrain, text,
-  Text, textParam, theme, THEMES, Tiled, tileHeights, TILT_LIMIT, TILT_MAX, tiltMaxAt, track, trail, Trail, traits,
-  translateModule, translateStatements, treeCrown, treeInstances, TREES, treeShapes, triangulate, typology, utci,
-  utciStress, valueOf, vapourPressure, vary, vegetation, Vegetation, VIC_STREETS, viewOf, visibilityOf, WALL, water, Water,
-  WATER, waterArea, waveSet, WEATHERS, WFS, whereOf, widthOf, windowRows, windProfile, wires, Wires, worker, workers,
-  world, World, writeRow, zonedTime, zoneLookups, zoomForDist
+  collision, color, colours, composeHeights, constants, Constants, contains, control, controllers, convection, CSV,
+  cubicBezier, custom, Custom, CUSTOM_SCOPE, CustomMaterial, CustomMesh, DAMPING, data, dataDrive, DataDrive, decodeHeight,
+  decodeMVT, DEFAULT_HEAT_OPTIONS, DEFAULT_LADDER, distForZoom, DQ_FLOATS, DRAPE_DEFAULTS, drapeOf, drive, driveway,
+  earcut, earth, earthLite, EarthSky, ease, EASE_PRESETS, EASES, easing, Element, encodeMVT, entities, Entities, entity,
+  Entity, entityElement, EntityElement, EntityKind, EntitySet, epochs, Epochs, epsgOf, exceptionOf, extrusion, Extrusion,
+  FeatureMark, fence, field, fieldLegend, figure, flag, Flight, followEntity, Follower, footprint, footprintOf, form,
+  Gates, GATES, geo, GeoJSON, gmst, Governor, grammar, GraphicsUnavailable, greatCircle, gridSampler, GROUND_WITHIN,
+  groundSun, groups, Groups, groupsJob, GroupsSource, HALF_LIFE_K, heat, Heat, HEAT_DIFF_RAMP, HEAT_METRICS,
+  HEAT_OPTION_INFO, HEAT_RAMP, heatModel, heatRaster, hex, history, HOOK_POINTS, HOT_HOUR, house, HOUSE, housePlan, icon,
+  Icon, IconAtlas, icons, icosphere, ImageRaster, imagery, importShape, impostor, inLevels, INSTANCE_FLOATS, int,
+  isByLevel, isHouse, isImpostor, isMiss, isScale, isTheme, jenksBreaks, Join, Joined, junctionMesh, kernel, keys, kind,
+  KIND_ORDER, kinds, kitbash, ladderOf, LAMP_CODES, layer, Layer, layers, LEAF_FILL, leg, legCost, legend, Levels,
+  levelValue, line, Line, LINE_CODE, linesOf, liveGraphics, loader, Loader, LoaderMiss, localFrame, localTime, locomotion,
+  Log, lookAt, LOT, makeState, material, MATERIAL_CODES, MATERIALS, MATERIALS_LOOK, MESH_FLOATS, MeshBuilder, meshCode,
+  MODES, moonAt, motionFrames, motions, move, moves, network, Network, NO_OBSERVATION, normalize, num, openGraphics,
+  openMeteo, packNormal, parseCSV, parseStars, partOf, PATHS, phaseName, pitchFloor, placement, Placement, PLAN, plane,
+  planeAt, planeXY, PMTiles, PMTilesReader, PMTilesWriter, points, Points, pointsOf, poles, POLES, polygonsOf, poseOf,
+  preset, PRESET_NOTES, presetCurve, prettyBreaks, preview, profileFor, profileOf, propertyLine, qaxis, qmul, Query, rain,
+  Rain, ramp, RAMPS, raster, Raster, RasterField, reachInto, readWFSCapabilities, readWFSDescribe, readWMSCapabilities,
+  readXML, recipes, rectInside, regions, RegionTree, Relations, RemoteLog, Renderer, replay, reveal, rgba, rgbOf, rigFrom,
+  rigPose, ROAD_CLASS, roads, Roads, roadSection, ROOF_FORMS, roofFaces, roofMeasure, roofMesh, roofOf, roofRise,
+  rotateBone, Rows, rowTexels, ruleOf, rules, saturationVapour, scale, scenarioApi, Scenarios, Scope, sea, SEA_LOOK,
+  SeaSurface, sectionMesh, serve, ShaderError, shadowBox, shape, Shape, SHAPE_FLOATS, shapeCode, shapeOf, shapePackage,
+  ShapePackage, shapes, ShapeShelf, shell, SHORE, Shot, shown, sidewalks, sizePxAt, sizeUnits, sizeValue, skeleton,
+  Skeleton, SKIN_FLOATS, SKIN_INSTANCE_FLOATS, SKIN_SLOTS, SkinDraw, skinMesh, skinPoint, sky, Sky, skyDir, skyLongwave,
+  skyNow, skyTurn, skyViewFactor, smallest, smoothNormals, solids, Solids, solveSteady, sortElements, Source, SPECIES,
+  speciesOf, splitParts, spring, springStep, starData, STATE_SCHEMA, states, stats, Stats, stepSurface, still, stream,
+  Stream, STREET, streetBands, streetDetail, StreetDetail, streets, Streets, STREETS_LOOK, streetsWorker, sunAt, sunFrames,
+  sunTest, sunTimes, supported, Surface, surfaceCapacity, SurfaceField, terrain, text, Text, textParam, theme, THEMES,
+  Tiled, tileHeights, TILT_LIMIT, TILT_MAX, tiltMaxAt, track, trail, Trail, traits, translateModule, translateStatements,
+  treeCrown, treeInstances, TREES, treeShapes, triangulate, typology, utci, utciStress, valueOf, vapourPressure, vary,
+  vegetation, Vegetation, VIC_STREETS, viewOf, visibilityOf, WALL, water, Water, WATER, waterArea, waveSet, WEATHERS, WFS,
+  whereOf, widthOf, windowRows, windProfile, wires, Wires, worker, workers, world, World, writeRow, zonedTime, zoneLookups,
+  zoomForDist
 
 types from 'aslnut' (import type { … }):
   Aim, Anchor, Anchors, Api, ApplyOptions, ApplyReport, ArcProps, AreaProps, AttachContext, Attribute, AvatarBody,
   AvatarMode, AvatarOptions, BakedNumbers, BakedRoadsProps, BakedTile, Blend, BlockLook, BodiesOptions, Body, BoneSpec,
-  BranchingShape, BranchLevel, BranchSpec, Budget, BufferKind, BuildingLook, BuildingsProps, CameraController,
+  BranchingShape, BranchLevel, BranchSpec, Budget, BufferKind, BuildingLook, BuildingsProps, ByLevel, CameraController,
   CameraControlOptions, Caps, CaptureOptions, CardLook, CardRow, CardsProps, Catalogue, Change, Channel, CityExtra,
   CityLook, CityRasters, CityTile, Clip, Clock, ClockWorld, CollisionOptions, Color, Colorish, ColumnChannel, CompareView,
   Constant, ConstantsTable, Controller, CopyHow, Corner, CountChannel, CpuGrid, CustomGeometry, CustomMaterialSpec,
   CustomMeshProps, CustomProps, Damping, Data, DataContext, DataDriveOptions, DayWeather, DeriveOptions, DetailBuilt,
   DetailContext, DetailIndex, DeviceState, DrapeMark, DrapeMode, DrawCall, Drive, EarthOptions, EarthSkyProps, Ease,
   ElementChange, ElementProps, ElementState, ElementStatus, EntitiesProps, EntityElementProps, EntityOptions,
-  EntitySetProps, ErrorCode, ExtrusionProps, Feature, FeatureLook, FeatureMarkProps, FieldDraw, FieldGrid, FieldInput,
-  FieldProps, Figure, Filter, Finish, FitOptions, FlyOptions, Fn, Followed, FollowTargets, Footprint, FormControl,
-  FormulaChannel, FrameContext, FrameProfile, FrameSample, FramesOptions, FrameWant, GBuffer, GeoJSONOptions, Geometry,
-  GovernorEvent, GovernorOptions, GovernorRung, GrammarSpec, Graphics, GridData, GroundWorld, GroupBy, GroupsJobIn,
-  GroupsJobOut, GroupsProps, GroupValue, GTarget, GTexture, HeatChanges, HeatField, HeatInput, HeatMetric, HeatModel,
-  HeatOptions, HeatPoint, HeatProps, HeatRasters, HeatSummary, Held, HeldItem, HourWeather, HouseLook, HousePlan,
-  HouseSite, IconImage, IconProps, IdRule, ImageRasterProps, Imagery, ImageryOptions, ImageSource, ImportOptions,
-  ImpostorLevel, InputState, JoinCounts, JoinItem, JoinOptions, JointSpec, Kernel, Key, Keys, Kind, KindCheck, KindSpec,
-  LampKind, LayerItem, LayerList, LayerPart, LayerProps, LayersHandle, LayersOptions, Legend, LegendHandle, LegendItem,
-  LegendOptions, LevelChange, LevelsOption, LevelSpec, Light, LineProps, LiveGraphics, LoaderMode, LoaderOptions,
-  LocalTime, Locomotion, LogChange, LogColumns, LogOptions, Look, LotLook, Made, MadeLike, Material, MaterialKind,
-  MaterialName, MemoryOptions, ModeName, ModeSpec, MoonPosition, Motion, Move, MoveWorld, Nearest, NetworkLine,
-  NetworkOptions, ObservationOptions, ObservationState, PackageCheck, PackageInfo, PackageSpec, ParamDef, ParamsOf,
-  ParamSpec, ParamValue, PartKind, Path, PerFeature, Picked, PickOptions, PlacedHeatRasters, PlacedOn, PlacementKind,
-  PlacementOptions, PlaceType, PlaneOptions, PlanOptions, PlanRect, PlanWing, Playback, PMTilesOptions, PointDatum,
-  PointerInfo, PointsProps, PoleLook, Pose, PoseFrame, Position, Preview, Priorities, Probe, Profile, Program, ProgramDesc,
-  Props, Quality, QueryOptions, RainProps, Ramp, RasterBlend, RasterContext, RasterProps, RasterSource, RasterTile,
-  RecordedFrame, RecordOptions, Region, RelationRow, RelationsOptions, RemoteLogOptions, ReplayOptions, RevealSpec, RGBA,
-  Rig, RigKey, RigSpec, RoadsLook, RoadSpec, RoadsProps, RollupOptions, Roof, RoofFaceOptions, RoofFaces, RoofForm,
-  RoofKind, RoofMeasure, RoofShape, RowOptions, Rule, Rung, Scale, ScaleOptions, Scenario, ScenarioApi, ScenarioDiff,
-  ScenarioOptions, SeaLook, SeaProps, SeaShore, ServiceOptions, SettleOptions, SettleReport, SetTrack, ShaderCode,
-  ShadowOptions, ShapeAnchor, ShapeCatalogue, ShapeCheck, ShapeParam, ShapePart, ShapeSpec, Shell, ShellOptions, Shortest,
-  SizeOf, SizeRange, SizeUnits, SkinMaterial, SkinMesh, SkinMeshInput, SkyNow, SkyPosition, SkyProps, SkyWeather,
-  SolidInfo, SolidKind, SolidOpts, SolidPicked, SolidsChunk, SolidsProps, SourceContext, SourceStatus, Span, Species,
-  SpeciesName, Spring, Star, StarsOptions, State, StateAt, StateSpec, StatRow, StatsOptions, StreamMessage, StreamOptions,
-  StreetDetailProps, StreetLook, StreetsLook, StreetsProps, Subject, Sun, Support, SurfaceGrade, SurfaceMaterial,
-  SurfaceProps, SweepOpts, SweepPath, SweepProfile, Target, Telemetry, Terms, Terrain, TerrainOptions, TexImage, TextProps,
-  TextureDesc, Theme, ThemeNow, ThemeScales, ThemeSpec, Thing, Tile, TiledOptions, TileNumbers, TilePlace, TiltLimit,
-  TimeState, TimeType, TimeZoneOption, Track, TrailProps, TraitMeasure, Traits, TraitSpec, TraitWhere, TreeIn, TreeLook,
-  TreeOptions, TreeShape, UserState, V3, ValueColor, ValueSpec, ValueType, VegetationProps, View, ViewChange, ViewState,
-  Want, WaterLook, WaterProps, Wave, WFSCapabilities, WFSFields, WFSInfo, WFSLayer, WFSOptions, When, WhenFn,
-  WhenShorthand, WingSide, WireDatum, WMSCapabilities, WMSLayer, WorkerLane, WorkerOptions, WorldEvents, WorldLike,
-  WorldOptions, WorldState, XNode, ZoneLookup
+  EntitySetProps, Epoch, EpochPick, EpochsOptions, EpochSource, EpochStats, EpochTime, ErrorCode, ExtrusionProps, Feature,
+  FeatureLook, FeatureMarkProps, FieldDraw, FieldGrid, FieldInput, FieldProps, Figure, Filter, Finish, FitOptions,
+  FlyOptions, Fn, Followed, FollowTargets, Footprint, FormControl, FormSource, FormulaChannel, FrameContext, FrameProfile,
+  FrameSample, FramesOptions, FrameWant, GBuffer, GeoJSONOptions, Geometry, GovernorEvent, GovernorOptions, GovernorRung,
+  GrammarSpec, Graphics, GridData, GridSource, GroundWorld, GroupBy, GroupsJobIn, GroupsJobOut, GroupsProps, GroupValue,
+  GTarget, GTexture, HeatChanges, HeatField, HeatInput, HeatMetric, HeatModel, HeatOptions, HeatPoint, HeatProps,
+  HeatRasters, HeatSummary, Held, HeldItem, HourWeather, HouseLook, HousePlan, HouseSite, IconImage, IconProps, IdRule,
+  ImageRasterProps, Imagery, ImageryOptions, ImageSource, ImportOptions, ImpostorLevel, InputState, JoinCounts, JoinItem,
+  JoinOptions, JointSpec, Kernel, Key, Keys, Kind, KindCheck, KindSpec, KnobSpec, LampKind, LayerItem, LayerList,
+  LayerPart, LayerProps, LayersHandle, LayersOptions, Legend, LegendHandle, LegendItem, LegendOptions, LevelChange,
+  Leveled, LevelsOption, LevelSpec, LevelValues, Light, LineProps, LiveGraphics, LoaderMode, LoaderOptions, LocalTime,
+  Locomotion, LogChange, LogColumns, LogOptions, Look, LotLook, Made, MadeLike, Material, MaterialKind, MaterialName,
+  MemoryOptions, ModeName, ModeSpec, MoonPosition, Motion, Move, MoveWorld, Nearest, NetworkLine, NetworkOptions,
+  ObservationOptions, ObservationState, PackageCheck, PackageInfo, PackageSpec, ParamDef, ParamsOf, ParamSpec, ParamValue,
+  PartKind, Path, PerFeature, Picked, PickOptions, PlacedHeatRasters, PlacedOn, PlacementKind, PlacementOptions, PlaceType,
+  PlaneOptions, PlanOptions, PlanRect, PlanWing, Playback, PMTilesOptions, PointDatum, PointerInfo, PointsProps, PoleLook,
+  Pose, PoseFrame, Position, Preview, Priorities, Probe, Profile, Program, ProgramDesc, Props, Quality, QueryOptions,
+  RainProps, Ramp, RasterBlend, RasterContext, RasterProps, RasterSource, RasterTile, RecordedFrame, RecordOptions, Region,
+  RelationRow, RelationsOptions, RemoteLogOptions, ReplayOptions, RevealSpec, RGBA, Rig, RigKey, RigSpec, RoadsLook,
+  RoadSpec, RoadsProps, RollupOptions, Roof, RoofFaceOptions, RoofFaces, RoofForm, RoofKind, RoofMeasure, RoofShape,
+  RowOptions, Rule, Rung, Scale, ScaleOptions, Scenario, ScenarioApi, ScenarioDiff, ScenarioOptions, SeaLook, SeaProps,
+  SeaShore, ServiceOptions, SettleOptions, SettleReport, SetTrack, ShaderCode, ShadowOptions, ShapeAnchor, ShapeCatalogue,
+  ShapeCheck, ShapeParam, ShapePart, ShapeSpec, Shell, ShellOptions, Shortest, SizeOf, SizeRange, SizeUnits, SkinMaterial,
+  SkinMesh, SkinMeshInput, SkyNow, SkyPosition, SkyProps, SkyWeather, SolidInfo, SolidKind, SolidOpts, SolidPicked,
+  SolidsChunk, SolidsProps, SourceContext, SourceStatus, Span, Species, SpeciesName, Spring, Star, StarsOptions, State,
+  StateAt, StateSpec, StatRow, StatsOptions, StreamMessage, StreamOptions, StreetDetailProps, StreetLook, StreetsLook,
+  StreetsProps, Subject, Sun, Support, SurfaceChannel, SurfaceChunk, SurfaceDraw, SurfaceFacet, SurfaceFieldProps,
+  SurfaceFn, SurfaceGrade, SurfaceInput, SurfaceLook, SurfaceMaterial, SurfaceProps, SurfaceValues, SweepOpts, SweepPath,
+  SweepProfile, Target, Telemetry, Terms, Terrain, TerrainOptions, TexImage, TextProps, TextureDesc, Theme, ThemeNow,
+  ThemeScales, ThemeSpec, Thing, Tile, TiledOptions, TileNumbers, TilePlace, TiltLimit, TimeState, TimeType,
+  TimeZoneOption, Track, TrailProps, TraitMeasure, Traits, TraitSpec, TraitWhere, TreeIn, TreeLook, TreeOptions, TreeShape,
+  UserState, V3, ValueColor, ValueSpec, ValueType, VegetationProps, View, ViewChange, ViewEvent, ViewState, Want,
+  WaterLook, WaterProps, Wave, WFSCapabilities, WFSFields, WFSInfo, WFSLayer, WFSOptions, When, WhenFn, WhenShorthand,
+  WingSide, WireDatum, WMSCapabilities, WMSLayer, WorkerLane, WorkerOptions, WorldEvents, WorldLike, WorldOptions,
+  WorldState, XNode, XYZOptions, ZoneLookup
 
 from 'aslnut/core/data/loading':
   CacheStore, checkScope, DEFAULT_SOURCES, FilePack, isAbort, MemoryStore, OPEN, SHOW_ONLY, termsOf, writePack
@@ -602,11 +605,11 @@ from 'aslnut/core/data/sources':
 
 from 'aslnut/modules/presets/humans':
   BASE, blink, bodyRings, buildGarment, buildPositions, crowd, cycle, decalOf, designMesh, DYED, EMOTIONS, express,
-  FACE_DEFAULTS, FACE_MATERIAL, farAt, farPerson, figureKey, fitHair, GAITS, garmentParams, GARMENTS, generate,
+  FACE_DEFAULTS, FACE_MATERIAL, farAt, farPerson, figureKey, fitBody, fitHair, GAITS, garmentParams, GARMENTS, generate,
   generateHair, GREYS, HAIR_COLORS, HAIR_PARAMS, HAIR_STYLES, hairDefaults, headMeasures, headRings, humanFigure, HumanRig,
-  idle, IRIS, joints, loadTemplate, mergePieces, MORPH_ORDER, MORPHS, OUTFITS, packFace, palette, PALETTE, paletteOf,
-  params, parseTemplate, PART_NAMES, PEOPLE, person, personEntity, POSES, restyle, scalpOf, seedOf, SKIN_TONES, strideOf,
-  toned, vertexParts
+  idle, IRIS, joints, loadFit, loadTemplate, mergePieces, MORPH_ORDER, MORPHS, OUTFITS, packFace, palette, PALETTE,
+  paletteOf, params, parseFit, parseTemplate, PART_NAMES, PEOPLE, person, personEntity, POSES, restyle, scalpOf, seedOf,
+  SKIN_TONES, strideOf, toned, vertexParts
 
 from 'aslnut/modules/presets/shared':
   seeded, walker, walking
@@ -618,7 +621,11 @@ from 'aslnut/modules/presets/drones':
   drone, dronePackage, drones
 
 from 'aslnut/tools':
-  BakeGateError, compile
+  ASSET_KINDS, BakeGateError, catalog, Catalog, CODE_FILES, compile, entryOf, kindOfFiles, packAsset, safePath, typeOf,
+  unpackAsset
+
+from 'aslnut/tools/catalog':
+  ASSET_KINDS, catalog, Catalog, CODE_FILES, entryOf, kindOfFiles, packAsset, safePath, typeOf, unpackAsset
 
 from 'aslnut/react':
   useElement, useWorld, useWorldEvent, World
@@ -646,7 +653,7 @@ Every part of aslnut that exists (built: in the package and tested on WebGPU and
   e.g. `tree.at(107.61, -6.9, 'district')`
 - core.space.regions.rollup [built]: `tree.rollup(rows, opts)` · `groups(options)` (things rolled up into groups per level, with values over time)
   params: `rows: Source` · `on: string` (the rows' region id) · `to: level` · `from?: level` · `sum?: string[]` · `mean?: string[]` · `count?: boolean` · `fn?: (rows, region) => props`; groups: `of: id | Element | Source | array` (a set's moving things: in a group while inside it; features) · `by: { regions: Source | Feature[], name? } | { cells: m } | d => key | { [level]: by }` · `values?: { [name]: { count: true } | { sum | mean | min | max: Channel } | { of: Channel, fn: values => number } } = { n: count }` · `log?` · `show?: { levels: string[] }` (the groups there, the members at the others) · `mark?: (g: GroupsSource, level) => Element` (default a label each)
-  returns: `Rows` at the target level (live: changes with the rows) · `Groups` (an element; a level's `GroupsSource`: a feature a group (its area, its cell, its members' middle) and its `log`: each group a thing, its values over time)
+  returns: `Rows` at the target level (live: changes with the rows while used: it follows the rows and the levels from the start, lets go of them when the last layer using it is removed or its world disposed, follows again when a layer takes it up, and catches up when read meanwhile; used without a layer, `close()` it yourself …
   e.g. `tree.rollup(crime, { on: 'suburb', to: 'lga', sum: ['count'] })` · `groups({ of: 'places', by: { regions: suburbs }, values: { n: { count: true } }, show: { levels: ['city', 'district'] }, mark: (g) => cards({ of: g, rows: [{ label: 'places', value: 'n' }] }) })`
 
 not there yet (planned, proposed or open; do not use):
@@ -676,9 +683,9 @@ not there yet (planned, proposed or open; do not use):
 ### core.data (docs/reference/core/data.md)
 
 - core.data.sources.tiles.xyz [built]: `raster.xyz(url, opts?)` · `imagery.custom({ url })`
-  params: `url: string` (`{z}/{x}/{y}`, `{-y}`) · `minZoom?: int = 0` · `maxZoom?: int = 18` · `attribution?: string` · `terms?: Partial<Terms>` · `where?: BBox`
+  params: `url: string` (`{z}/{x}/{y}`, `{-y}` counted from the south, `{s}` a host of `subdomains`) `| (z, x, y) => string` (your function of the service's tile) · `subdomains?: string | string[] = 'abc'` (each tile asks one host, by its x and y) · `tileSize?: px = 256` (512: one tile covers four 256 px tiles of the next level) · `zoomOffset?: int = 0` (added to the zoom in the URL: -1 for 512 px tiles counted from level 0) · `errorUrl?: string` (a picture for a tile that fails) · `minZoom?: int = 0` · `maxZoom?: int = 18` · `attribution?: string` · `terms?: Partial<Terms>` · `where?: BBox`
   returns: `RasterSource`
-  e.g. `raster.xyz('https://…/{z}/{x}/{y}.png')`
+  e.g. `raster.xyz('https://{s}.tile.example.org/{z}/{x}/{y}.png', { subdomains: 'abc' })` · `raster.xyz('https://…/512/{z}/{x}/{y}@2x', { tileSize: 512, zoomOffset: -1 })`
 - core.data.sources.tiles.wms [built]: `raster.wms(url, opts)` · `raster.wms.capabilities(url, opts?)` · `raster.wms.legend(url, layer, opts?)` · `raster.wms.info(url, { layers, lon, lat, zoom? }, opts?)` · `raster.view({ url: (box, width, height) => string })`
   params: `layers: string` · `styles?: string` · `format?: string = 'image/png'` · `version?: string = '1.3.0'` · `transparent?: boolean = true` · `params?: Record<string, string>` · `single?: boolean = false` (one picture of the view in CRS:84 instead of EPSG:3857 tiles: drawn on the chip as a mark, stacked among vector layers, its opacity a uniform; asked again when the view reaches new ground or comes 1.6× closer, never while it moves, after a failure only after 2 s doubling to a minute) · `maxSize?: px = 2048` · `scale?: = 1` (picture px per CSS px at the centre) · `headers?` · `fetch?` · `proxy?: string | (url) => string`
   returns: `RasterSource` (tiles, painted into the ground) · `ViewSource` (`single`; its `legend` (GetLegendGraphic) and `wms: { url, layers, version }`) · capabilities: `{ version, title, layers: [{ name, title, crs, bbox, queryable, legend, styles }], formats, infoFormats }` (1.3.0, else 1.1.1) · info: the features there as GeoJSON, each with its `layer`
@@ -740,8 +747,8 @@ not there yet (planned, proposed or open; do not use):
   returns: `source.features()` · `source.get(id)`
   e.g. `suburbs.get('vic-3168').props.name`
 - core.data.features.rows [built]: `data.rows(array?, opts?)` · `rows.set(array)` · `rows.rows()`
-  params: `array: object[]` · `id?: string | fn = 'id'` · `lon? / lat?` (rows with coordinates are points)
-  returns: `Rows` (a Source; geometry only where it has coordinates)
+  params: `array: (object | Feature)[]`: a row (its point from `lon` / `lat`) or a feature of any shape `{ id?, props (or properties), geometry }` (a line, an area: live rows of any shape) · `id?: string | fn = 'id'` · `lon? / lat?` (rows with coordinates are points)
+  returns: `Rows` (a Source; geometry where it has coordinates or gives one)
   e.g. `const crime = data.rows([])`
 - core.data.query.join [built]: `shapes.join(rows, opts)`
   params: `on: string | f => key` (the shapes' prop, or `'id'`) · `rowsOn?: string | f => key` (when named differently)
@@ -756,11 +763,12 @@ not there yet (planned, proposed or open; do not use):
   returns: replaces all; shapes rebuild only if shapes changed, else colours ease
   e.g. `crime.set(await fetchRows())`
 - core.data.live.upsert [built]: `rows.upsert(items)`
-  params: `items: Row[]` (by id)
-  returns: — (a new id plays its reveal)
+  params: `items: (Row | Feature)[]` (by id; a feature of any shape)
+  returns: — (one change however many; a new id plays its reveal; a changed shape rebuilds, changed props restyle)
   e.g. `fleet.upsert([{ id: 'B1', lon, lat }])`
-- core.data.live.patch [built]: `rows.patch(id, props)`
-  params: `id` · `props: Partial`
+- core.data.live.patch [built]: `rows.patch(id, change)`
+  params: `id` · `change: Partial<Row>` (its point read again only when it gives coordinates) or a feature's `{ props?, geometry? }` (props merged; the geometry it does not give is kept)
+  returns: — (props alone: a restyle, never a rebuild)
   e.g. `fleet.patch('B1', { soc: .58 })`
 - core.data.live.remove [built]: `rows.remove(...ids)`
   params: `ids: (string | number)[]`
@@ -777,6 +785,10 @@ not there yet (planned, proposed or open; do not use):
   params: `from?, to?: Date | string | ms` (default the log's span) · `speed?: number = 1` · `loop?: boolean = false` · `play?: boolean = false` · `log?`
   returns: `Playback`: `play()` · `pause()` · `toggle()` · `setSpeed(x)` · `seek(t, { share? })` · `on(fn)` · `playing` · `progress`
   e.g. `const p = replay(w, { log, speed: 60, loop: true }); p.play(); p.seek(.5, { share: true })`
+- core.data.history.epochs [built]: `data.epochs(list, opts?)` · `.pick(t)` · `.now` · `.from` · `.to` · `.epochStats()`
+  params: `list: { at: Time, source }[]` (one dataset per time, in time order: features (areas, lines, points: GeoJSON, a FeatureCollection, rows), a grid (a raster field's values: `Float32Array` or `{ values, size }`) or surface values (a surface field's); a function of no parameters is a loader, called when the epoch is needed) · `blend?: 'step' | 'morph' = 'step'` · `by?: param key = 'time'` (the world's clock, or a param's number) · `keep?: number = 4`
+  returns: a `Source` that follows `s.time` (or the param): replay, a seek and a time slider drive it; raster fields (`data`) and surface fields (`data`) take it
+  e.g. `field({ id: 'heat', res: 10, area, data: data.epochs(hours.map((h) => ({ at: h.time, source: () => grid(h) })), { blend: 'morph' }) })` · `area({ data: data.epochs(iceSheets) })`
 - core.data.scenarios.base [built]: `w.scenario.use('base')` · `w.scenario.current` · `w.scenario.list()`
   returns: the world as it is (everything a scenario changed, put back)
   e.g. `w.scenario.use('base')`
@@ -817,12 +829,12 @@ not there yet (planned, proposed or open; do not use):
   core.data.sources.tiles.cog, core.data.loading.chunks.manifest, core.data.loading.chunks.logic-pack,
   core.data.loading.chunks.near, core.data.loading.chunks.far, core.data.loading.chunks.streamer,
   core.data.loading.chunks.hot-swap, core.data.loading.chunks.fallback, core.data.history.checkpoints,
-  core.data.history.epochs, core.data.scenarios.overrides, core.data.rights.licences
+  core.data.scenarios.overrides, core.data.rights.licences
 
 ### core.observation (docs/reference/core/observation.md)
 
 - core.observation.observers.orbit.views [built]: `w.go(view)` · `w.addView(name, view)` · `w.fly(to, opts)` · `w.fit(target, opts)` · `w.viewToFit(target, opts)` · `w.setProjection(p, seconds?)` · `world(canvas, { frame })` · `w.camera.tiltLimit` · `w.camera.clear`
-  params: `view: { lon, lat, dist? | zoom?, tilt?: degrees = 0, bearing?: degrees = 0 }` (both dist and zoom when they agree: `w.camera.view` written back as it is, camera keys' views too) · `tilt`: up to 88° with the eye at street level or below (30 m over the ground under the centre), 80° from 300 m up, eased between (`tiltLimit: { low: 88, high: 80, street: 30, above: 300 }`; a zoom out from the street takes the tilt back to the map's) · `clear?: metres | false = 1` (the eye kept over the ground and what is stood on under it, whatever moves it: a hand, a flight, a move; false: a view from under the ground) · `target: [w, s, e, n] | Feature | Feature[]` · `padding?: number = .08` · `maxZoom?` · `p: 'auto' | 'globe' | 'flat'` (eased over `seconds = 1.2`: the globe opens into the map) · `frame?: 'auto' | 'height' = 'auto'` ('auto': a portrait screen sees as much across as a landscape one, so a zoom shows the same place whole on a phone)
+  params: `view: { lon, lat, dist? | zoom?, tilt?: degrees = 0, bearing?: degrees = 0 }` (both dist and zoom when they agree: `w.camera.view` written back as it is, camera keys' views too) · `tilt`: up to 88° with the eye at street level or below (30 m over the ground under the centre), 80° from 300 m up, eased between (`tiltLimit: { low: 88, high: 80, street: 30, above: 300 }`; a zoom out from the street takes the tilt back to the map's) · `clear?: metres | false = 1` (the eye kept over the ground and what is stood on under it, whatever moves it: a hand, a flight, a move; false: a view from under the ground) · `target: [w, s, e, n] | Feature | Feature[]` · `padding?: number = .08` · `maxZoom?` · `p: 'auto' | 'globe' | 'flat'` (eased over `seconds = 1.2`: the globe opens into the map) · `frame?: 'auto' | 'height' | 'pixels' = 'auto'` ('auto': a portrait screen sees as much across as a landscape one, so a zoom shows the same place whole on a phone; 'pixels': the zoom is a 2D web map's at the canvas's own pixels, a level's 256 px tiles drawn 256 CSS px across whatever the canvas's size)
   returns: `Promise<void>` (fly, fit) · a view (viewToFit: the box whole on this canvas, any shape)
   e.g. `await w.fit(suburb, { padding: .1, tilt: 30 }); w.setProjection('flat')`
 - core.observation.observers.orbit.keys [built]: `camera.keys(list)`
@@ -911,10 +923,10 @@ not there yet (planned, proposed or open; do not use):
   params: `keep?: { levels?: int = 2, seconds?: number = 60 }` (the last levels' data and built shapes kept: going back is instant; past it, freed)
   returns: — (a level change swaps once: the new level's things shown together when ready, the old ones until then)
   e.g. `observation: { keep: { levels: 3, seconds: 120 } }`
-- core.observation.presence [built]: `when: (s) => boolean | number` or a shorthand, on every element and every feature (`feature: { when }`)
-  params: `s: State` · shorthand `{ level?: name | name[] | { from?, to? }, hour?: [a, b], month?: [a, b], year?: [a, b], api?, quality?, role?, toggle? }` (`level`: one rung, a set of rungs, or a range on the ladder; with no ladder set, `level` turns the default one on) · or `boolean = true` · no `when`: always shown (a GIS layer: no gate)
-  returns: `boolean | 0..1` (fraction = partly shown); a change by level plays once, at the level change (the gates); `when: { zoom }` is an error with its fix (the camera never decides presence: use `level`; a function of `s.view` still works if you insist)
-  e.g. `when: { level: { from: 'district' }, hour: [18, 6] }` · `when: s => s.user.toggles.crime`
+- core.observation.presence [built]: `when: (s) => boolean | number` or a shorthand, on every element and every feature (`feature: { when }`) · any prop of any element given by level: `{ level: { [rung]: value } }` · `el.byLevel`
+  params: `s: State` · shorthand `{ level?: name | name[] | { from?, to? }, hour?: [a, b], month?: [a, b], year?: [a, b], api?, quality?, role?, toggle? }` (`level`: one rung, a set of rungs, or a range on the ladder; with no ladder set, `level` turns the default one on) · or `boolean = true` · no `when`: always shown (a GIS layer: no gate) · a prop by level: an object whose only key is `level`, its value the rungs by name, any value (a number, a colour, an object, an array; plain JSON, so a catalog or a config carries it; `id` and `when` are never one); a rung not named takes the nearest named coarser rung on the ladder, with none coarser the nearest finer (`size: { level: { district: 6, street: 14 } }`: world … district 6, street, building, room 14) · types `ByLevel<T>`, `Leveled<P>` (where props enter: the factories, `setProps`)
+  returns: `boolean | 0..1` (fraction = partly shown); a change by level plays once, at the level change (the gates); `when: { zoom }` is an error with its fix (the camera never decides presence: use `level`; a function of `s.view` still works if you insist) · a prop by level: `el.props` holds the value for the level now (what it runs with) …
+  e.g. `when: { level: { from: 'district' }, hour: [18, 6] }` · `when: s => s.user.toggles.crime` · `points({ size: { level: { district: 6, street: 14 } } })` · `field({ res: { level: { street: 1, city: 16 } } })`
 
 not there yet (planned, proposed or open; do not use):
   core.observation.observers.orbit.paths.bezier, core.observation.observers.orbit.paths.spline,
@@ -934,9 +946,9 @@ not there yet (planned, proposed or open; do not use):
 
 ### core.geometry (docs/reference/core/geometry.md)
 
-- core.geometry.shapes.shape [built]: `shape(spec)` · `shape.make(params, seed)` · `shape.into(mesh, params, { at, turn, id })` · `shape.update(spec)` (a new definition: its builds let go, every layer placing it built again) · `shape.watch(fn)` · its params: `num(min, max, def)` · `int(min, max, def)` · `choice(opts, def)` · `color(def)` · `flag(def)` · `text(def, max)` (exported as `textParam`: `text` is the label mark) · a form for them: `form(shape)` · `.render(into, onChange)`
+- core.geometry.shapes.shape [built]: `shape(spec)` · `shape.make(params, seed)` · `shape.into(mesh, params, { at, turn, id })` · `shape.update(spec)` (a new definition: its builds let go, every layer placing it built again) · `shape.watch(fn)` · its params: `num(min, max, def)` · `int(min, max, def)` · `choice(opts, def)` · `color(def)` · `flag(def)` · `text(def, max)` (exported as `textParam`: `text` is the label mark) · a form for them: `form(shape | package | element | params)` · `.controls` · `.render(into, onChange)`
   params: `id?: string` · `params?: Record<string, Param>` · `build: (b, p, rand) => void` · `simple?: true | (b, p) => void` (its level 1: the build again with fewer sides and without what is whole-only, or a build of its own; unset: the whole stands in) · `far?: 'impostor' | 'box' | 'dot' | 'none' | (b, p) => void` (its far level; unset: the simple one stands in) · `budget?: { whole, simple, far }` · `defaults?: (given) => params` (its defaults by what is given: a type given brings its row of numbers, what is given besides stands over them) · `size?: { min?: px, max?: px }` (its range on screen: a shape kept within this many CSS px across its bounds, seen at its middle: core › render › drawing › size) · a param: as named
-  returns: `Shape` · `Param` · a form: `{ controls }` (a slider, a stepper, a dropdown, a colour, a switch, a text box per param, with its range)
+  returns: `Shape` · `Param` · a form: `{ controls }` (a slider, a stepper, a number box, a dropdown, a colour, a switch, a text box, a vector per param, with its range, unit and default: one schema for a shape's params and a world's or an element's (core › world › settings › params), the one an editor draws: tools › catalog)
   e.g. `shape({ id: 'bin', params: { lid: color('#c43c2c') }, build: (b, p) => b.solid('box', { size: [.6, 1, .7], at: [0, .5, 0] }) })` · `params: { size: num(.3, 2, .6) }` · `form(bin).render(panel, (p) => pv.set(p))`
 - core.geometry.shapes.builder.solid [built]: `b.solid(kind, o)` · `b.label(text, o)` · the finish, on every verb: `color` · `material` · `round` · `detail` · `tint` · `label` · `lamps`
   params: `kind: 'box' | 'cylinder' | 'sphere' | 'cone' | 'capsule'` · `size | radius` · `top?` (a cone's) · `at?: [x, y, z]` (its centre) · `axis?: 'x' | 'y' | 'z' = 'y'` · `turn?: degrees` · `sides?` · finish: `material?: 'matte' | 'painted' | 'glass' | 'metal' | 'emissive' | 'foliage' | 'water'` · `round?: m` · `detail?: 0 | 1 | 2` · `tint?: boolean` (it takes the instance's colour: `entities({ tint })`, `entity({ color })`; built into a mesh, `shape.into(mb, p, { tint })`) · `lamps?: 'head' | 'tail' | 'windows'` · `label?: text | { text, on?: 'front' | 'back' | 'left' | 'right' | 'top' = 'front', at?: [u, v], height?, color? }` · `b.label(text, { at, facing, along?, height = .3, off = .004 })`
@@ -1099,11 +1111,11 @@ not there yet (planned, proposed or open; do not use):
 ### core.encoding (docs/reference/core/encoding.md)
 
 - core.encoding.marks.symbols.point [built]: `points(options)`
-  params: `size?: Fn<number> | { m | px: Fn<number>, min?, max? } = 8` (CSS px, or metres within a range of CSS px: render › drawing › instancing) · `color?: Fn<color> = '#fff'` · `outline?: number = 0` · `restyle?: seconds` (as a line's) · `drape?` (marks/drape; default 'above': never hidden) · `behind?: number = .35` (above: its opacity where something stands in front)
+  params: `size?: Fn<number> | { m | px: Fn<number>, min?, max? } = 8` (CSS px, or metres within a range of CSS px: render › drawing › instancing) · `color?: Fn<color> = '#fff'` · `outline?: { color?: Fn<color> = '#00000080', width?: Fn<px> = 1.5 }` (a ring round each point, one for all or each feature's own: a restyle, never a rebuild) · `restyle?: seconds` (as a line's) · `drape?` (marks/drape; default 'above': never hidden) · `behind?: number = .35` (above: its opacity where something stands in front)
   returns: element (on the chip: its place and its feature; colour, size and state read by the feature; floating, drawn twice: in front at full opacity, behind things at `behind` of it)
   e.g. `points({ data, size: d => Math.sqrt(d.props.mw) })`
-- core.encoding.marks.symbols.icon [built]: `icon(options)` · `icons(images, { size? })` (the app's own pictures in one atlas)
-  params: `of: id | Element | Source | array` (a set's things by reference: turned along their paths, giving way to its shapes near the camera as its dots do; or features) · `icons: IconAtlas` (`icons({ name: url | image | canvas | (g, size) => draw }, { size: px = 64 })`: a cell each, one texture; a URL through the world's loader) · `icon: Fn<string>` (its picture's name) · `size?: px | { px | m, min, max } = 24` (the one size rule) · `color?: Fn<Color>` (a tint: white as drawn) · `heading?: true | d => degrees` (as the screen sees it) · `lift?` · `at?` · `tooltip?` · `onTap?` · `select?` · `pickable?`
+- core.encoding.marks.symbols.icon [built]: `icon(options)` · `icons(images, { size? })` (the app's own pictures in one atlas) · `atlas.add(name, image)` (a picture later: the atlas grows)
+  params: `of: id | Element | Source | array` (a set's things by reference: turned along their paths, giving way to its shapes near the camera as its dots do; or features) · `icons: IconAtlas` (`icons({ name: url | image | canvas | (g, size) => draw }, { size: px = 64 })`: a cell each, one texture; a URL through the world's loader) · `icon: Fn<string>` (its picture's name) · `size?: px | [w, h] | { px | m, min, max } = 24` (the one size rule; per axis: `[w, 0]` the height by the picture's shape, `[0, 0]` its own pixels; a square size fits the picture in, its shape kept; two sides stretch it) · `anchor?: Fn<[x, y]> = [.5, .5]` (the point that sits on the place: shares across from the picture's left and down from its top; `[.5, 1]` a pin's tip) · `color?: Fn<Color>` (a tint: white as drawn) · `heading?: true | d => degrees` (as the screen sees it) · `lift?` · `at?` · `tooltip?` · `onTap?` · `select?` · `pickable?`
   returns: element
   e.g. `icon({ of: 'fleet', icons: pics, icon: d => d.props.kind, heading: true, size: { m: 9, min: 14, max: 30 } })`
 - core.encoding.marks.symbols.text [built]: `text(options)`
@@ -1111,8 +1123,8 @@ not there yet (planned, proposed or open; do not use):
   returns: element (labels make room for each other and fade; on the ground hidden behind the terrain and extrusions; reveal type / count / mask / fade)
   e.g. `text({ data: towns, text: d => d.props.name, priority: d => d.props.pop })`
 - core.encoding.marks.lines.line [built]: `line(options)`
-  params: `width?: Fn<number> | { m | px: Fn<number>, min?, max? } = 2` (CSS px, or metres within a range of CSS px; an arc's and a trail's the same) · `color?: Fn<color> | Scale` · `dashes?: [on, off]` (px) · `flow?: number = 0` (the dashes move along, px a second, start → end; frames only while shown) · `glow?: number = .5` (pulse) · `value?: Fn<number>` (hooks) · `on?: 'ground' | 'sea' | 'absolute' = 'ground'` (follows the terrain and the globe) · `detail?: { step: metres }` · `blend?: 'alpha' | 'add' | 'multiply' | 'screen' = 'alpha'` · `restyle?: seconds` (new colours or numbers eased on the chip; default `transition` when set, else 0: drawn the next frame) · `groundMarks?: 'tiles' | 'prisms' | 'auto'` · `drape?` (marks/drape; default 'ground'; `over: true` is the older name of 'above')
-  returns: element (mitred joins, anti-aliased; reveal trace / pulse / fade; hooks color, alpha, reveal)
+  params: `width?: Fn<number> | { m | px: Fn<number>, min?, max? } = 2` (CSS px, or metres within a range of CSS px; an arc's and a trail's the same) · `color?: Fn<color> | Scale` · `dashes?: Fn<number[]>` (`[on, off]` or `[on, off, on, off]` CSS px, an odd list doubled; one for all or each feature's own: a restyle) · `dashOffset?: Fn<px> = 0` · `caps?: 'round' | 'butt' | 'square' = 'round'` and `joins?: 'bevel' | 'round' | 'miter' = 'bevel'` (drawn on the ground; 'miter' drawn as 'bevel' there; a line floating free of the ground: mitred joins, flat ends) · `flow?: number = 0` (the dashes move along, px a second, start → end; frames only while shown) · `glow?: number = .5` (pulse) · `value?: Fn<number>` (hooks) · `on?: 'ground' | 'sea' | 'absolute' = 'ground'` (follows the terrain and the globe) · `detail?: { step: metres }` · `blend?: 'alpha' | 'add' | 'multiply' | 'screen' = 'alpha'` · `restyle?: seconds` (new colours or numbers eased on the chip; default `transition` when set, else 0: drawn the next frame) · `groundMarks?: 'tiles' | 'prisms' | 'auto'` · `drape?` (marks/drape; default 'ground'; `over: true` is the older name of 'above')
+  returns: element (on the ground: round, flat or square caps, bevelled or round joins; floating free: mitred joins; anti-aliased; dashes per feature; reveal trace / pulse / fade; hooks color, alpha, reveal)
   e.g. `line({ data: grid, width: d => d.props.kv / 100, reveal: { mode: 'trace', from: substation, head: { glow: .8 } } })`
 - core.encoding.marks.lines.arc [built]: `arc(options)`
   params: `from: d => [lon, lat]` · `to: d => [lon, lat]` · `height?: Fn<number>` (metres at the middle; default a quarter of the distance, at most 1,500 km; 0 lies on the ground) · `fromHeight?` / `toHeight?: Fn<number>` (metres over the ground at each end) · `drape?` (marks/drape; default 'above': drawn over the world, order 4.5; `over` its older name, `over: false` is 'ground') · `points?: int | { every?: m = 25, min? = 8, max? = 64 }` (by length by default; at most 513) · and every line option (`width`, `color`, `dashes`, `flow`, `blend`, hover, tooltip, tap)
@@ -1158,9 +1170,9 @@ not there yet (planned, proposed or open; do not use):
   params: `legend?: Legend | Scale` (default its first sign's colour scale: `layer.props.color`)
   returns: its classes, ramp or categories, from the whole data (the same at every zoom)
   e.g. `legend(w, { for: 'suburbs', title: 'km²' })`
-- core.encoding.layers.stack [built]: its place in the stack: `order` · `above` · `below` · `w.reorder(ids)` · `w.move(id, to)` (core › world › elements › order)
-  params: `ids: string[]` (bottom first)
-  returns: each layer keeps its band (fills on the ground, floating over); its labels take the same place among every layer's labels
+- core.encoding.layers.stack [built]: its place in the stack: `order` · `above` · `below` · `w.reorder(ids)` · `w.move(id, to)` (core › world › elements › order) · each feature's place inside its layer: `feature: { order: (d, s) => number }` (on every mark drawn from features, and an icon's)
+  params: `ids: string[]` (bottom first) · `order`: higher drawn over lower, the data's order between equals
+  returns: each layer keeps its band (fills on the ground, floating over); its labels take the same place among every layer's labels · a feature's order: points and icons draw their places in it (a change writes their records again, nothing built: a restyle), lines and areas build their shapes in it (a change builds them again)
   e.g. `w.reorder(['zones', 'suburbs', 'creeks', 'places'])`
 - core.encoding.join [built]: automatic on every mark and layer: features keyed by id
   params: `key?: (d) => string | number` (default the feature's id)
@@ -1238,10 +1250,10 @@ not there yet (planned, proposed or open; do not use):
   params: `grey?: 0..1 = 1` · `tint?: colour` · `tintAmount?: 0..1 = .75` (with a tint) · `brightness?: number = 1` · `contrast?: number = 1` · `ground?: number = 1` (× the ground's brightness after the rest: darker than what stands on it) · `sky?: { amount?: 0..1 = 1, color? } | false` (the sky and its haze, through the sky's own `dim`) · `subjects?: string[] | (layer) => boolean` · `ramp?: Ramp = 'viridis'` (the subjects' one colour scale) · `seconds?: number = 1` · `when?: When` · presets: `dark` (blue-grey, the ground .55, the sky '#151c28'), `grey`, `light`
   returns: `Theme { name, spec, ramp, scale.linear | quantile | category … (value, opts), subject(layer), mute(rgb, amount) }`
   e.g. `w.setTheme(theme.dark({ subjects: ['transit'], ramp: 'turbo' }))` · `line({ id: 'transit', data, subject: true, color: t.scale.category((d) => d.props.route) })` · `world(canvas, { theme: theme.grey({ when: { toggle: 'analysis' } }) })`
-- core.render.project.project [built]: `w.project(at)`
-  params: `at: [lon, lat, h?] | point name`
-  returns: `[x, y] | null` (screen pixels; null when behind the camera)
-  e.g. `const xy = w.project('fault.mid')`
+- core.render.project.project [built]: `w.project(at)` · its inverse `w.unproject([x, y])`
+  params: `at: [lon, lat, h?] | point name` · `[x, y]`: CSS px on the canvas
+  returns: `[x, y] | null` (screen pixels; null when behind the camera) · `[lon, lat] | null` (the place on the ground under the point: the camera's ray down to the terrain, on the flat map, the globe and a tilted view alike; null: the sky)
+  e.g. `const xy = w.project('fault.mid')` · `const ll = w.unproject([e.offsetX, e.offsetY])`
 - core.render.project.visible [built]: `w.visible(at)`
   params: `at: [lon, lat, h?] | point name`
   returns: `boolean` (false when terrain hides it)
@@ -1281,7 +1293,7 @@ not there yet (planned, proposed or open; do not use):
   returns: — (mouse: hover; touch: a tap shows the tooltip)
   e.g. `streets({ hover: { color: '#ffe066', shape: (d) => d.kind === 'tree' ? crownNet(d.props) : null } })`
 - core.interaction.events [built]: `w.on(event, fn)` (returns the function that stops it)
-  params: `'hover': (f | null, pointer)` · `'tap': (f | null, { x, y, lon, lat })` · `'select': (ids)` · `'frame'` · `'error'` · `'layers': ({ what, ids })` (a layer added, removed, moved, shown or hidden, faded) (`'load'`, `'settled'`, `'governor'`, `'chunks'` planned)
+  params: `'hover': (f | null, pointer)` · `'tap': (f | null, { x, y, lon, lat })` · `'select': (ids)` · `'frame'` · `'error'` · `'layers': ({ what, ids })` (a layer added, removed, moved, shown or hidden, faded) · `'view': ({ phase: 'start' | 'change' | 'end', zoomed, by: 'hands' | 'app', view })` (the view began to move, moved this frame, came to rest; `zoomed` once its distance changed; `by` a person's hands or the app: a scale bar, a reload when the view rests) (`'load'`, `'settled'`, `'governor'`, `'chunks'` planned)
   returns: an unsubscribe function
   e.g. `w.on('tap', f => f && panel.show(f.props))`
 - core.interaction.signals.selection [built]: `w.select(ids)` · `w.toggle(name, on?)` · `s.user` · `selected: { color?, mix?, shape, material, follow }` on a layer · `w.selectedBy(id)`
@@ -1289,7 +1301,7 @@ not there yet (planned, proposed or open; do not use):
   returns: `s.user = { hover, selection, toggles, role }` (usable in `when` and styles; layers draw their `selected` look, and a form on each selected thing whose place is known)
   e.g. `when: s => !s.user.selection.length || s.user.selection.includes(d.id)` · `streets({ selected: { color: '#38bdf8' } })`
 - core.interaction.controllers [built]: `control(w, layer, target, controller)` · `w.control(target, controller, opts)`
-  params: `target: Entity | null` (null = the map; the entity in an entity layer) · `controller: controllers.walk() | ride() | fly() | custom(read)` (an entity) `| orbit({ pan?, rotate?, tilt?, zoom?, zoomRange?: [out, in], tiltRange?: [least, most] }) | pan(o)` (the map: what a person's hands may do; `pan` never turns or tilts) · `opts: { offset?, eye?, blocked? }` (an entity's camera)
+  params: `target: Entity | null` (null = the map; the entity in an entity layer) · `controller: controllers.walk() | ride() | fly() | custom(read)` (an entity) `| orbit({ pan?, rotate?, tilt?, zoom?: boolean | { wheel?, pinch?, keys? }, zoomRange?: [out, in], tiltRange?: [least, most], bounds?: [w, s, e, n], viscosity?: 0..1 = 1, snap?: levels = 0, step?: levels = 1, keys?: boolean = false }) | pan(o)` (the map: what a person's hands may do; `pan` never turns or tilts; `zoom` per input; `bounds` the box the centre is kept in by hand, `viscosity` how hard it holds (under 1: dragged past by that share less, eased back when let go); `snap` a zoom by hand ends on a multiple of these levels; `keys` the arrows move the view and + / - zoom it by `step` levels, the canvas focused) · `opts: { offset?, eye?, blocked? }` (an entity's camera)
   e.g. `control(w, people, me, controllers.walk())`
 
 not there yet (planned, proposed or open; do not use):
@@ -1386,10 +1398,14 @@ not there yet (planned, proposed or open; do not use):
 
 ### core.simulation (docs/reference/core/simulation.md)
 
-- core.simulation.fields.raster [built]: `field({ kind: 'raster', … })` · `.step(seconds)` · `.play(rate)` · `.pause()` · `.at(point)` · `.values()` · `.sync()` · `.reset(init)` · `.setParams(p)`
-  params: `id: string` · `res: number` (metres a cell) · `area: [w, s, e, n] | { centre, size }` · `init?: number | (lon, lat) => number | grid = 0` · `rule: Rule | Kernel | fn` · `inputs?: Record<name, Field | number | fn | grid | 'terrain'>` · `params?` · `rate?: s/s = 0` · `dt?` (default the rule's stable step) · `draw?: { ramp, domain, opacity, min, channel, on: 'ground' | 'surface', base } | false` · `gpu?: 'auto' | boolean`
+- core.simulation.fields.raster [built]: `field({ kind: 'raster', … })` · `.step(seconds)` · `.play(rate)` · `.pause()` · `.at(point)` · `.values()` · `.sync()` · `.reset(init)` · `.setParams(p)` · `.legend()`
+  params: `id: string` · `res: number` (metres a cell; by level, `{ level: { street: 1, city: 16 } }`: a finer grid near, a coarser one far, the same rule and about the same cost, changed once at a level change: core › observation › presence) · `area: [w, s, e, n] | { centre, size }` (by level too: a smaller piece near, a bigger one far) · `init?: number | (lon, lat) => number | grid = 0` · `rule: Rule | Kernel | fn` (or `data: Epochs` of grids, its values through time: core › data › history › epochs) · `inputs?: Record<name, Field | number | fn | grid | 'terrain'>` · `params?` · `rate?: s/s = 0` · `dt?` (default the rule's stable step) · `draw?: { ramp, domain, opacity, min, channel, on: 'ground' | 'surface', base } | false` · `gpu?: 'auto' | boolean`
   returns: `Field` (a layer)
   e.g. `field({ id: 'flood', res: 3, area: { centre, size: 600 }, rule: rules.shallowWater(), inputs: { ground: 'terrain' } })`
+- core.simulation.fields.surface [built]: `field({ kind: 'surface', on, values | data, draw })` · `.set(values)` · `.at(point)` · `.probe(opts)` · `.vertices()` · `.legend()`
+  params: `on: string | Solids` (a solids layer or its id: buildings, solids, entities: the shapes they place) · `values: Float32Array | Record<chunk, Float32Array> | (thing, facet, normal, at) => number` (a value per vertex in the mesh's own order (one mesh, or by chunk), or your function: `thing` as picking gives it (id, props), `facet: 'roof' | 'wall' | number` (looking up; sideways or down; with `walls: 'numbered'` the wall's number, its thing's walls by direction in the order built), `normal: [east, north, up]`, `at: [lon, lat, metres above its ground]`; NaN: none, its own colour there) · `data?: Epochs` (values through time: core › data › history › epochs) · `draw?: { ramp, domain, min, opacity = 1 }` · `walls?: 'numbered'`
+  returns: `SurfaceField` (a layer; its values drawn by the solids' own draws)
+  e.g. `field({ kind: 'surface', on: 'buildings', values: (b, facet, n) => facet === 'roof' ? 6.1 : 3 + 2 * n[1], draw: { ramp: 'inferno', domain: [0, 7] } })`
 - core.simulation.fields.kernels [built]: `rule: { wgsl, glsl?, cpu?, params?, inputs?, maxDt? }` · `kernel(k)`
   params: `wgsl: string` (sets `next` from `cur`, `dt`, `cell`, your params by name, `laplacian(cur)`, `at(dx, dy)`, `in0…in3(dx, dy)`; the same text serves GLSL when it is expressions only) · `cpu?: (cur, n, dt, p) => number` (where the chip cannot)
   returns: `Rule`
@@ -1406,7 +1422,7 @@ not there yet (planned, proposed or open; do not use):
   params: `at: Point` | `along: Line` | `over: Area` (a ring) · `every?: 'step' | seconds = 'step'`
   returns: `Probe { value, series, stop() }` · `number`
   e.g. `water.probe({ at: [107.61, -6.9] })`
-- core.simulation.constants [built]: `constants.load(name)` · `constants.get(path)` · `constants.add(name, table)` · `constants.materials(ids)`
+- core.simulation.constants [built]: `constants.load(name)` · `constants.get(path)` · `constants.add(name, table)` · `constants.materials(ids)` · `constants.scope()` · `w.constants` (a world's: the same calls)
   params: `name: 'materials' | 'physics' | yours` · every value `{ value, unit, source }`
   returns: citable parameter tables (albedo, emissivity, evaporation, heat capacity, conductivity…)
   e.g. `constants.get('materials.asphalt.albedo')`
@@ -1418,9 +1434,8 @@ not there yet (planned, proposed or open; do not use):
 not there yet (planned, proposed or open; do not use):
   core.simulation.agents.behaviour, core.simulation.agents.rhythm, core.simulation.agents.habitat,
   core.simulation.agents.senses, core.simulation.agents.populations, core.simulation.agents.tiers,
-  core.simulation.fields.surface, core.simulation.fields.graph, core.simulation.fields.volume,
-  core.simulation.rules.coupling, core.simulation.rules.regimes, core.simulation.fidelity.fixed,
-  core.simulation.fidelity.observed, core.simulation.measure.sensors, core.simulation.measure.validation,
+  core.simulation.fields.graph, core.simulation.fields.volume, core.simulation.rules.coupling,
+  core.simulation.rules.regimes, core.simulation.measure.sensors, core.simulation.measure.validation,
   core.simulation.phenomena.fluids, core.simulation.phenomena.fire, core.simulation.phenomena.light,
   core.simulation.phenomena.acoustics, core.simulation.phenomena.contacts, core.simulation.phenomena.orbits.ephemerides,
   core.simulation.phenomena.orbits.tle, core.simulation.phenomena.orbits.n-body,
@@ -1475,7 +1490,7 @@ not there yet (planned, proposed or open; do not use):
   returns: swaps by id; the old version stays if the new one fails, with file + line
   e.g. `if (import.meta.hot) import.meta.hot.accept(m => w.hot(m))`
 - core.world.lifecycle.world [built]: `world(canvas, options?)`
-  params: `canvas: HTMLCanvasElement | null` (null = headless: Node, servers, tests, the same results) · `body?: Body = earth()` · `bodies?: Body[]` · `view?: View` · `time?: Date | 'now' = 'now'` · `graphics?: 'auto' | 'webgpu' | 'webgl2' = 'auto'` · `render?: { quality, shadows?: boolean | ShadowOptions }` (`'auto'`: the device's quality; shadows off by default, cast by the light of a `sky()`) · `timeZone?: string | 'auto'` (the clocks' zone: `s.time.local`) · `clock?: 'real' | { fps }` · `attribution?: false | { position, format }` · `onError?: (e) => void` · `pixelRatio?: number` · `budget?: Budget | 'auto' | false = 'auto'` · `frames?: FramesOptions` (draw on demand) · `loader?: LoaderOptions` · `build?: 'auto' | 'compiled' | 'live' = 'auto'` · `seed?: number` (planned: same seed, same world; a shape's builds take their own seed) · `theme?: Theme` (an analysis view: core › render › style › theme)
+  params: `canvas: HTMLCanvasElement | OffscreenCanvas | null` (null = headless: Node, servers, tests, the same results; an OffscreenCanvas on the page or in a worker: drawn the same on WebGPU and WebGL2, no controls, hover or credits there: its host sends the input) · `body?: Body = earth()` · `bodies?: Body[]` · `view?: View` · `time?: Date | 'now' = 'now'` · `graphics?: 'auto' | 'webgpu' | 'webgl2' = 'auto'` · `render?: { quality, shadows?: boolean | ShadowOptions }` (`'auto'`: the device's quality; shadows off by default, cast by the light of a `sky()`) · `timeZone?: string | 'auto'` (the clocks' zone: `s.time.local`) · `clock?: 'real' | { fps }` · `attribution?: false | { position, format }` · `onError?: (e) => void` · `pixelRatio?: number` · `budget?: Budget | 'auto' | false = 'auto'` · `frames?: FramesOptions` (draw on demand) · `loader?: LoaderOptions` · `build?: 'auto' | 'compiled' | 'live' = 'auto'` · `seed?: number` (planned: same seed, same world; a shape's builds take their own seed) · `theme?: Theme` (an analysis view: core › render › style › theme)
   returns: `Promise<World>`
   e.g. `const w = await world(canvas, { body: earth() })`
 - core.world.lifecycle.errors [built]: `AslnutError`
@@ -1570,9 +1585,9 @@ not there yet (planned, proposed or open; do not use):
   returns: one full-screen pass behind the surface: space, stars and the glow round the globe; a horizon-to-zenith sky over the flat map
   e.g. `new Sky({ stars: .6 })`
 - modules.world.plane [built]: `plane(options)`
-  params: `size?: number = 1000` (metres) · `grid?: number | false = 10` · `color?: color = '#eee'` · `units?: 'm' = 'm'`
+  params: `size?: number = 1000` (metres) · `grid?: number | false = 10` · `color?: color = '#eee'` · `lines?: color` · `beyond?: rgb` · `sky?: boolean | SkyProps | Element` (as the earth's: a painted sky by default, which gives no light; `false`: none; `sky()` of modules › earth › air › sky in its place: the real sun over the floor at the world's time, lighting what stands on it and, with `render.shadows`, casting its shadows on the floor the same way as on the earth)
   returns: `Body` (flat, no curvature)
-  e.g. `world(canvas, { body: plane({ size: 50 }) })`
+  e.g. `world(canvas, { body: plane({ size: 50, sky: sky() }), render: { shadows: true } })`
 
 not there yet (planned, proposed or open; do not use):
   modules.world.shared, modules.world.surface.provenance, modules.world.sun, modules.world.moon, modules.world.mars
@@ -1779,10 +1794,10 @@ not there yet (planned, proposed or open; do not use):
 
 ### modules.presets.humans (docs/reference/modules/human.md)
 
-- modules.presets.humans.body [built]: `generate(sliders)` · `humanFigure(template, spec)` · `loadTemplate(url)`
-  params: sliders 0…1: `gender_female`, `weight_heavy`, `weight_thin`, `muscular`, `age_child`, `age_teen`, `age_elder`, `tall`, `short`, `bust`, `hips_wide`, … (34, `MORPHS`) · spec: `{ body, hair, garments, gait, face = true, frames = { walk: 16, run: 12, idle: 8 }, poses }`
+- modules.presets.humans.body [built]: `generate(sliders)` · `humanFigure(template, spec)` · `loadTemplate(url)` · `loadFit(url)` · `fitBody(body, fit)`
+  params: sliders 0…1: `gender_female`, `weight_heavy`, `weight_thin`, `muscular`, `age_child`, `age_teen`, `age_elder`, `tall`, `short`, `bust`, `hips_wide`, … (34, `MORPHS`) · spec: `{ body, fit = null, hair, garments, gait, face = true, frames = { walk: 16, run: 12, idle: 8 }, poses }` · `fit`: a base mesh's silhouette (`fit.json` from `tools/humans-fit.mjs <mesh.glb>`: per vertex the offset onto the mesh's surface, and the joints moved with it, on top of the sliders' own moves; the template's skeleton, weights, correctives, hair and garments kept; a fit for another vertex count refused, `E-LOAD-005`)
   returns: `{ P, positions, joints }` · a `HumanFigure` (mesh, skeleton, clips)
-  e.g. `humanFigure(tpl, { body: { age_elder: 0.8 }, hair: 'bun' })`
+  e.g. `humanFigure(tpl, { body: { age_elder: 0.8 }, hair: 'bun', fit: await loadFit(url) })`
 - modules.presets.humans.face [built]: `packFace(face)` · `FACE_MATERIAL`
   params: `style: 'eyes' | 'dots' | 'closed'` · `eyeSize, eyeOpen, eyeGap, eyeTilt, lash, brow, browY, mouth, smile, blush`: 0…1 · `browTilt: −1…1` · `iris: color` · `blinks = true`
   returns: 3 numbers (an entity's `decal`)
@@ -1915,11 +1930,15 @@ not there yet (planned, proposed or open; do not use):
   params: `names?`: the recipes (default all six) or `trials/<name>` (a script a model wrote: what it has, to score it) · `PORT`
   returns: each recipe renders on the graphics asked for, settles, draws a frame neither black nor flat, fails no element, makes no page error, asks nothing from outside unmocked (tools/recipes-mock.mjs answers the services, tiles, data and model), and has what it says; exit 1 on a failure
   e.g. `EXAMPLES_KEEP_BUILD=1 npx vite build && node tools/smoke-recipes.mjs`
+- tools.catalog [built]: `catalog(entries | catalog.json)` · `.search(text | { text, kind, tag, licence })` · `.get(id)` · `.tags()` · `.licences()` · `.toJSON()` · `entryOf(info, { kind, path, presets })` · `form(pkg | element | params).controls` · `packAsset(files, { id, kind? })` · `unpackAsset(file, { code?, maxBytes?, maxFiles? })` (`import … from 'aslnut/tools/catalog'`)
+  params: an entry: `{ id, kind: 'shape' | 'element', name, licence (SPDX), path, tags?, version?, author?, about?, thumbs?, presets? }` · a query: every field given holds (words in its id, name, about, tags, presets; any of the tags; any of the licences, case ignored) · `files: { path: bytes | text }`
+  returns: `Catalog` · `CatalogFile` (`{ version: 1, entries }`, ordered by path) · `FormControl[]` · a `Blob` (a pack: core › data › loading › packs, its scope the asset's id, its keys the folder's paths) · `UnpackedAsset` (`{ id, kind, files, info, licence, licenceText, code, data, trust: 'data' | 'code', text(path) }`)
+  e.g. `catalog(json).search({ kind: 'shape', tag: 'vehicle' })` · `form(drones.package).controls` · `const u = await unpackAsset(packAsset(files, { id: 'bin' })); if (u.trust === 'code') …`
 
 not there yet (planned, proposed or open; do not use):
   tools.geo, tools.scan.classify, tools.scan.align, tools.scan.fit, tools.scan.clean, tools.scan.grid,
   tools.compile.run.on-save, tools.compile.run.page, tools.compile.steps.resolve, tools.compile.steps.mesh,
   tools.compile.steps.assign, tools.compile.steps.solids, tools.compile.steps.logic, tools.compile.custom-steps,
   tools.compile.options, tools.compile.stale, tools.convert.fbx, tools.convert.ifc, tools.convert.citygml,
-  tools.convert.las, tools.convert.i3s, tools.convert.usd, tools.export.usd, tools.catalog, tools.cli, tools.mcp
+  tools.convert.las, tools.convert.i3s, tools.convert.usd, tools.export.usd, tools.cli, tools.mcp
 

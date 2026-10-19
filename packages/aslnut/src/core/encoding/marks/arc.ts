@@ -23,10 +23,13 @@ import { unwrapNear } from '../../geometry/build/mesh.ts';
 import { FeatureMark, Prog, type Entry, type FeatureMarkProps, type PerFeature, type Styled } from './features.ts';
 import type { LineProps } from './line.ts';
 import { sizeUnits, sizeValue, type SizeOf, type SizeUnits } from '../../render/drawing/size.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 /** how many points along each arc: a number for every arc, or by its length (one every `every` metres, `min` to `max`) */
 export type ArcPoints = number | { every?: number; min?: number; max?: number };
-export interface ArcProps<D> extends Omit<LineProps<D>, 'on'> {
+export interface ArcProps<D> extends Omit<LineProps<D>, 'on' | 'dashes' | 'dashOffset' | 'caps' | 'joins'> {
+  /** [on, off] CSS px, for every arc */
+  dashes?: [number, number];
   /** where each arc starts */
   from: (d: D) => LonLat;
   /** where it ends */
@@ -111,13 +114,15 @@ export class Arc<D = unknown> extends FeatureMark<D, ArcProps<D>> {
     if (typeof p.from !== 'function' || typeof p.to !== 'function') throw new AslnutError('E-DATA-001', `arc '${p.id}' needs from: d => [lon, lat] and to: d => [lon, lat]`, { where: p.id, fix: 'arc({ data, from: d => [d.props.olon, d.props.olat], to: d => [d.props.dlon, d.props.dlat] })' });
     // it stands where its heights say (the ground under its ends, read here)
     super({ ...p, on: 'absolute' } as ArcProps<D>);
-    this.arcP = p;
+    // (its own props: those given by level as resolved now)
+    const run = this.props as unknown as Record<string, unknown>;
+    this.arcP = { ...p, ...Object.fromEntries(Object.keys(this.byLevel).filter((k) => k !== 'on').map((k) => [k, run[k]])) } as ArcProps<D>;
   }
   protected override drapeMark(): 'arc' { return 'arc'; }
   protected override legacySits(): 'above' | 'ground' | undefined { return this.props.over === undefined ? undefined : this.props.over ? 'above' : 'ground'; }
   /** drawn over the world: after the buildings and shapes (4), under the points (5), unless placed */
   override get order(): number | undefined { return this.props.order ?? (this.sits === 'above' ? 4.5 : undefined); }
-  override setProps(p: Partial<ArcProps<D>>): this {
+  override setProps(given: Partial<Leveled<ArcProps<D>>>): this { const p = given as Partial<ArcProps<D>>;
     super.setProps(p);
     this.arcP = { ...this.arcP, ...p };
     if (['from', 'to', 'height', 'fromHeight', 'toHeight', 'points', 'reveal'].some((k) => k in p)) { this.stale = true; this.full = true; }
@@ -262,4 +267,4 @@ export class Arc<D = unknown> extends FeatureMark<D, ArcProps<D>> {
     };
   }
 }
-export const arc = <D = unknown>(p: ArcProps<D>) => new Arc<D>(p);
+export const arc = <D = unknown>(p: Leveled<ArcProps<D>>) => new Arc<D>(p as ArcProps<D>);

@@ -97,18 +97,7 @@ void main() {
   float t = dot(rp, v_dir.xy) / v_dir.z;
   float s = dot(rp, v_side);
   float k = tilePx(v_p);
-  float across = s / k;
-  if (t < 0.0) {
-    if (v_ends.z > 0.5) {
-      discard;
-    }
-    across = length(vec2(s, t * v_dir.z)) / k;
-  } else if (t >= 1.0) {
-    if (v_ends.w > 0.5) {
-      discard;
-    }
-    across = length(vec2(s, (t - 1.0) * v_dir.z)) / k;
-  }
+  float across = acrossAt(t, s, v_dir.z, k, v_ends);
   if (abs(across) > v_halfw) {
     discard;
   }
@@ -122,10 +111,7 @@ void main() {
   float value = v_value;
   float reveal = v_state.z;
   float mode = u.reveal.x;
-  // dashes, flowing along at u.b.y px a second (0: still)
-  float dashP = max(u.a.z + u.a.w, 0.0001);
-  float dashAt = alongPx - time * u.b.y;
-  if (u.a.z > 0.0 && mod(dashAt, dashP) > u.a.z) {
+  if (!dashOn(alongPx + featAt(v_idx, 3).w - time * u.b.y, featAt(v_idx, 6))) {
     discard;
   }
   if (mode == 1.0 || mode == 3.0) {

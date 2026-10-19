@@ -32,6 +32,7 @@ import { rgba, type Color } from '../../core/render/style/color.ts';
 import { sizeUnits, sizeValue, type SizeOf } from '../../core/render/drawing/size.ts';
 import { CARD_FILTERED, CARD_FLOATS, CARD_TEXTURES, cardsWGSL } from './cards.wgsl.ts';
 import { cardsGLSL } from './cards.glsl.ts';
+import type { Leveled } from '../../core/observation/presence.ts';
 
 /** a row: its label, its value (a channel), its `of` ('3/4': a channel), its decimals, a bar under it (filled to the
  *  value over its `of`, or over a domain); or a text of its item's (`text`: your function of it) in its value's place */
@@ -154,7 +155,7 @@ export class Cards<D = unknown> extends Element<CardsProps<D>> {
   }
   /** a frame asked for; `touched`: it changed itself (its props, its pictures): its decisions settle again */
   private invalidate(touched = false): void { if (touched) this.touchedAt = this.attached?.world.now ?? 0; (this.attached?.world as { invalidate?: () => void } | undefined)?.invalidate?.(); }
-  override setProps(p: Partial<CardsProps<D>>): this {
+  override setProps(given: Partial<Leveled<CardsProps<D>>>): this { const p = given as Partial<CardsProps<D>>;
     super.setProps(p);
     if ('rows' in p || 'fill' in p || 'badge' in p || 'header' in p || 'log' in p || 'priority' in p || 'fit' in p) { this.madeFor = -1; this.deriver = null; }
     if ('collide' in p || 'header' in p) this.progKey = '';
@@ -529,4 +530,4 @@ export class Cards<D = unknown> extends Element<CardsProps<D>> {
   }
 }
 /** a data card on each thing or feature: cards({ of, header, rows, fill, badge }) */
-export function cards<D = unknown>(p: CardsProps<D>): Cards<D> { return new Cards<D>(p); }
+export function cards<D = unknown>(p: Leveled<CardsProps<D>>): Cards<D> { return new Cards<D>(p as CardsProps<D>); }

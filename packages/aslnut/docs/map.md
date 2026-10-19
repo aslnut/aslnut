@@ -63,7 +63,7 @@ From your code to the screen, top to bottom. Each box links to its page.
 |---|---|---|
 | `core` | the machinery: world, space, time, data, geometry, entities, simulation, render, interaction, runtime | knows no domain: no Earth, no cars, no people |
 | `modules` | the defaults built with the machinery: world bodies and their natural systems (Earth, Sun, Moon, Mars, a plane, space), and presets: ready-made things for any world (humans, animals, vehicles, drones, robots) and for Earth (roads, buildings, plants…) | may be domain-specific; replaceable |
-| `kits` | opinionated pieces for a kind of app: dashboard, game, authoring (what a studio edits: fabric and rules, saved as diffs) | built only from core and modules; the screens stay in apps |
+| `kits` | opinionated pieces for a kind of app: dashboard, game, authoring (what a studio edits: fabric and rules, saved as diffs), compat (other web-map interfaces running on a world unchanged: Leaflet-compatible, built only from the public interface) | built only from core and modules; the screens stay in apps |
 | `tools` | Node-only work at build time: geo analysis, baking, converting, exporting, the command line | never in the browser bundle |
 
 **What a world is made of:** a body (terrain, terraform, water level) + a fabric (networks and areas, and the structures made from them) + rules (fabric → entities) + fields + sky and time + entities. Roads and rivers are fabric, not entities ([the fabric](concepts/fabric.md)).

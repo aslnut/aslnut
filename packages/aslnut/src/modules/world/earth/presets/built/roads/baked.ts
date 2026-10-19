@@ -18,6 +18,7 @@ import { tilePoint } from '../../../../../../core/space/geo.ts';
 import type { Piece, P3 } from '../../../../../../core/geometry/networks/bake-types.ts';
 import { standGrid, type StandGrid } from '../../../../../../core/space/stands.ts';
 import type { WorkerLane } from '../../../../../../core/runtime/workers.ts';
+import type { Leveled } from '../../../../../../core/observation/presence.ts';
 
 /** a baked road tile (v2): see tools › compile › steps › manifest */
 export interface BakedTile { v: number; ix: number; iz: number; size: number; infos: { kind: string; props: Record<string, unknown>; patchRefs?:number[] }[]; pieces: number[][]; numeric?: string[]; numericScale?:number;turnUnits?:number; overhead?:number[]; levels?:[number,number][] }
@@ -249,7 +250,7 @@ export class BakedRoads extends StreetDetail<BakedTile, null> {
     }
   }
 }
-export const bakedRoads = (p: BakedRoadsProps) => new BakedRoads(p);
+export const bakedRoads = (p: Leveled<BakedRoadsProps>) => new BakedRoads(p as BakedRoadsProps);
 
 // ── the ground under the roads ──────────────────────────────────────────────────────────────────────────────────
 /** a terrain whose ground goes under the baked roads: the base terrain's heights, lowered (never raised) where a road

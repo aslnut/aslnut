@@ -14,12 +14,13 @@
 import { AslnutError } from '../../world/errors.ts';
 import type { State } from '../../world/state.ts';
 import { shown, type When } from '../../observation/presence.ts';
-import { normalize, type Feature, type IdRule, type Props } from '../features.ts';
+import { checkGeometry, normalize, type Feature, type IdRule, type Props } from '../features.ts';
 import { parseCSV, type CSVOptions } from './csv.ts';
 import { PMTilesReader, Compression, type Header } from './pmtiles.ts';
 import { Source, type SourceContext } from './source.ts';
 import { Tiled, gunzip, type TiledOptions } from './tiled.ts';
 import { wfs } from './wfs.ts';
+import { epochs } from '../epochs.ts';
 
 export { Source, Joined } from './source.ts';
 export type { SourceContext, SourceStatus, JoinOptions } from './source.ts';
@@ -35,18 +36,32 @@ export interface RowOptions { id?: IdRule; /** the props holding coordinates (de
 function rowFeature(row: Props, i: number, o: RowOptions): Feature {
   const idv = typeof o.id === 'function' ? o.id({ properties: row, ...row } as never, i) : row[o.id ?? 'id'];
   const id = typeof idv === 'string' || typeof idv === 'number' ? idv : i;
-  const lon = row[o.lon ?? 'lon'] ?? row['lng'] ?? row['longitude'], lat = row[o.lat ?? 'lat'] ?? row['latitude'];
-  const g = typeof lon === 'number' && typeof lat === 'number' && Number.isFinite(lon) && Number.isFinite(lat) ? { type: 'Point' as const, coordinates: [lon, lat] as [number, number] } : null;
-  return { id, props: row, geometry: g };
+  return { id, props: row, geometry: pointOf(row, o) };
 }
-const sameShape = (a: Feature | undefined, b: Feature) => !!a && JSON.stringify(a.geometry) === JSON.stringify(b.geometry);
+/** a row's point (its lon / lat props), or null; undefined: it gives no coordinates at all */
+function pointOf(row: Props, o: RowOptions): Feature['geometry'] {
+  const lon = row[o.lon ?? 'lon'] ?? row['lng'] ?? row['longitude'], lat = row[o.lat ?? 'lat'] ?? row['latitude'];
+  return typeof lon === 'number' && typeof lat === 'number' && Number.isFinite(lon) && Number.isFinite(lat) ? { type: 'Point' as const, coordinates: [lon, lat] as [number, number] } : null;
+}
+/** an item given as a feature of any shape: `{ id?, props (or properties), geometry }` (a row has no `geometry`) */
+const isFeature = (r: unknown): r is { id?: string | number; props?: Props; properties?: Props | null; geometry: unknown } => !!r && typeof r === 'object' && 'geometry' in r && ('props' in r || 'properties' in r || (r as { type?: unknown }).type === 'Feature');
+/** a change of a feature: its props merged, its geometry replaced (each optional); a row's change has neither key */
+const isFeatureChange = (c: unknown): c is { props?: Props; geometry?: unknown } => !!c && typeof c === 'object' && Object.keys(c).length > 0 && Object.keys(c).every((k) => k === 'props' || k === 'geometry');
+const sameShape = (a: Feature | undefined, b: Feature) => !!a && (a.geometry === b.geometry || JSON.stringify(a.geometry) === JSON.stringify(b.geometry));
 
-/** your rows: set, upsert, patch, remove; a layer updates only what changed (numbers recolour, shapes rebuild) */
+/** your rows: set, upsert, patch, remove; a layer updates only what changed (numbers recolour, shapes rebuild). An item
+ *  is a row (its point from its lon / lat) or a feature of any shape ({ id, props, geometry }: a line, an area) */
 export class Rows<P = Props> extends Source<P> {
   protected o: RowOptions;
   constructor(rows: P[] = [], o: RowOptions & { id?: IdRule } = {}) { super({ attribution: o.attribution }); this.o = o; if (rows.length) this.set(rows); }
   protected async load(_ctx: SourceContext): Promise<void> {}
-  private feat(r: P, i: number): Feature<P> { return rowFeature(r as Props, i, this.o) as Feature<P>; }
+  private feat(r: P, i: number): Feature<P> {
+    if (!isFeature(r)) return rowFeature(r as Props, i, this.o) as Feature<P>;
+    const props = (r.props ?? r.properties ?? {}) as Props, rule = this.o.id;
+    const idv = r.id ?? (typeof rule === 'function' ? rule({ ...r, properties: props } as never, i) : rule ? props[rule] : undefined);
+    const id = typeof idv === 'string' || typeof idv === 'number' ? idv : i;
+    return { id, props, geometry: checkGeometry(r.geometry, `${this.id} feature ${String(id)}`) } as Feature<P>;
+  }
   /** replace every row */
   set(rows: P[] | readonly P[] | { features: unknown[] }): this {
     const list = Array.isArray(rows) ? rows.map((r, i) => this.feat(r as P, i)) : normalize(rows, { id: this.o.id, where: this.id }) as Feature<P>[];
@@ -54,22 +69,30 @@ export class Rows<P = Props> extends Source<P> {
     this.replace(list, shapes);
     return this;
   }
-  /** add or replace rows by id */
-  upsert(rows: P[]): this {
+  /** add or replace rows (or features) by id: one change, however many */
+  upsert(rows: P[] | readonly P[]): this {
     let shapes = false; const list = [...this.list];
     const at = new Map(list.map((f, i) => [f.id, i]));
     rows.forEach((r, k) => {
-      const f = this.feat(r, list.length + k), i = at.get(f.id);
+      const f = this.feat(r as P, list.length + k), i = at.get(f.id);
       if (i === undefined) { at.set(f.id, list.length); list.push(f); shapes = true; } else { if (!sameShape(list[i] as Feature, f as Feature)) shapes = true; list[i] = f; }
     });
     this.replace(list, shapes);
     return this;
   }
-  /** change some props of one row */
-  patch(id: string | number, change: Partial<P>): this {
+  /** change one row: some of its props (its point read again only when the change gives coordinates), or a
+   *  feature's `{ props?, geometry? }` (props merged, the geometry replaced; the geometry not given is kept) */
+  patch(id: string | number, change: Partial<P> | { props?: Partial<P>; geometry?: unknown }): this {
     const f = this.get(id); if (!f) throw new AslnutError('E-DATA-001', `no row '${id}'`, { where: this.id, fix: 'upsert it first' });
-    const g = this.feat({ ...(f.props as object), ...(change as object) } as P, 0);
-    const list = this.list.map((x) => (x === f ? { ...g, id: f.id } : x));
+    let g: Feature<P>;
+    if (isFeatureChange(change)) {
+      g = { id: f.id, props: (change.props ? { ...(f.props as object), ...(change.props as object) } : f.props) as P, geometry: 'geometry' in change ? checkGeometry(change.geometry, `${this.id} feature ${String(f.id)}`) : f.geometry };
+    } else {
+      const props = { ...(f.props as object), ...(change as object) } as Props, own = change as Props, o = this.o;
+      const moved = [o.lon ?? 'lon', o.lat ?? 'lat', 'lng', 'longitude', 'latitude'].some((k) => k in own);
+      g = { id: f.id, props: props as P, geometry: moved ? pointOf(props, o) : f.geometry };
+    }
+    const list = this.list.map((x) => (x === f ? g : x));
     this.replace(list, !sameShape(f as Feature, g as Feature));
     return this;
   }
@@ -177,8 +200,8 @@ export class Stream<P = Props> extends Rows<P> {
     if (m.remove?.length) this.remove(...m.remove);
   }
   /** taken up again after close(): the next start connects again */
-  reopen(): void { if (!this.closed) return; this.closed = false; this.unstart(); }
-  close(): void {
+  override reopen(): void { if (!this.closed) return; this.closed = false; this.unstart(); }
+  override close(): void {
     if (this.closed) return;
     this.closed = true;
     if (this.retryTimer) clearTimeout(this.retryTimer); this.retryTimer = null;
@@ -273,6 +296,8 @@ export class TemplateTiles extends Tiled {
 }
 /** the factories */
 export const data = {
+  /** one dataset per time, played through time (core › data › history › epochs): features, grids or surface values */
+  epochs,
   /** a GeoJSON file or object; a URL with {z}/{x}/{y}: GeoJSON tiles for the view */
   geojson: (input: string | object, o?: GeoJSONOptions & TemplateOptions): Source => (typeof input === 'string' && input.includes('{z}') ? new TemplateTiles(input, 'geojson', o) : new GeoJSON(input, o)),
   /** MVT tiles at a z/x/y URL template, loaded for the view */

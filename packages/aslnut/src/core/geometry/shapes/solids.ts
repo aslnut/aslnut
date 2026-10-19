@@ -35,6 +35,10 @@ import { assembleMaterial, paramBlock, type ParamBlock } from '../../render/grap
 import { rangeUnits, type SizeRange, type SizeUnits } from '../../render/drawing/size.ts';
 import type { Emitter } from './parts.ts';
 import { translateStatements } from '../../render/graphics/shaders/translate.ts';
+import { SOLID_FIELD_WGSL, FIELD_TEXELS } from '../../render/graphics/shaders/solid-field.wgsl.ts';
+import { SOLID_FIELD_GLSL } from '../../render/graphics/shaders/solid-field.glsl.ts';
+import { partOf } from '../../render/look/materials.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 /** what a chunk's id is: picking answers with it */
 export interface SolidInfo { kind: string; id: string | number; props: Record<string, unknown> }
@@ -130,6 +134,40 @@ export interface SolidsProps extends ElementProps {
    *  walls behind the glass, by day and night) */
   windows?: { lit?: number | ((s: State) => number); interior?: boolean };
 }
+/** a surface field's values on a solids layer (core › simulation › fields › surface): what the field gives the layer it
+ *  is on. Its values come once a chunk and a version (when the chunk's mesh is there; again when the version moves),
+ *  its look each frame. Drawn by the layer's own draws: one more texture, no draw of its own */
+export interface SurfaceChannel {
+  /** its name (its textures are labelled by it: the field's graphics memory) */
+  readonly id: string;
+  /** moved when its values change: every chunk asked again, only those whose values differ written */
+  readonly version: number;
+  /** a chunk's values: its whole mesh's vertices ('near', in the mesh's own order), its far mesh's ('far'), its clones'
+   *  (by id; NaN: none); `b` the next epoch's (morph: mixed on the chip); null: none */
+  values(c: SurfaceChunk, which: 'near' | 'far' | 'clones'): SurfaceValues | null;
+  /** this frame's look */
+  look(s: State): SurfaceLook;
+}
+export interface SurfaceValues { a: Float32Array; b?: Float32Array | null }
+/** a surface field's look this frame: its ramp (256 colours, 0xRRGGBB each), its domain, the least drawn, how much over
+ *  the solids' own colours (0: not shown), the next epoch's share, a theme's subject; `version` moves with ramp or domain */
+export interface SurfaceLook { version: number; ramp: Float32Array; lo: number; hi: number; min: number; mix: number; f: number; subject: boolean }
+/** a chunk as a surface field reads it: its key and spec, the mesh asked for (its own order) and the whole one (made
+ *  now if it is made on demand; null: not yet), its clones (their id and place: m of the chunk, height) */
+export interface SurfaceChunk { key: string; spec: SolidsChunk; mesh: Float32Array | null; near(): Float32Array | null; clones: { id: number; x: number; z: number; h: number }[] | null }
+interface FieldTex { tex: GTexture; n: number; rows: number; two: boolean; a: Float32Array; b: Float32Array | null; head: Float32Array; lookV: number }
+interface ChunkField { near: FieldTex | null; far: FieldTex | null; nearV: number; farV: number; clonesV: number; clones: SurfaceValues | null; mesh: Float32Array | null; loading: boolean }
+/** a value no surface field has (the shader's 'none') */
+const NONE = -3e38;
+/** the order a mesh's vertices are drawn in when some of them are drawn apart (lines, ghosts, your materials: core ›
+ *  render › look › materials): the solid triangles', as splitParts keeps them; null: as given */
+function drawnOrder(m: Float32Array): Int32Array | null {
+  const n = Math.floor(m.length / MESH_FLOATS); let special = false;
+  for (let i = 0; i < n; i += 3) if (partOf(meshCode(m, i)) !== 'solid') { special = true; break; }
+  if (!special) return null;
+  const out: number[] = []; for (let t = 0; t + 2 < n; t += 3) if (partOf(meshCode(m, t)) === 'solid') out.push(t, t + 1, t + 2);
+  return Int32Array.from(out);
+}
 /** a cell's count (levels › counted): its middle (the mean of its copies) and how many */
 export interface CountedCell { lon: number; lat: number; count: number }
 /** what a pick of a solid gives as its datum */
@@ -209,6 +247,8 @@ interface Chunk {
   square: Bounds;
   /** the first row of its tints in the layer's (−1: none) and how many */
   tintRow: number; tintRows: number;
+  /** its surface field's values on the chip (null: none asked yet) */
+  fv: ChunkField | null;
 }
 
 export class Solids extends Element<SolidsProps> {
@@ -285,13 +325,14 @@ export class Solids extends Element<SolidsProps> {
       textures: [...textures, REC_TEX, { name: 'atlas', kind: '2d' as const, sample: 'float' as const }, { name: 'normals', kind: '2d' as const, sample: 'float' as const }],
       instance: INST_LAYOUT, depth: { write: true, test: 'less' }, cull: 'none' });
     this.progImp.ready.then(() => { this.impReady = true; }, (e) => ctx.world.error(e));
+    this.fieldProgram();
     await Promise.all([this.prog.ready, this.progI.ready]);
     for (const [k, c] of this.pending) this.put(k, c);
     this.pending.clear();
   }
   override detach(): void {
     for (const k of [...this.chunks.keys()]) this.drop(k);
-    this.prog?.destroy(); this.progI?.destroy(); this.progImp?.destroy(); this.groundTex?.destroy();
+    this.prog?.destroy(); this.progI?.destroy(); this.progImp?.destroy(); this.groundTex?.destroy(); this.progF?.destroy(); this.progF = null; this.progFReady = false;
     for (const x of this.imps.values()) { x.block?.destroy(); for (const t of x.baked?.targets ?? []) t.destroy(); for (const b of x.baked?.buffers ?? []) b.destroy(); }
     this.imps.clear(); this.progImp = null; this.impReady = false;
     for (const b of this.shapeBufs.values()) b.destroy(); this.shapeBufs.clear();
@@ -321,7 +362,7 @@ export class Solids extends Element<SolidsProps> {
       key, slot, spec, born: old ? old.born : spec.fade === false ? -1e9 : this.nowMs, n,
       vbuf: n ? g.buffer('vertex', whole!, `${this.id} ${key}`) : null, lazy, lazyPending: false, parts: sp ? this.partsOf(sp, `${key}`) : null,
       fn: spec.far ? spec.far.length / MESH_FLOATS : 0, fbuf: spec.far && spec.far.length >= MESH_FLOATS ? g.buffer('vertex', spec.far, `${this.id} ${key} far`) : null,
-      inst: [], rdata: new Float32Array(0), rbase: 0, rn: 0, square: [0, 0, 0, 0, 0, 0], tintRow: -1, tintRows: 0,
+      inst: [], rdata: new Float32Array(0), rbase: 0, rn: 0, square: [0, 0, 0, 0, 0, 0], tintRow: -1, tintRows: 0, fv: null,
       top: spec.free ? 1e5 : topOf(spec), ext: extentOf(lazy ? null : (spec.mesh as Float32Array | undefined), extentOf(spec.far, null)),
       tbuf: g.buffer('uniform', 16 * 4, `${this.id} ${key} block`), t: new Float32Array(16), tw: new Float32Array(16).fill(NaN),
       ground: old?.ground ?? FLAT, glayer, groundSeen: old ? old.groundSeen : -1, groundFull: old?.groundFull ?? false, groundRead: old ? old.groundRead : -1, groundTop: old?.groundTop ?? NaN, inView: old?.inView ?? true, away: old?.away ?? 0, waits: old?.waits ?? 0,
@@ -544,7 +585,7 @@ export class Solids extends Element<SolidsProps> {
    *  draws them) */
   protected framing = false;
   protected changed(): void { if (!this.framing) (this.attached?.world as { invalidate?: () => void } | undefined)?.invalidate?.(); }
-  private release(c: Chunk): void { if (c.glayer >= 0) this.groundFree.push(c.glayer); const pic = this.pics.get(c.key); if (typeof pic === 'object') pic.destroy(); this.pics.delete(c.key); this.tintPx.delete(c.key); c.vbuf?.destroy(); c.fbuf?.destroy(); this.dropParts(c.parts); c.parts = null; this.releaseSets(c); c.tbuf.destroy(); }
+  private release(c: Chunk): void { this.dropField(c); if (c.glayer >= 0) this.groundFree.push(c.glayer); const pic = this.pics.get(c.key); if (typeof pic === 'object') pic.destroy(); this.pics.delete(c.key); this.tintPx.delete(c.key); c.vbuf?.destroy(); c.fbuf?.destroy(); this.dropParts(c.parts); c.parts = null; this.releaseSets(c); c.tbuf.destroy(); }
   /** a chunk's instance sets let go: out of their groups, their levels counted down, its records' texels free */
   private releaseSets(c: Chunk): void { for (const x of c.inst) { this.leave(x); this.letGoLevels(x); } c.inst = []; this.unallot(c.rbase, c.rn); c.rn = 0; }
   /** an instance set's block (S): its shape's size across (m) and its range on screen (core › render › drawing ›
@@ -781,6 +822,11 @@ export class Solids extends Element<SolidsProps> {
     this.nowMs = ctx.loadNow ?? ctx.now; this.clockMs = ctx.now; this.sortStats.sets = 0; this.sortStats.ms = 0; this.clockAt = Infinity; this.eyeXZ[0] = ctx.camera.eye[0]!; this.eyeXZ[1] = ctx.camera.eye[2]!;
     if (!this.g || !this.prog?.ready || !this.groundTex || !this.chunks.size) return [];
     this.syncSelection(ctx);
+    // a surface field's look this frame (its clones' tints made again when it changed)
+    const look = this.surf ? this.surf.look(ctx.s) : null;
+    this.surfLookNow = look;
+    if (look) this.fieldLook(look);
+    const fieldT0 = performance.now(); let fieldMore = false;
     const tints = this.syncTints();
     // (no instances left: their records let go)
     if (this.groups.size) this.syncRecords(); else if (this.recTex) { this.recTex.destroy(); this.recTex = null; this.recRows = 0; }
@@ -837,9 +883,11 @@ export class Solids extends Element<SolidsProps> {
       // twice that
       if (c.lazy && !c.vbuf && distS < lod2 * 1.15) this.lazyWaiting++;
       if (c.lazy && !c.vbuf && !c.lazyPending && distS < lod2 * 1.15 && lazyBudget-- > 0) {
-        const take = (m: Float32Array) => { c.lazyPending = false; if (this.chunks.get(c.key) !== c || c.vbuf || !this.g) return; c.ext = extentOf(m, c.ext); const sp = splitParts(m, MESH_FLOATS, meshCode), wm = sp ? sp.solid : m; this.dropParts(c.parts); c.parts = sp ? this.partsOf(sp, c.key) : null; c.n = wm.length / MESH_FLOATS; c.vbuf = c.n ? this.g.buffer('vertex', wm, `${this.id} ${c.key}`) : null; if (!c.n && !c.parts) c.lazy = null; /* (an empty whole mesh: nothing to wait for, nothing to make again) */ (this.attached?.world as { invalidate?: () => void } | undefined)?.invalidate?.(); };
+        const take = (m: Float32Array) => { c.lazyPending = false; if (this.chunks.get(c.key) !== c || c.vbuf || !this.g) return; c.ext = extentOf(m, c.ext); const sp = splitParts(m, MESH_FLOATS, meshCode), wm = sp ? sp.solid : m; this.dropParts(c.parts); c.parts = sp ? this.partsOf(sp, c.key) : null; c.n = wm.length / MESH_FLOATS; c.vbuf = c.n ? this.g.buffer('vertex', wm, `${this.id} ${c.key}`) : null; if (this.surf) { const fv = this.fieldOf(c); fv.mesh = m; fv.nearV = -1; } if (!c.n && !c.parts) c.lazy = null; /* (an empty whole mesh: nothing to wait for, nothing to make again) */ (this.attached?.world as { invalidate?: () => void } | undefined)?.invalidate?.(); };
         try { const m = c.lazy(); if (m instanceof Promise) { c.lazyPending = true; m.then(take, (e) => { c.lazyPending = false; c.lazy = null; ctx.world.error(e); }); } else take(m); } catch (e) { c.lazy = null; ctx.world.error(e); }
-      } else if (c.lazy && c.vbuf && distS > lod2 * 2) { c.vbuf.destroy(); c.vbuf = null; c.n = 0; this.dropParts(c.parts); c.parts = null; }
+      } else if (c.lazy && c.vbuf && distS > lod2 * 2) { c.vbuf.destroy(); c.vbuf = null; c.n = 0; this.dropParts(c.parts); c.parts = null; if (c.fv?.near) { c.fv.near.tex.destroy(); c.fv.near = null; c.fv.nearV = -1; } }
+      // its surface field's values: asked once a chunk and a version, a few ms of them a frame
+      if (look && this.fieldSync(c, look, fieldT0)) fieldMore = true;
       // written only when it changed (a turning view keeps the same numbers: the sun's shadow map is kept too)
       let same = true; for (let i = 0; i < 16; i++) if (t[i] !== c.tw[i]) { same = false; c.tw[i] = t[i]!; }
       if (!same) c.tbuf.write(t);
@@ -852,7 +900,11 @@ export class Solids extends Element<SolidsProps> {
       if (seenM) {
         const far = (lodM === 2 || !c.vbuf) && c.fbuf;
         const vb = far ? c.fbuf! : c.vbuf, vn = far ? c.fn : c.n;
-        if (vb && vn) { out.push({ program: p, blocks, textures, vertices: vb, count: vn, pickProgram: () => p, bounds: meshes }); vDrawn += vn; }
+        // (a surface field's values: the same draw, its program with one more texture)
+        const ft = look && this.progF && this.progFReady ? (far ? c.fv?.far : c.fv?.near) : null, fd = ft && ft.n === vn ? ft : null;
+        if (fd) this.fieldHead(fd, look!);
+        const pd = fd ? this.progF! : p;
+        if (vb && vn) { out.push({ program: pd, blocks, textures: fd ? [...textures, fd.tex] : textures, vertices: vb, count: vn, pickProgram: () => pd, bounds: meshes }); vDrawn += vn; }
         if (c.parts && !far) this.partDraws(c.parts, out, { blocks, textures, bounds: meshes }, false, MESH_FLOATS);
       }
       if (cast) {
@@ -905,6 +957,7 @@ export class Solids extends Element<SolidsProps> {
       }
     }
     this.drawn = { chunks: nDrawn, vertices: vDrawn };
+    this.fieldMore = fieldMore;
     if (this.late.length) { out.push(...this.late); this.late = []; }
     return out;
   }
@@ -1010,6 +1063,140 @@ export class Solids extends Element<SolidsProps> {
     }
     const spent = performance.now() - t0; sortSpent += spent; this.sortStats.ms += spent;
   }
+  // ── a surface field on it (core › simulation › fields › surface): a value per vertex over its own colours ────────
+  private surf: SurfaceChannel | null = null; private progF: Program | null = null; private progFReady = false;
+  /** a chunk's field values still to ask (a few ms a frame): frames until there are none */
+  private fieldMore = false;
+  /** the look its clones' tints were made with (version, mix, share) */
+  private clonesLook = '';
+  /** field textures written (a chunk's values, its look) since the layer was made: what a change of values cost */
+  private fieldWrites = 0;
+  /** the surface field drawn on it (null: none): its values come from the field, its draws stay its own */
+  surface(ch: SurfaceChannel | null): this {
+    if (this.surf === ch) return this;
+    for (const c of this.chunks.values()) this.dropField(c);
+    this.surf = ch; this.clonesLook = '';
+    if (!ch) { this.progF?.destroy(); this.progF = null; this.progFReady = false; }
+    else this.fieldProgram();
+    this.tintPx.clear();
+    (this.attached?.world as { invalidate?: () => void } | undefined)?.invalidate?.();
+    return this;
+  }
+  /** the surface field drawn on it (null: none) */
+  get surfaceOn(): SurfaceChannel | null { return this.surf; }
+  /** each chunk's mesh vertices in its own order (null: its mesh is made when it comes near) */
+  meshVertices(): Record<string, number | null> {
+    const out: Record<string, number | null> = {};
+    for (const [k, c] of this.chunks) out[k] = c.spec.mesh instanceof Float32Array ? Math.floor(c.spec.mesh.length / MESH_FLOATS) : null;
+    for (const [k, sp] of this.pending) out[k] = sp.mesh instanceof Float32Array ? Math.floor(sp.mesh.length / MESH_FLOATS) : null;
+    return out;
+  }
+  /** its surface field on the chip: textures (near and far meshes), bytes, values written since it was made, values
+   *  still to ask */
+  surfaceStats(): { textures: number; bytes: number; writes: number; pending: boolean } {
+    let textures = 0, bytes = 0;
+    for (const c of this.chunks.values()) for (const ft of [c.fv?.near, c.fv?.far]) if (ft) { textures++; bytes += ft.tex.desc.width * ft.tex.desc.height * 4; }
+    return { textures, bytes, writes: this.fieldWrites, pending: this.fieldMore };
+  }
+  private fieldProgram(): void {
+    const g = this.g; if (!g || this.progF || !this.surf) return;
+    const textures = [{ name: 'ground', kind: '2d-array' as const, sample: 'unfilterable' as const }, { name: 'shadowMap', kind: '2d' as const, sample: 'float' as const }, { name: 'tints', kind: '2d' as const, sample: 'float' as const }, { name: 'picture', kind: '2d' as const, sample: 'float' as const }, { name: 'fieldv', kind: '2d' as const, sample: 'unfilterable' as const }];
+    const prog = this.progF = g.program({ label: `solids ${this.id} field`, wgsl: SOLID_FIELD_WGSL, glsl: SOLID_FIELD_GLSL, blocks: ['Frame', 'T'], textures,
+      vertex: { stride: MESH_FLOATS, attributes: [{ name: 'a', location: 0, size: 4, offset: 0 }, { name: 'b', location: 1, size: 4, offset: 4 }] }, depth: { write: true, test: 'less' }, cull: 'none' });
+    prog.ready.then(() => { if (this.progF === prog) { this.progFReady = true; (this.attached?.world as { invalidate?: () => void } | undefined)?.invalidate?.(); } }, (e) => this.attached?.world.error(e));
+  }
+  private fieldOf(c: Chunk): ChunkField { return (c.fv ??= { near: null, far: null, nearV: -1, farV: -1, clonesV: -1, clones: null, mesh: null, loading: false }); }
+  private dropField(c: Chunk): void {
+    const fv = c.fv; if (!fv) return;
+    fv.near?.tex.destroy(); fv.far?.tex.destroy(); c.fv = null;
+    if (fv.clones) this.tintPx.delete(c.key);
+  }
+  /** a chunk's whole mesh for its field: given, held from when it was made, or made again now (null: on its way) */
+  private nearMeshOf(c: Chunk): Float32Array | null {
+    if (c.spec.mesh instanceof Float32Array) return c.spec.mesh;
+    const fv = this.fieldOf(c); if (fv.mesh) return fv.mesh;
+    if (!c.lazy || fv.loading) return null;
+    let r: Float32Array | Promise<Float32Array>;
+    try { r = c.lazy(); } catch (e) { this.attached?.world.error(e); return null; }
+    if (r instanceof Promise) { fv.loading = true; r.then((m) => { fv.loading = false; if (c.fv === fv) { fv.mesh = m; fv.nearV = -1; fv.farV = -1; (this.attached?.world as { invalidate?: () => void } | undefined)?.invalidate?.(); } }, (e) => { fv.loading = false; this.attached?.world.error(e); }); return null; }
+    fv.mesh = r; return r;
+  }
+  /** a chunk's field values asked when the version moved (its whole mesh's when drawn, its far one's, its clones'),
+   *  within a few ms of the frame: true when some are left for the next frame */
+  private fieldSync(c: Chunk, look: SurfaceLook, t0: number): boolean {
+    const ch = this.surf!, v = ch.version, fv = this.fieldOf(c);
+    const near = !!c.vbuf && fv.nearV !== v, far = !!c.fbuf && fv.farV !== v, clones = c.inst.length > 0 && fv.clonesV !== v;
+    if (!near && !far && !clones) return false;
+    if (performance.now() - t0 > 6) return true;
+    const sc = (mesh: Float32Array | null, cl: SurfaceChunk['clones'] = null): SurfaceChunk => ({ key: c.key, spec: c.spec, mesh, clones: cl, near: () => this.nearMeshOf(c) });
+    try {
+      if (far) { fv.farV = v; fv.far = this.fieldTex(c, fv.far, ch.values(sc(c.spec.far ?? null), 'far'), c.spec.far!, 'far', null, look); }
+      if (near) {
+        const m = this.nearMeshOf(c);
+        if (m) { fv.nearV = v; fv.near = this.fieldTex(c, fv.near, ch.values(sc(m), 'near'), m, 'near', drawnOrder(m), look); if (c.lazy) fv.mesh = null; }
+        else if (!fv.loading) fv.nearV = v;
+      }
+      if (clones) {
+        fv.clonesV = v;
+        const list: { id: number; x: number; z: number; h: number }[] = [];
+        for (const x of c.inst) for (let k = 0; k < x.ni; k++) { const o = k * x.R * RECORD_FLOATS; list.push({ id: x.rec[o + 3]!, x: x.rec[o]!, z: x.rec[o + 1]!, h: x.rec[o + 2]! }); }
+        fv.clones = ch.values(sc(null, list), 'clones'); this.tintPx.delete(c.key);
+      }
+    } catch (e) { this.attached?.world.error(e); }
+    return false;
+  }
+  /** a chunk's values on the chip: a texture (its look in row 0, then its values in the order drawn, then the next
+   *  epoch's), made when its size changes, else only the rows whose values changed written */
+  private fieldTex(c: Chunk, old: FieldTex | null, vals: SurfaceValues | null, mesh: Float32Array, which: 'near' | 'far', order: Int32Array | null, look: SurfaceLook): FieldTex | null {
+    if (!vals || !this.g) { old?.tex.destroy(); return null; }
+    const own = Math.floor(mesh.length / MESH_FLOATS);
+    if (vals.a.length !== own || (vals.b && vals.b.length !== own)) throw new AslnutError('E-DATA-001', `surface field '${this.surf?.id}' on '${this.id}': chunk '${c.key}' has ${own} vertices in its ${which === 'near' ? 'whole' : 'far'} mesh, the values ${vals.b && vals.b.length !== own ? vals.b.length : vals.a.length}`, { where: this.surf?.id, fix: "one value a vertex, in the mesh's own order (layer.meshVertices() gives each chunk's count), or a function of the thing and its facet" });
+    const n = order ? order.length : own, rows = Math.max(1, Math.ceil(n / FIELD_TEXELS)), two = !!vals.b;
+    const drawn = (src: Float32Array) => { const out = new Float32Array(rows * FIELD_TEXELS).fill(NONE); for (let i = 0; i < n; i++) { const x = src[order ? order[i]! : i]!; out[i] = Number.isFinite(x) ? x : NONE; } return out; };
+    const a = drawn(vals.a), b = vals.b ? drawn(vals.b) : null;
+    const same = (x: Float32Array, y: Float32Array | null) => { if (!y || x.length !== y.length) return false; for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false; return true; };
+    if (old && old.n === n && old.rows === rows && old.two === two) {
+      if (!same(a, old.a)) { old.tex.write(a, { x: 0, y: 1, width: FIELD_TEXELS, height: rows }); old.a = a; this.fieldWrites++; }
+      if (b && !same(b, old.b)) { old.tex.write(b, { x: 0, y: 1 + rows, width: FIELD_TEXELS, height: rows }); old.b = b; this.fieldWrites++; }
+      return old;
+    }
+    old?.tex.destroy();
+    const tex = this.g.texture({ label: `${this.surf!.id} ${c.key} ${which}`, width: FIELD_TEXELS, height: 1 + rows * (two ? 2 : 1), format: 'r32f', filter: 'nearest' });
+    const ft: FieldTex = { tex, n, rows, two, a, b, head: new Float32Array(8).fill(NaN), lookV: -1 };
+    tex.write(a, { x: 0, y: 1, width: FIELD_TEXELS, height: rows }); this.fieldWrites++;
+    if (b) { tex.write(b, { x: 0, y: 1 + rows, width: FIELD_TEXELS, height: rows }); this.fieldWrites++; }
+    this.fieldHead(ft, look);
+    return ft;
+  }
+  /** a field texture's look (row 0): whole when the ramp or domain changed, else its first numbers when they moved
+   *  (shown, the next epoch's share) */
+  private fieldHead(ft: FieldTex, look: SurfaceLook): void {
+    const h = [1, look.lo, look.hi, look.min, look.mix, ft.two ? look.f : 0, ft.rows, look.subject ? 1 : 0];
+    if (ft.lookV !== look.version) {
+      const row = new Float32Array(FIELD_TEXELS); row.set(h); row.set(look.ramp.subarray(0, 256), 8);
+      ft.tex.write(row, { x: 0, y: 0, width: FIELD_TEXELS, height: 1 }); ft.head.set(h); ft.lookV = look.version; this.fieldWrites++;
+      return;
+    }
+    let same = true; for (let i = 0; i < 8; i++) if (ft.head[i] !== Math.fround(h[i]!)) { same = false; break; }
+    if (!same) { ft.head.set(h); ft.tex.write(ft.head, { x: 0, y: 0, width: 8, height: 1 }); }
+  }
+  /** the look moved: its clones' tints made again (a share of the next epoch in 32 steps) */
+  private fieldLook(look: SurfaceLook): void {
+    const key = `${look.version}|${look.mix.toFixed(3)}|${Math.round(look.f * 32)}|${look.min}`;
+    if (key === this.clonesLook) return;
+    this.clonesLook = key;
+    for (const c of this.chunks.values()) if (c.fv?.clones) this.tintPx.delete(c.key);
+  }
+  /** a clone's colour from its field (rgba 0..255; null: its own) */
+  private cloneTint(c: Chunk, id: number): readonly number[] | null {
+    const v0 = c.fv?.clones, look = this.surf ? this.surfLookNow : null; if (!v0 || !look || look.mix <= 0) return null;
+    const a = v0.a[id], b = v0.b?.[id];
+    let v = a ?? NaN; if (b !== undefined && Number.isFinite(b)) v = Number.isFinite(v) ? v + (b - v) * look.f : b;
+    if (!Number.isFinite(v) || v < look.min) return null;
+    const k = Math.round(Math.max(0, Math.min(1, (v - look.lo) / (look.hi - look.lo || 1))) * 255), rgb = look.ramp[k]!;
+    return [(rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, Math.round(look.mix * 255)];
+  }
+  private surfLookNow: SurfaceLook | null = null;
   /** tint the solids by id: your function gives each thing's colour and how much (0..1), or null for its own; null
    *  ends the tint (an analysis view: houses by their walk to a park, everything else quiet) */
   tint(fn: ((info: SolidInfo, chunk: string, id: number) => readonly [number, number, number, number] | null) | null): this {
@@ -1063,14 +1250,15 @@ export class Solids extends Element<SolidsProps> {
    *  a chunk's made again in its rows, a new one after the last, all of them packed again only when it is full */
   private syncTints(): GTexture {
     const g = this.g!;
-    if (!this.tintFn && !this.selBy.size) {
+    const fieldTints = !!this.surfLookNow && this.surfLookNow.mix > 0 && [...this.chunks.values()].some((c) => c.fv?.clones);
+    if (!this.tintFn && !this.selBy.size && !fieldTints) {
       if (this.tintAtlas || this.tintPx.size) { this.tintAtlas?.destroy(); this.tintAtlas = null; this.tintPx.clear(); this.tintRows = 0; this.tintTop = 0; }
       for (const c of this.chunks.values()) c.tintRow = -1;
       return this.noTintTex();
     }
     const made: Chunk[] = []; let pack = !this.tintAtlas;
     for (const c of this.chunks.values()) {
-      if (!this.tintFn && !this.selBy.has(c.key)) { this.tintPx.delete(c.key); c.tintRow = -1; continue; }
+      if (!this.tintFn && !this.selBy.has(c.key) && !(fieldTints && c.fv?.clones)) { this.tintPx.delete(c.key); c.tintRow = -1; continue; }
       const old = this.tintPx.get(c.key); if (old) continue;
       const px = this.tintPixels(c); this.tintPx.set(c.key, px); made.push(c);
       // (in its rows when as many as before; else after the last, when there is room)
@@ -1099,7 +1287,10 @@ export class Solids extends Element<SolidsProps> {
     const sel = this.selBy.get(c.key);
     let n = 0; while (c.spec.info?.(n)) n++;
     if (sel) for (const k of sel) n = Math.max(n, k + 1);
+    const cl = c.fv?.clones?.a; if (cl) n = Math.max(n, cl.length);
     const rows = Math.max(1, Math.ceil(n / 256)), px = new Uint8Array(256 * rows * 4);
+    // a surface field's colour on its clones, under your tint and the selection
+    if (cl) for (let i = 0; i < cl.length; i++) { const v = this.cloneTint(c, i); if (v) px.set(v, i * 4); }
     if (this.tintFn) for (let i = 0; i < n; i++) { const info = c.spec.info?.(i), v = info ? this.tintFn(info, c.key, i) : null; if (v) px.set([v[0] * 255, v[1] * 255, v[2] * 255, v[3] * 255], i * 4); }
     // the selected things over their tint, in the selected colour
     if (sel) { const sc = this.selLook!; for (const k of sel) px.set(sc, k * 4); }
@@ -1136,7 +1327,7 @@ export class Solids extends Element<SolidsProps> {
   protected clockRate(): number { const c = this.clockAt; if (c === Infinity) return 0; const [l1, l2] = this.props.lod ?? [350, 800]; return c < l1 ? Infinity : c < l2 ? 30 : 10; }
   /** a sort of levels under way (frames come until it is done) */
   protected sorting(): boolean { for (const c of this.chunks.values()) for (const x of c.inst) if (x.job) return true; return false; }
-  override animating(_s?: State): boolean { return this.fading() || this.sorting() || this.groundWaits(); }
+  override animating(_s?: State): boolean { return this.fading() || this.sorting() || this.groundWaits() || this.fieldMore; }
   /** a chunk waits for its ground to be read again (a slice of them a frame): frames until none does */
   private groundWaits(): boolean { const gv = this.attached?.world.groundVersion; for (const c of this.chunks.values()) if (c.groundRead !== gv && !c.spec.free) return true; return false; }
   /** frames (core › runtime › frame): every display frame while chunks fade in (or a subclass's animating() says so),
@@ -1151,6 +1342,7 @@ export class Solids extends Element<SolidsProps> {
     for (const c of this.chunks.values()) { if (c.groundRead !== gv) { st.pending.push('reading the ground'); break; } }
     if (this.lazyWaiting > 0) st.pending.push(`${this.lazyWaiting} near chunk(s) building their whole mesh`);
     { let jobs = 0; for (const c of this.chunks.values()) for (const x of c.inst) if (x.job) jobs++; if (jobs) st.pending.push(`${jobs} instance set(s) choosing their levels`); }
+    if (this.surf && (this.fieldMore || (this.progF && !this.progFReady))) st.pending.push(`surface field '${this.surf.id}' putting its values`);
     st.ready = !st.pending.length;
     return st;
   }
@@ -1261,7 +1453,7 @@ export function keptLevel(v: number, prev: number, a: number, b: number, mg: num
   return Math.min(Math.max(prev, lo), hi);
 }
 /** solids made by code, in 500 m chunks on the ground: lit, shadowed, picked by id */
-export const solids = (p: SolidsProps = {}) => new Solids(p);
+export const solids = (p: Leveled<SolidsProps> = {}) => new Solids(p as SolidsProps);
 /** how far a box is from the eye on the ground (m): 0 inside it; no box: 0 */
 function awayFrom(eye: readonly [number, number], b: readonly number[] | undefined): number { return b ? Math.hypot(Math.max(b[0]! - eye[0], 0, eye[0] - b[3]!), Math.max(b[2]! - eye[1], 0, eye[1] - b[5]!)) : 0; }
 /** a box made empty, a box grown to take another (world m: least x, y, z, then most) */

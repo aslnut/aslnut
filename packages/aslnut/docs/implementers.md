@@ -47,6 +47,7 @@ aslnut 0.1.0 is used from source. An npm package comes later.
 | `aslnut/kits/dashboard` | legends, stats, the layer list |
 | `aslnut/modules/presets/humans`, `…/vehicles`, `…/drones`, `…/shared` | the ready-made people, vehicles and drones |
 | `aslnut/tools` | build-time entries (the roads compile), kept out of a visitor's bundle |
+| `aslnut/tools/catalog` | a project's assets as a catalog (search, catalog.json), one controls schema for any params (`form`), an asset's folder as one file and back (browser-safe) |
 
 - **From source:** point the names at the source. The package's own `tsconfig.json` does it with `paths`: `"aslnut": ["./src/index.ts"]`, `"aslnut/*": ["./src/*/index.ts", "./src/*.ts"]`. Give your bundler the same aliases (the root README shows one for Vite).
 - **Built:** `npm run build` (in `packages/aslnut`) writes `dist/` with types. The `exports` point there. `dist/` is not in the repository: build it before you resolve `aslnut` through the package.
@@ -67,7 +68,7 @@ aslnut 0.1.0 is used from source. An npm package comes later.
 - **One world per canvas.** Several worlds on one page are fine.
 - **After `w.dispose()`, give the next world a new canvas.** Dispose frees the graphics; on WebGL2 it loses the canvas's context for good.
 - **Sizes follow the canvas.** The world watches the canvas element (a resize observer) and draws at its CSS size times the pixel ratio. Size the canvas with CSS (your component's box); never set `canvas.width` yourself. The pixel ratio is capped by the device's profile (1.5 at quality lite, 2 at realistic); `pixelRatio` fixes it.
-- **Controls, hover, tooltips and credits** attach to an `HTMLCanvasElement` in a page. The type also takes an `OffscreenCanvas`; no check runs a world on one yet.
+- **Controls, hover, tooltips and credits** attach to an `HTMLCanvasElement` in a page. A world also runs on an `OffscreenCanvas`, made on the page or handed to a worker (`canvas.transferControlToOffscreen()`), on WebGPU and WebGL2 (`examples/offscreen`, checked by `tools/checks.mjs offscreen`); there it takes no controls, hover or credits: its host sends the input (`w.go`, `w.fly`) and shows what it needs.
 - **`w.dispose()`** stops the clock, removes the controls and observers, detaches every element, frees all graphics memory and ends the world's own loader. It is safe to call twice. A call on a disposed world throws `E-WORLD-003` with its fix.
 
 ## 3 · Wrapping it as components
@@ -328,7 +329,7 @@ PMTiles, packs of pieces and every ranged read go through the loader: `fetch` wi
 ### Fields on the CPU
 
 - **`field({ res, area, init, rule, inputs })`** steps a grid with a rule (`rules.diffusion`, `.advection`, `.heat`, `.shallowWater`, `.flow`, `.custom`, or your `kernel`). Without graphics it steps on the CPU: call `f.step(seconds)` yourself, read `f.at([lon, lat])`, `f.values()` or a `f.probe(…)`.
-- **`heatModel(rasters).field(input)`** is the heat model on the CPU. `constants` holds citable tables; `constants.add` changes them for the whole process.
+- **`heatModel(rasters).field(input)`** is the heat model on the CPU. `constants` holds citable tables; `constants.add` changes them for the whole process; `w.constants.add` (a world's scope of them) for that world alone.
 
 ### Recording frames in a headless browser
 

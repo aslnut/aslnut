@@ -8,9 +8,9 @@
 
 | | before | after |
 |---|---|---|
-| needs | 187 | 193 (5 new) |
-| status | 131 covered · 34 thin · 27 GAP · 1 process | 185 covered · 7 outside · 1 process |
-| API rows | 346 | 562 |
+| needs | 187 | 194 (5 new) |
+| status | 131 covered · 34 thin · 28 GAP · 1 process | 186 covered · 7 outside · 1 process |
+| API rows | 346 | 560 |
 | rows with no need | 8 | 0 |
 | pattern violations | 20 | 0 |
 
@@ -148,7 +148,7 @@ The pattern: providers with defaults · your own data · custom functions · `wh
 |---|---|---|
 | space | complete: bodies, frames, orbits, the observer at light speed, satellites, stars, galaxies | [space](#concepts/space), [modules › space](#reference/modules/space) |
 | bodies & agents | complete: agents for any body; humans and animals as presets; tiers that conserve counts | [agents](#reference/core/simulation), [society](#reference/modules/earth~life-society), [ecology](#reference/modules/earth~life-ecology) |
-| physics | complete: fields, rules, multi-rate coupling, regimes, citable constants, fidelity, probes; sea level and river flow | [physics](#concepts/physics), [phenomena](#reference/core/simulation) |
+| physics | complete: fields, rules, multi-rate coupling, regimes, citable constants, a resolution by level, probes; sea level and river flow | [physics](#concepts/physics), [phenomena](#reference/core/simulation) |
 | live twins | complete: live updates, streams, history, scenarios, corrections, external engines, an experiment socket | [live twins](#concepts/live-twins) |
 | phones | complete: lite by default, WebGL2, budgets, compiled chunks, workers, remote log, phone shots | [performance](#concepts/performance), [runtime](#reference/core/runtime) |
 | hosting | complete: plain, React, Zebflow, server-safe, dispose, a code-only package (decision 9) | [hosting](#concepts/hosting) |
@@ -334,7 +334,7 @@ Status: **covered** (an interface serves it) · **thin** (mentioned, not enough)
 
 | # | need | used by | → where | status |
 |---|---|---|---|---|
-| 49 | fields (raster / surface / graph / volume), observation-chosen resolution, conservation | city twins, hazard twins, physics labs | [fields/raster](#reference/core/simulation~fields-raster) · [fields/surface](#reference/core/simulation~fields-surface) · [fields/graph](#reference/core/simulation~fields-graph) · [fields/volume](#reference/core/simulation~fields-volume) · [fidelity/observed](#reference/core/simulation~fidelity-observed) | covered |
+| 49 | fields (raster / surface / graph / volume), observation-chosen resolution, conservation | city twins, hazard twins, physics labs | [fields/raster](#reference/core/simulation~fields-raster) · [fields/surface](#reference/core/simulation~fields-surface) · [fields/graph](#reference/core/simulation~fields-graph) · [fields/volume](#reference/core/simulation~fields-volume) · [presence](#reference/core/observation~presence) | covered |
 | 50 | rules / kernels with a stdlib and slots (inject a formula, custom functions) | researchers, physics labs, city twins | [rules/presets](#reference/core/simulation~rules-presets) · [rules/custom](#reference/core/simulation~rules-custom) · [fields/kernels](#reference/core/simulation~fields-kernels) | covered |
 | 51 | fluids: flow-1d, shallow water, wind / advection | games, hazard twins, city twins, physics labs | [phenomena/fluids](#reference/core/simulation~phenomena-fluids) · [water/hydrology/water](#reference/modules/earth~water-hydrology-water) | covered |
 | 52 | heat: radiation, T_mrt, energy balance, canyon air, UTCI (a street heat lab as a rule) | city twins | [phenomena/heat](#reference/core/simulation~phenomena-heat) · [climate/heat](#reference/modules/earth~climate-heat) | covered |
@@ -349,7 +349,7 @@ Status: **covered** (an interface serves it) · **thin** (mentioned, not enough)
 | 61 | probes (virtual sensors), validation | city twins, researchers | [measure/probes](#reference/core/simulation~measure-probes) · [measure/sensors](#reference/core/simulation~measure-sensors) · [measure/validation](#reference/core/simulation~measure-validation) | covered |
 | 62 | coupled systems, multi-rate, dirty propagation | city twins | [rules/coupling](#reference/core/simulation~rules-coupling) | thin → **covered** (per-field rate; recompute only when inputs change) |
 | 63 | parameter libraries (materials, units, citable) | city twins, researchers | [constants](#reference/core/simulation~constants) | GAP → **covered** (citable constant tables with units and sources) |
-| 152 | fidelity per rule: fixed (science, the whole basin) vs observed (picture) | city twins, hazard twins, physics labs | [fidelity/fixed](#reference/core/simulation~fidelity-fixed) · [fidelity/observed](#reference/core/simulation~fidelity-observed) | covered |
+| 152 | fidelity per rule: fixed (science, the whole basin) vs observed (picture) | city twins, hazard twins, physics labs | [fields/raster](#reference/core/simulation~fields-raster) · [presence](#reference/core/observation~presence) | covered |
 | 190 NEW | rivers derived from the terrain (flow routing and accumulation, including the exposed shelf) as a data source drawn with `line` + `trace` | videos, physics labs, hazard twins | [water/hydrology/flow](#reference/modules/earth~water-hydrology-flow) · [marks/lines/line](#reference/core/encoding~marks-lines-line) · [reveal/modes](#reference/core/render~reveal-modes) | GAP → **covered** (water.flow) |
 
 ### F. Data, live, state
@@ -496,3 +496,4 @@ Status: **covered** (an interface serves it) · **thin** (mentioned, not enough)
 | 185 | modules shared by several products (earth/infrastructure, earth/society, earth/ecology) by the promotion rule | all | [boundaries](#concepts/boundaries) · [life/society](#reference/modules/earth~life-society) · [life/ecology](#reference/modules/earth~life-ecology) · [presets/built/infrastructure/energy/wind-turbine](#reference/modules/earth~presets-built-infrastructure-energy-wind-turbine) · [shared](#reference/modules/world~shared) · [shared](#reference/modules/earth~shared) · [shared](#reference/modules/presets~shared) | GAP → **covered** (the promotion rule) |
 | 186 | publishable package: ESM, d.ts, subpath exports, `sideEffects: false`, LICENSE, DATA-LICENCES, examples with redistributable data, CI with a headless WebGPU smoke test; private place data kept out | release | [host/package](#reference/core/world~host-package) · [checks/smoke](#reference/tools~checks-smoke) · [hosting](#concepts/hosting) | GAP → **covered** (the package section) |
 | 187 | the repository made public after the 0.1 cleanup | release | a release step, not an interface | process |
+| 194 NEW | code written for another web-map interface (Leaflet) runs on a world unchanged, each object a handle over the public parts; a few opt-in extras for what that interface cannot do | GIS apps moving to 3D, assistants | [boundaries](#concepts/boundaries) | GAP → **covered** (kits › compat › leaflet) |

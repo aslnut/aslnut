@@ -597,19 +597,22 @@ for (const api of want('rest')) for (const go of ['go=parity-street', 'go=parity
       let restsAgain = false; for (let i = 0; i < 40 && !restsAgain; i++) { await sleep(250); restsAgain = w.telemetry().frames.resting; }
       const whyAfter = w.drawnWhy();
       // your own work asks for its frames (w.everyFrame at 10 a second): they come at its rate while it is on, none after
-      let calls = 0; const d0 = w.stats().drawn, sampleStart = performance.now(), off = w.everyFrame(() => { calls++; }, { fps: 10 });
-      await sleep(1500); const during = w.stats().drawn - d0, elapsedMs = performance.now() - sampleStart; off(); await sleep(1200);
+      // (and nothing else: the view is settled and still, so every frame drawn meanwhile is one it asked for)
+      w.drawnWhy(); let calls = 0; const d0 = w.stats().drawn, sampleStart = performance.now(), off = w.everyFrame(() => { calls++; }, { fps: 10 });
+      await sleep(1500); const during = w.stats().drawn - d0, elapsedMs = performance.now() - sampleStart, whyDuring = w.drawnWhy(); off(); await sleep(1200);
       const d1 = w.stats().drawn; await sleep(1500); const after = w.stats().drawn - d1;
       // the budget's telemetry: every layer's share, its memory adding up to the graphics'
       const tel = w.telemetry(), memSum = tel.memory.reduce((a, m) => a + m.MB, 0);
-      return { still, woke, restsAgain, whyAfter, every: { during, calls, after, elapsedMs }, telemetry: { elements: tel.elements.length, memoryMB: tel.memoryMB, memSum: +memSum.toFixed(1), quality: tel.quality, budget: tel.budget } };
+      return { still, woke, restsAgain, whyAfter, every: { during, calls, after, elapsedMs: Math.round(elapsedMs), why: whyDuring }, telemetry: { elements: tel.elements.length, memoryMB: tel.memoryMB, memSum: +memSum.toFixed(1), quality: tel.quality, budget: tel.budget } };
     });
     check(api, `rest: ${go.slice(3)}: a settled still view draws 0 frames in 3 s and its loop rests; a nudge wakes it, then it rests again`, st.still.frames === 0 && st.still.resting && st.still.asked <= 45 && st.woke < 8000 && st.restsAgain, JSON.stringify({ still: st.still, woke: st.woke, restsAgain: st.restsAgain, whyAfter: st.whyAfter }));
-    // The reported street/parity sample reached 19 frames at 10 fps over a nominal 1.5 s.
-    // Give it 25% headroom (24), scaled by the measured window: setTimeout can resume late
-    // on a busy renderer, so this counts scheduled frames over elapsed time, not scene draw calls.
-    const frameLimit = Math.ceil(24 * Math.max(1500, st.every.elapsedMs) / 1500);
-    check(api, `rest: ${go.slice(3)}: everyFrame asks for its own frames at its rate (10 a second), none once off; telemetry counts every layer and the chip's memory`, st.every.during >= 1 && st.every.during <= frameLimit && Math.abs(st.every.calls - st.every.during) <= 1 && st.every.after === 0 && st.telemetry.elements > 3 && Math.abs(st.telemetry.memSum - st.telemetry.memoryMB) < 2, JSON.stringify({ every: st.every, telemetry: st.telemetry }));
+    // its frames: the one its start asks for (an invalidate: 'dirty'), then one whenever 100 − 4 ms have passed since
+    // the last frame drawn (the world's beat for a rate of 10: msPer(10) − 4), so at most 1 + elapsed / 96 in the
+    // window, however late the timer that ends it comes; and no other reason (another asker on a settled, still view
+    // is the fault: the water reading the ground again once drew 26 here, heights that came after the view settled)
+    const frameLimit = 1 + Math.floor(st.every.elapsedMs / (1000 / 10 - 4));
+    const others = Object.entries(st.every.why).filter(([k, n]) => !/^animating:everyFrame#\d+$/.test(k) && !(k === 'dirty' && n === 1));
+    check(api, `rest: ${go.slice(3)}: everyFrame asks for its own frames at its rate (10 a second), nothing else draws, none once off; telemetry counts every layer and the chip's memory`, st.every.during >= 1 && st.every.during <= frameLimit && !others.length && Math.abs(st.every.calls - st.every.during) <= 1 && st.every.after === 0 && st.telemetry.elements > 3 && Math.abs(st.telemetry.memSum - st.telemetry.memoryMB) < 2, JSON.stringify({ every: st.every, frameLimit, telemetry: st.telemetry }));
     check(api, `no page errors (rest ${go.slice(3)})`, errors.length === 0, errors.slice(0, 3).join(' | '));
   } catch (e) { check(api, `rest: ${go}`, false, e.message.slice(0, 300)); }
   await page.close();

@@ -1,10 +1,11 @@
 // core › simulation › constants: citable parameter tables. Every value with its unit and where it comes from, so a
 // model's numbers can be shown, checked and replaced. Tables: 'materials' (surfaces of a street: albedo, emissivity,
 // evaporation, heat capacity, conductivity, water held), 'physics' (the constants the phenomena use). Your own tables
-// join them (constants.add).
+// join them (constants.add: for the whole process; a world's own: w.constants.add, or any scope: constants.scope()).
 //   constants.load('materials').asphalt.albedo            → { value: 0.08, unit: '', source: '…' }
 //   constants.get('physics.sigma')                       → 5.67e-8
 //   heat({ …, rasters: { …, materials: constants.materials(['asphalt', 'grass']) } })
+//   w.constants.add('materials', { asphalt: { … } })        this world's alone (cityHeat(tiles, { constants: w.constants }))
 import { AslnutError } from '../world/errors.ts';
 import { LAMBDA, MATERIALS, RHO_CP, SIGMA, WALL, Z0, K0, type Material } from './phenomena/heat/physics.ts';
 
@@ -32,29 +33,41 @@ tables.set('physics', {
   gravity: { value: { value: 9.80665, unit: 'm/s²', label: 'standard gravity', source: 'CGPM 1901' } },
 });
 
-export const constants = {
-  /** a table by name: entries → their values by key, each { value, unit, source } */
+/** a table with another's entries over it, value by value (an entry given in part keeps its other values) */
+const merged = (a: Table, b: Table): Table => { const out: Table = { ...a }; for (const [e, v] of Object.entries(b)) out[e] = { ...(a[e] ?? {}), ...v }; return out; };
+/** citable tables: the process's (`constants`), or a scope of them (`constants.scope()`, a world's `w.constants`):
+ *  a scope reads its own tables over its parent's, and what is added to it stays in it */
+export class Constants {
+  private own = new Map<string, Table>();
+  private parent: Constants | null;
+  constructor(parent: Constants | null = null, seed?: Map<string, Table>) { this.parent = parent; if (seed) this.own = seed; }
+  /** a table by name: entries → their values by key, each { value, unit, source } (a scope's entries over its parent's) */
   load(name: string): Table {
-    const t = tables.get(name);
-    if (!t) throw new AslnutError('E-DATA-001', `no constants table '${name}' (there are ${[...tables.keys()].join(', ')})`, { fix: "constants.load('materials')" });
+    const up = this.parent?.has(name) ? this.parent.load(name) : null, mine = this.own.get(name);
+    const t = up && mine ? merged(up, mine) : mine ?? up;
+    if (!t) throw new AslnutError('E-DATA-001', `no constants table '${name}' (there are ${this.names().join(', ')})`, { fix: "constants.load('materials')" });
     return t;
-  },
+  }
+  private has(name: string): boolean { return this.own.has(name) || !!this.parent?.has(name); }
   /** one number by its path: 'materials.asphalt.albedo', or 'physics.sigma' (a table whose entries have one value) */
   get(path: string): number {
-    const [table, entry, key = 'value'] = path.split('.'), v = table && entry ? constants.load(table)[entry]?.[key] : undefined;
+    const [table, entry, key = 'value'] = path.split('.'), v = table && entry && this.has(table) ? this.load(table)[entry]?.[key] : undefined;
     if (!v) throw new AslnutError('E-DATA-001', `no constant '${path}'`, { fix: "constants.get('materials.asphalt.albedo')" });
     return v.value;
-  },
+  }
   /** the tables there are */
-  names(): string[] { return [...tables.keys()]; },
-  /** your own table (or more entries in one): every value with its unit and source */
+  names(): string[] { return [...new Set([...(this.parent?.names() ?? []), ...this.own.keys()])]; }
+  /** your own table (or more entries in one): every value with its unit and source. On `constants` it is the process's
+   *  (every world, every scope sees it); on a scope (a world's `w.constants`) it is that scope's alone */
   add(name: string, t: Table): void {
     for (const [e, vals] of Object.entries(t)) for (const [k, c] of Object.entries(vals)) if (!(typeof c?.value === 'number' && typeof c.unit === 'string' && typeof c.source === 'string')) throw new AslnutError('E-DATA-001', `constants '${name}.${e}.${k}' needs { value, unit, source }`, { fix: "{ albedo: { value: 0.1, unit: '', source: 'my measurements' } }" });
-    tables.set(name, { ...(tables.get(name) ?? {}), ...t });
-  },
+    this.own.set(name, merged(this.own.get(name) ?? {}, t));
+  }
+  /** a scope over these tables: it reads them (and what is added to them later), and keeps what is added to it to itself */
+  scope(): Constants { return new Constants(this); }
   /** heat model materials from the 'materials' table (their values as the table holds them now), by id */
   materials(ids: string[]): Material[] {
-    const t = constants.load('materials');
+    const t = this.load('materials');
     return ids.map((id) => {
       const base = MATERIALS[id] ?? (id === WALL.id ? WALL : null), row = t[id];
       if (!row) throw new AslnutError('E-DATA-001', `no material '${id}' in the constants`, { fix: `one of ${Object.keys(t).join(', ')}` });
@@ -63,5 +76,7 @@ export const constants = {
       m.source = row.albedo?.source ?? m.source;
       return m;
     });
-  },
-};
+  }
+}
+/** the process's tables: what every world and scope reads (`constants.add` here: for every one of them) */
+export const constants = new Constants(null, tables);

@@ -15,6 +15,7 @@ export type ErrorCode =
   | 'E-WORLD-005'    // w.control of an entity in no entity element
   | 'E-WORLD-006'    // a recording that is not one (its fps, frames, seconds or size), or one asked while another is under way
   | 'E-LEVEL-001'    // observation levels: a ladder that is not one, an unknown level, a binding that failed
+  | 'E-LEVEL-002'    // a prop given by level names a level not on the world's ladder (or none at all)
   | 'E-WHEN-001'     // a `when` returned something that is not a boolean or a number in 0..1
   | 'E-VIEW-001'     // a view or camera move that is not one: no lon / lat, a dist and a zoom that disagree, a number not finite (NaN, Infinity), an unknown ease or path
   | 'E-SETTLE-001'   // strict settled: not settled in time (what is still pending is listed)
@@ -31,7 +32,13 @@ export type ErrorCode =
   | 'E-LOAD-006'     // an image decode worker failed
   | 'E-STATE-001'    // a saved state does not fit the state schema (its path and the fix given)
   | 'E-LANE-001'     // a worker lane cannot run (no workers, the module failed to load) and has no fallback
-  | 'E-LANE-002';    // a call in a worker failed (its error given)
+  | 'E-LANE-002'     // a call in a worker failed (its error given)
+  | 'E-COMPAT-001'   // kits › compat: a call the interface it follows has and this one does not carry
+  | 'E-COMPAT-002'   // kits › compat: an option or event not carried (the page goes on; said once)
+  | 'E-COMPAT-003'   // kits › compat: a coordinate reference system other than the ones carried
+  | 'E-COMPAT-004'   // kits › compat: page elements put into a pane (they would not follow the view)
+  | 'E-COMPAT-005'   // kits › compat: a subclass overrides an internal drawing method
+  | 'E-COMPAT-006';  // kits › compat: a plugin's factory (its aslnut route given)
 
 export class AslnutError extends Error {
   readonly code: ErrorCode;

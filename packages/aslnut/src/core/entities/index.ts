@@ -18,6 +18,7 @@ import { SkinDraw } from './body/draw.ts';
 import { motionFrames } from '../runtime/frame.ts';
 import { SKIN_INSTANCE_FLOATS, type Figure, type Motion } from './body/skin.ts';
 import { dataDrive } from './sets.ts';
+import type { Leveled } from '../observation/presence.ts';
 
 type LonLat = [number, number];
 const KZ = 110574, kxOf = (lat: number) => 111320 * Math.cos(lat * D), clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -144,14 +145,45 @@ export const controllers = {
    *  the zoom and the tilt kept within a range */
   orbit(o: CameraControlOptions = {}): CameraController {
     if (o.drag !== undefined && o.drag !== 'pan' && o.drag !== 'orbit') throw new AslnutError('E-VIEW-001', `controllers.orbit: drag is ${JSON.stringify(o.drag)}`, { where: 'controllers.orbit', fix: "drag: 'pan' (a one-finger drag moves the map) or 'orbit' (it turns and tilts round the centre)" });
-    return { kind: 'orbit', help: o.drag === 'orbit' ? 'drag to turn and tilt · right-drag or Shift to move · scroll to zoom' : 'drag to move · two fingers to turn and tilt · scroll to zoom', gestures: { pan: o.pan ?? true, rotate: o.rotate ?? true, tilt: o.tilt ?? true, zoom: o.zoom ?? true }, zoomRange: o.zoomRange, tiltRange: o.tiltRange, drag: o.drag ?? 'pan' };
+    const b = o.bounds;
+    if (b !== undefined && !(Array.isArray(b) && b.length === 4 && b.every(Number.isFinite) && b[2] > b[0] && b[3] > b[1])) throw new AslnutError('E-VIEW-001', `controllers.orbit: bounds is ${JSON.stringify(b)}`, { where: 'controllers.orbit', fix: 'give bounds as [west, south, east, north] degrees, west < east and south < north' });
+    for (const [k, v, lo, hi] of [['viscosity', o.viscosity, 0, 1], ['snap', o.snap, 0, 8], ['step', o.step, 0, 8]] as const) if (v !== undefined && !(Number.isFinite(v) && v >= lo && v <= hi)) throw new AslnutError('E-VIEW-001', `controllers.orbit: ${k} is ${v}`, { where: 'controllers.orbit', fix: `give ${k} as a number from ${lo} to ${hi}, or leave it out` });
+    const z = o.zoom, zoom = typeof z === 'object' && z !== null ? { wheel: z.wheel ?? true, pinch: z.pinch ?? true, keys: z.keys ?? true } : { wheel: z ?? true, pinch: z ?? true, keys: z ?? true };
+    return {
+      kind: 'orbit', help: o.drag === 'orbit' ? 'drag to turn and tilt · right-drag or Shift to move · scroll to zoom' : 'drag to move · two fingers to turn and tilt · scroll to zoom',
+      gestures: { pan: o.pan ?? true, rotate: o.rotate ?? true, tilt: o.tilt ?? true, zoom: zoom.wheel || zoom.pinch || zoom.keys }, zoomInputs: zoom, zoomRange: o.zoomRange, tiltRange: o.tiltRange, drag: o.drag ?? 'pan',
+      bounds: b ? [b[0], b[1], b[2], b[3]] : undefined, viscosity: o.viscosity ?? 1, snap: o.snap ?? 0, step: o.step ?? 1, keys: o.keys ?? false,
+    };
   },
   /** a flat map's hands: move and zoom, never turned or tilted */
   pan(o: Omit<CameraControlOptions, 'rotate' | 'tilt' | 'drag'> = {}): CameraController { return { ...controllers.orbit({ ...o, rotate: false, tilt: false }), kind: 'pan', help: 'drag to move · scroll or pinch to zoom' }; },
 };
-export interface CameraControlOptions { pan?: boolean; rotate?: boolean; tilt?: boolean; zoom?: boolean; /** zoom levels a person may reach [out, in] */ zoomRange?: [number, number]; /** tilts a person may reach, degrees [least, most] */ tiltRange?: [number, number]; /** a one-finger drag moves the map ('pan', default) or turns and tilts round the centre ('orbit'); the other button or Shift does the other */ drag?: 'pan' | 'orbit' }
+export interface CameraControlOptions {
+  pan?: boolean; rotate?: boolean; tilt?: boolean;
+  /** zoom by hand: true / false for every input, or each its own (the wheel, a pinch, the + and - keys) */
+  zoom?: boolean | { wheel?: boolean; pinch?: boolean; keys?: boolean };
+  /** zoom levels a person may reach [out, in] */ zoomRange?: [number, number];
+  /** tilts a person may reach, degrees [least, most] */ tiltRange?: [number, number];
+  /** a one-finger drag moves the map ('pan', default) or turns and tilts round the centre ('orbit'); the other button or Shift does the other */ drag?: 'pan' | 'orbit';
+  /** the box the view's centre is kept in by hand, [west, south, east, north] degrees (default none) */
+  bounds?: [number, number, number, number];
+  /** how hard the box holds while it is dragged past: 1 (default) never past it; less lets the drag go past by that
+   *  share less, and the view eases back inside when it is let go */
+  viscosity?: number;
+  /** a zoom by hand ends on a multiple of these levels (1: whole levels, .5 halves; default 0: where it stops) */
+  snap?: number;
+  /** levels a + or - key zooms (default 1) */
+  step?: number;
+  /** the arrow keys move the view and + / - zoom it, the canvas focused (default false) */
+  keys?: boolean;
+}
 /** what a person's hands may do to the camera itself (w.control(null, controllers.orbit())) */
-export interface CameraController { readonly kind: 'orbit' | 'pan'; readonly help: string; readonly gestures: { pan: boolean; rotate: boolean; tilt: boolean; zoom: boolean }; readonly zoomRange?: [number, number]; readonly tiltRange?: [number, number]; readonly drag?: 'pan' | 'orbit' }
+export interface CameraController {
+  readonly kind: 'orbit' | 'pan'; readonly help: string; readonly gestures: { pan: boolean; rotate: boolean; tilt: boolean; zoom: boolean };
+  /** the inputs that zoom */ readonly zoomInputs?: { wheel: boolean; pinch: boolean; keys: boolean };
+  readonly zoomRange?: [number, number]; readonly tiltRange?: [number, number]; readonly drag?: 'pan' | 'orbit';
+  readonly bounds?: [number, number, number, number]; readonly viscosity?: number; readonly snap?: number; readonly step?: number; readonly keys?: boolean;
+}
 /** why something moves */
 export interface Drive { readonly kind: 'player' | 'script' | 'none'; want(e: Entity, input: InputState, dt: number): Want }
 export const drive = {
@@ -373,7 +405,7 @@ export class EntityElement extends Solids {
   override wantsFrames(): number {
     if (this.fading() || this.bodiesWaiting) return Infinity;
     for (const e of this.items.values()) if (e.drive && (this.input.keys.size || this.input.stick[0] || this.input.stick[1] || this.input.up)) return Infinity;
-    return Math.max(this.clockRate(), this.moverRate);
+    return Math.max(this.clockRate(), this.moverRate, this.framesOpts.fps && this.skin?.drawn?.instances ? this.framesOpts.fps : 0);
   }
   private moverRate = 0;
   /** the frames a second its moving things on screen need (0: none on screen) */
@@ -444,10 +476,12 @@ export interface EntityElementProps {
   /** what else it is waiting for (bodies still being made…): it is not settled while there is any */
   pending?: () => string[];
   /** the frames its moving things ask for (core › runtime › frame): `below` px tall on screen they ask for none (too
-   *  small to see move; default 3), `step` px is the most they may move between frames (default 1) */
-  frames?: { below?: number; step?: number };
+   *  small to see move; default 3), `step` px is the most they may move between frames (default 1); `fps` the frames a
+   *  second it asks for while any skinned body is drawn, moving or not (bodies moving in place: a lineup, a gallery;
+   *  default 0: only the things that move ask) */
+  frames?: { below?: number; step?: number; fps?: number };
 }
-export const entityElement = (p: EntityElementProps = {}) => new EntityElement(p);
+export const entityElement = (p: Leveled<EntityElementProps> = {}) => new EntityElement(p as EntityElementProps);
 
 /** the camera behind an entity: `offset` [right, up, behind] metres, easing over `lag` seconds, looking at it or ahead
  *  of it; pulled in where `blocked` says something stands between (a wall). Returns the stop function */

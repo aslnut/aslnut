@@ -431,7 +431,7 @@
          },
          {
           "n": "epochs",
-          "s": "planned",
+          "s": "built",
           "h": "reference/core/data~history-epochs"
          }
         ]
@@ -1984,7 +1984,7 @@
          },
          {
           "n": "surface",
-          "s": "planned",
+          "s": "built",
           "h": "reference/core/simulation~fields-surface"
          },
          {
@@ -2028,23 +2028,6 @@
           "n": "regimes",
           "s": "planned",
           "h": "reference/core/simulation~rules-regimes"
-         }
-        ]
-       },
-       {
-        "n": "fidelity",
-        "s": "planned",
-        "h": "reference/core/simulation~fidelity",
-        "c": [
-         {
-          "n": "fixed",
-          "s": "planned",
-          "h": "reference/core/simulation~fidelity-fixed"
-         },
-         {
-          "n": "observed",
-          "s": "planned",
-          "h": "reference/core/simulation~fidelity-observed"
          }
         ]
        },
@@ -3792,7 +3775,7 @@
      },
      {
       "n": "catalog",
-      "s": "planned",
+      "s": "built",
       "h": "reference/tools~catalog"
      },
      {

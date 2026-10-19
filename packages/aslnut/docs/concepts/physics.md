@@ -16,7 +16,7 @@
 2. **A rule** advances the field by one step: a preset (`rules.shallowWater`, `rules.diffusion`, `rules.advection`, `rules.heat`) or your own function.
 3. **A kernel** is the small piece of code that runs per cell; presets come with WGSL kernels and a CPU path.
 4. **Coupling:** a field can read others (rain → water depth → flooded roads → traffic).
-5. **Fidelity:** `fixed` (one resolution everywhere) or `observed` (finer where the camera looks, coarser elsewhere, same rule).
+5. **Resolution by level:** a field's `res` is one number (the same everywhere) or one per observation level (`res: { level: { street: 1, city: 16 } }`: finer near, coarser far, same rule; its `area` by level too: a smaller piece near, a bigger one far). It is a param by level like any other (core › observation › presence), not a part of its own: at a level change the field becomes a new grid, its state carried over where the two overlap.
 6. **Probes and sensors:** read a value at a place, along a line, or over an area, every step; a sensor compares it with a real feed.
 7. **Validation:** a run is scored against measured data (error, bias), so a result shows how much to trust it.
 8. Fields draw like any element: `field(…).draw({ ramp, when })`.
@@ -39,9 +39,6 @@ physics/
 │   ├── wgsl
 │   └── cpu
 ├── coupling
-├── fidelity/
-│   ├── fixed
-│   └── observed
 ├── probes/
 │   ├── point
 │   ├── line
@@ -57,10 +54,9 @@ Plain meanings: **laplacian** = how different a cell is from its neighbours (wha
 ```ts
 // 1 · a flood with a preset rule, fed by rain, finer where you look
 const water = w.add(field({
-  id: 'flood', kind: 'raster', res: 2,
+  id: 'flood', kind: 'raster', res: { level: { street: 1, city: 16 } },
   rule: rules.shallowWater({ friction: .03 }),
   inputs: { ground: 'terrain', rain: data.stream('wss://…/rain') },
-  fidelity: { observed: { near: 1, far: 16 } },
   draw: { ramp: 'blues', when: (d, s) => d.value > .05 },
 }));
 
@@ -86,11 +82,11 @@ const score = await water.validate({ against: data.csv('…/flood-2024.csv'), me
 - **[Networks](networks.md):** `graph` fields for flow in pipes and roads.
 - **[Live twins](live-twins.md):** sensors and scenarios compare runs.
 - **[Graphics](graphics.md):** kernels run as compute on WebGPU, on the CPU on WebGL2.
-- **[Performance](performance.md):** observed fidelity keeps the cost near the camera.
+- **[Performance](performance.md):** a resolution by level keeps the cost about the same at every level.
 
 ## Common mistakes
 
-- **One huge fixed grid.** Use `observed` fidelity.
+- **One huge fixed grid.** Give `res` per level.
 - **Trusting a run without validation.** Attach sensors and score it.
 
 ## Open questions
@@ -105,5 +101,5 @@ const score = await water.validate({ against: data.csv('…/flood-2024.csv'), me
 | raster and surface fields on the ground, kernels | [planned] (a research prototype exists) |
 | graph and volume fields | [planned] |
 | rule presets, custom rules, coupling | [planned] |
-| fixed vs observed fidelity | [planned] |
+| a resolution by level (`res` per level) | [planned] |
 | probes, sensors, validation | [planned] |

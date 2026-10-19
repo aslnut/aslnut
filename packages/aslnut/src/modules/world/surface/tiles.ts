@@ -218,6 +218,17 @@ export class TileSet {
       if (e && e.fails >= 3 && !(e.slot >= 0 && e.ver === ver)) { failed.push({ tile: tname(t.z, t.x, t.y), error: e.lastError ?? 'failed' }); continue; }
       if (!e || e.busy || e.pend || e.hBusy || e.slot < 0 || e.ver !== ver || now - e.at < o.fade || (e.heights && now - e.hAt < (e.hDur ?? o.fadeH)) || e.prev >= 0) pending++;
     }
+    // the ground the view falls back on (its tiles' ancestors, three levels up: the stand-ins, the coarser fallbacks)
+    // still on its way: its heights change what heightAt answers (the version is bumped, every reader of the ground
+    // reads it again), so the view is not done while one is loading, waiting to be shown or waiting for its heights.
+    // (Not waited for, their heights came up to a second after the view settled, on a still view that rested: the
+    // next frame drawn for anything, your everyFrame work, had the water read the ground again for several frames.)
+    // What was asked for ahead of need (a prefetch, the camera's path) is not the view's: never waited for here
+    for (const k of this.near) {
+      const e = this.cache.get(k);
+      if (!e || this.wanted.has(e) || e.soon || e.fails >= 3) continue;
+      if ((e.busy && !e.stale) || e.pend || e.hBusy) pending++;
+    }
     return { done: want.length > 0 && pending === 0, pending, failed, missing };
   }
 

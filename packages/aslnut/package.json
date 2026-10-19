@@ -1,6 +1,6 @@
 {
   "name": "aslnut",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A world engine for the web: GIS, digital twins and 3D viz on WebGPU and WebGL2",
   "license": "Apache-2.0",
   "author": "aslnut",
@@ -29,12 +29,14 @@
     "./modules/presets/vehicles": { "types": "./dist/modules/presets/vehicles/index.d.ts", "default": "./dist/modules/presets/vehicles/index.js" },
     "./modules/presets/drones": { "types": "./dist/modules/presets/drones/index.d.ts", "default": "./dist/modules/presets/drones/index.js" },
     "./tools": { "types": "./dist/tools.d.ts", "default": "./dist/tools.js" },
+    "./tools/catalog": { "types": "./dist/tools/catalog.d.ts", "default": "./dist/tools/catalog.js" },
     "./react": { "types": "./dist/react.d.ts", "default": "./dist/react.js" },
     "./package.json": "./package.json"
   },
   "scripts": {
     "test": "node --test test/*.test.ts",
-    "check": "tsc -p tsconfig.json && node tools/twins.mjs",
+    "check": "tsc -p tsconfig.json && node tools/twins.mjs && node tools/api.mjs",
+    "api": "node tools/api.mjs",
     "build": "tsc -p tsconfig.build.json",
     "examples": "vite build",
     "dev": "vite",

@@ -24,6 +24,7 @@ import { stepFor, Origin, relMetres } from '../../geometry/build/mesh.ts';
 import { DRAPE_DEFAULTS, drapeOf, GROUND_WITHIN, type DrapeMark, type DrapeMode } from './drape.ts';
 import { Join, type JoinCounts } from '../join.ts';
 import { PX, type SizeUnits } from '../../render/drawing/size.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 export type Data<D> = readonly D[] | Source<never> | Source<any>;   // eslint-disable-line @typescript-eslint/no-explicit-any
 export type PerFeature<T, D> = T | ((d: D, s: State) => T);
@@ -44,8 +45,9 @@ export interface FeatureMarkProps<D> extends ElementProps {
    *  false: each vertex at the ground's height plus `lift`, hidden by what is in front (a route floating over streets) */
   drape?: boolean | DrapeMode;
   opacity?: number;
-  /** each feature's own gate */
-  feature?: { when?: (d: D, s: State) => boolean | number };
+  /** each feature's own gate (`when`), and its own order in the layer (`order`: higher drawn over lower, the data's
+   *  order between equals; core › encoding › layers › stack) */
+  feature?: { when?: (d: D, s: State) => boolean | number; order?: (d: D, s: State) => number };
   filter?: Filter<D> | null;
   reveal?: RevealSpec | ModeName;
   hover?: Look | false;
@@ -79,13 +81,19 @@ export interface FeatureMarkProps<D> extends ElementProps {
 /** a feature as a mark keeps it: its id and key, the datum your functions get, its shape, its slot (`index`: its row on
  *  the chip, kept while it is in the data: core › encoding › join) and when it was born */
 export interface Entry<D> { id: string | number; key: string; d: D; geometry: Geometry | null; cuts?: Uint8Array[][]; index: number; born: number }
-export interface Styled { color: RGBA; /** the mark's number: line width px, area height m, extrusion height m */ number: number; value: number }
+export interface Styled {
+  color: RGBA; /** the mark's number: line width px, area height m, extrusion height m */ number: number; value: number;
+  /** the mark's second number (the numbers' fourth: a point's outline px; an extrusion writes its base there itself) */
+  base?: number;
+  /** the mark's own four values (plane 6: a point's outline colour, a line's dashes); unset: the mark has none */
+  extra?: RGBA;
+}
 
-export const FW = 512, PLANES = 6;
+export const FW = 512, PLANES = 7;
 /** floats in the layer block (L): see feature.wgsl.ts */
-export const LFLOATS = 64;
-/** the planes of the features texture: colour, colour before, state, numbers, centre and half size, motion */
-export const P_COLOR = 0, P_BEFORE = 1, P_STATE = 2, P_NUMBERS = 3, P_BOX = 4, P_MOTION = 5;
+export const LFLOATS = 72;
+/** the planes of the features texture: colour, colour before, state, numbers, centre and half size, motion, the mark's own */
+export const P_COLOR = 0, P_BEFORE = 1, P_STATE = 2, P_NUMBERS = 3, P_BOX = 4, P_MOTION = 5, P_EXTRA = 6;
 /** ms between two drawings of the ground's tiles while a layer on them fades or restyles */
 const FADE_STEP = 80;
 const HOVER: Look = { color: '#ffffff', mix: 0.45 };
@@ -152,7 +160,7 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
   protected L = new Float32Array(LFLOATS); protected lbuf: GBuffer | null = null; protected pbuf: GBuffer | null = null;
   /** the planes on the chip (bit k: plane k), each one's row block there (-1: not there, its value a uniform), the
    *  planes changed since last written, and the values of the planes that are the same for every feature */
-  protected planes = 1 << P_STATE; private slots = new Int8Array(PLANES).fill(-1); private dirtyPlanes = 0; private k0 = new Float32Array(4); private k3 = new Float32Array(4);
+  protected planes = 1 << P_STATE; private slots = new Int8Array(PLANES).fill(-1); private dirtyPlanes = 0; private k0 = new Float32Array(4); private k3 = new Float32Array(4); private k6 = new Float32Array(4);
   /** the planes this mark always keeps on the chip (the state; areas and extrusions their boxes, …) */
   protected planesWanted(): number { return 1 << P_STATE; }
   /** this mark's shaders read the features texture (labels read the features on the CPU: none made) */
@@ -239,7 +247,7 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
     try { next = this.programs(this.code()); await Promise.all(next.map((p) => p.ready)); } catch (e) { next.forEach((p) => p.destroy()); this.props = keep0; throw e; }
     this.progs.forEach((p) => p.destroy()); this.progs = next; this.preparePrograms();
   }
-  override setProps(p: Partial<P>): this {
+  override setProps(given: Partial<Leveled<P>>): this { const p = given as Partial<P>;
     const dataChanged = 'data' in p && p.data !== this.props.data, was = this.sits, wasDraped = this.draped;
     super.setProps(p);
     // a new place with the twin (its drape): its programs made again (draped or not, the part behind things or not), its
@@ -358,6 +366,10 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
   /** its pieces' own ground ranges are being measured again: the prisms stand on the layer's range meanwhile (a
    *  settled view once showed the ground through prisms measured on heights that had risen since) */
   protected rangesStale(): boolean { return false; }
+  /** its pieces' own ground ranges are being measured (a run under way, or one waiting for its turn): frames come
+   *  for it, so the view is not settled until it is done (it once ran up to a second after the view settled, its
+   *  frames on a still view that had rested) */
+  protected measuring(): boolean { return false; }
   /** the lowest and highest ground under the layer (true metres): where its draped prisms stand */
   protected range: [number, number] = [0, 0];
   /** the last reading found no ground under the layer at all (nothing loaded there yet) */
@@ -405,6 +417,8 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
     if (shapes || values) {
       this.entries = this.read(now);
       const byKey = new Map<string, Entry<D>>(); for (const e of this.entries) byKey.set(e.key, e); this.byKey = byKey;
+      // each feature's own order: a change of it alone draws them again in the new order (no new shapes asked for)
+      if (this.readOrders(s) && !shapes && this.built) this.reordered();
       // the join says what changed: the same features handed over again (a source re-handing what it has) build and
       // restyle nothing; new, changed or gone ones do (stayed ones keep their slots: never another's look meanwhile)
       const j = this.join.last;
@@ -440,6 +454,32 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
     if (values || shapes || sk !== this.seen.scales) { this.seen.scales = sk; this.restyle(ctx, !first); }
     this.flushPlanes();
   }
+  /** each feature's own order (feature.order) by slot, and its version (bumped when one changed) */
+  protected orders = new Float64Array(0); protected orderVer = 0;
+  private sortedOf: { of: Entry<D>[]; ver: number; list: Entry<D>[] } | null = null;
+  /** read every feature's order again; true when one changed */
+  private readOrders(s: State): boolean {
+    const fo = this.props.feature?.order; if (!fo) return false;
+    if (this.orders.length < this.bySlot.length) { const o = new Float64Array(Math.max(64, this.bySlot.length * 2)).fill(NaN); o.set(this.orders); this.orders = o; }
+    let changed = false;
+    for (const e of this.entries) { const v = Number(fo(e.d, s)) || 0; if (this.orders[e.index] !== v) { this.orders[e.index] = v; changed = true; } }
+    if (changed) this.orderVer++;
+    return changed;
+  }
+  /** the features in their drawing order: by their own order (feature.order: lower first, the data's order between
+   *  equals), else as the data gives them; the same array until either changes */
+  protected buildList(): Entry<D>[] {
+    if (!this.props.feature?.order) return this.entries;
+    const c = this.sortedOf; if (c && c.of === this.entries && c.ver === this.orderVer) return c.list;
+    const o = this.orders, idx = this.entries.map((_, i) => i);
+    idx.sort((a, b) => (o[this.entries[a]!.index]! - o[this.entries[b]!.index]!) || a - b);
+    const list = idx.map((i) => this.entries[i]!);
+    this.sortedOf = { of: this.entries, ver: this.orderVer, list };
+    return list;
+  }
+  /** a feature's order changed and nothing else of its shape: what the mark draws in order is made again (default:
+   *  its shapes built again in the new order; points write their places again) */
+  protected reordered(): void { this.building = true; }
   /** gone features' slots written empty (no colour, not shown): an old shape still drawn there until the next build
    *  draws nothing */
   private clearSlots(slots: readonly number[]): void {
@@ -521,28 +561,31 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
   private restyle(ctx: FrameContext, animate: boolean): void {
     if (!this.entries.length) return;
     this.ensureTexture();
-    const f = this.featData, s = ctx.s, k0 = this.k0, k3 = this.k3;
+    const f = this.featData, s = ctx.s, k0 = this.k0, k3 = this.k3, k6 = this.k6;
     // the colour and number shown now become "before"; the new ones ease in over `restyle` seconds, on the chip (on
     // the ground's tiles they show at once: the tiles are drawn again once, not at every step of an ease)
     const tr = this.restyleSeconds(), eases = animate && tr > 0 && !this.onTiles, t = this.mixT;
     // a colour or numbers the same for every feature take no room on the chip (a uniform)
-    let colours = false, numbers = false, firstOne = true;
+    let colours = false, numbers = false, extras = false, firstOne = true;
     for (const e of this.entries) {
-      const i = e.index, c0 = this.at(i, 0), c1 = this.at(i, 1), n = this.at(i, 3);
+      const i = e.index, c0 = this.at(i, 0), c1 = this.at(i, 1), n = this.at(i, 3), x = this.at(i, P_EXTRA);
       for (let k = 0; k < 4; k++) f[c1 + k] = f[c1 + k]! + (f[c0 + k]! - f[c1 + k]!) * t;
       f[n + 1] = f[n + 1]! + (f[n]! - f[n + 1]!) * t;
-      const st = this.style(e, s), c = st.color;
+      const st = this.style(e, s), c = st.color, ex = st.extra;
       f[c0] = c[0]; f[c0 + 1] = c[1]; f[c0 + 2] = c[2]; f[c0 + 3] = c[3]; f[n] = st.number; f[n + 2] = st.value;
+      if (st.base !== undefined) f[n + 3] = st.base;
+      if (ex) { f[x] = ex[0]; f[x + 1] = ex[1]; f[x + 2] = ex[2]; f[x + 3] = ex[3]; }
       if (!eases || e.born === ctx.now) { f[c1] = c[0]; f[c1 + 1] = c[1]; f[c1 + 2] = c[2]; f[c1 + 3] = c[3]; f[n + 1] = st.number; }
-      if (firstOne) { firstOne = false; for (let k = 0; k < 4; k++) { k0[k] = f[c0 + k]!; k3[k] = f[n + k]!; } continue; }
+      if (firstOne) { firstOne = false; for (let k = 0; k < 4; k++) { k0[k] = f[c0 + k]!; k3[k] = f[n + k]!; k6[k] = ex ? f[x + k]! : 0; } continue; }
       if (!colours && (f[c0] !== k0[0] || f[c0 + 1] !== k0[1] || f[c0 + 2] !== k0[2] || f[c0 + 3] !== k0[3])) colours = true;
       if (!numbers && (f[n] !== k3[0] || f[n + 1] !== k3[1] || f[n + 2] !== k3[2] || f[n + 3] !== k3[3])) numbers = true;
+      if (ex && !extras && (f[x] !== k6[0] || f[x + 1] !== k6[1] || f[x + 2] !== k6[2] || f[x + 3] !== k6[3])) extras = true;
     }
     this.mixT = eases ? 0 : 1; this.mixFrom = ctx.now;
-    const keep = this.planes & ~((1 << P_COLOR) | (1 << P_BEFORE) | (1 << P_NUMBERS));
-    this.layout(keep | (colours ? 1 << P_COLOR : 0) | (tr > 0 ? 1 << P_BEFORE : 0) | (numbers ? 1 << P_NUMBERS : 0));
+    const keep = this.planes & ~((1 << P_COLOR) | (1 << P_BEFORE) | (1 << P_NUMBERS) | (1 << P_EXTRA));
+    this.layout(keep | (colours ? 1 << P_COLOR : 0) | (tr > 0 ? 1 << P_BEFORE : 0) | (numbers ? 1 << P_NUMBERS : 0) | (extras ? 1 << P_EXTRA : 0));
     // (a texture made again is written whole from the copy here, the states too: nothing else to ask)
-    this.touch(P_COLOR); this.touch(P_BEFORE); this.touch(P_NUMBERS); this.lookGen++;
+    this.touch(P_COLOR); this.touch(P_BEFORE); this.touch(P_NUMBERS); this.touch(P_EXTRA); this.lookGen++;
   }
   /** centre and half size (planes 4) per feature, relative to the origin */
   protected boxes(): void {
@@ -728,6 +771,8 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
     L[52] = k0[0]!; L[53] = k0[1]!; L[54] = k0[2]!; L[55] = k0[3]!; L[56] = k3[0]!; L[57] = k3[1]!; L[58] = k3[2]!; L[59] = k3[3]!;
     // how its size (points) or width (lines) is drawn: CSS px, or metres, within a range (core › render › drawing › size)
     L.set(this.sizeUnits(), 60);
+    // the mark's own plane: where it is (-1: the same for every feature, k6)
+    L[64] = at[P_EXTRA]!; L[65] = 0; L[66] = 0; L[67] = 0; L[68] = this.k6[0]!; L[69] = this.k6[1]!; L[70] = this.k6[2]!; L[71] = this.k6[3]!;
     this.flatNow = false;
     if (this.draped) {
       const ex = ctx.world.exaggeration, level = (this.sampled[1] - this.sampled[0]) * ex < 1;
@@ -833,6 +878,7 @@ export abstract class FeatureMark<D, P extends FeatureMarkProps<D>> extends Elem
     // the programs it draws with this frame still being built (a view is complete when they draw)
     if (this.built && this.entries.length && this.graphicsBusy()) st.pending.push('building its programs');
     if (this.mixT < 1) st.pending.push('restyling');
+    if (this.built && this.entries.length && this.measuring()) st.pending.push("measuring its pieces' ground ranges");
     const dur = (this.plan?.dur ?? 0) * 1000, now = this.attached.world.now;
     if (now - this.newest < dur && this.entries.some((e) => now - e.born < dur)) st.pending.push('new features revealing');
     st.ready = !st.pending.length;

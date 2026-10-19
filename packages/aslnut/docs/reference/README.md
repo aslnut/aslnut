@@ -386,9 +386,6 @@ aslnut/
 │   │   │   ├── custom
 │   │   │   ├── coupling
 │   │   │   └── regimes
-│   │   ├── fidelity/
-│   │   │   ├── fixed
-│   │   │   └── observed
 │   │   ├── measure/
 │   │   │   ├── probes
 │   │   │   ├── sensors
@@ -719,7 +716,7 @@ aslnut/
 |---|---|
 | core | [world](core/world.md) · [space](core/space.md) · [time](core/time.md) · [data](core/data.md) · [geometry](core/geometry.md) · [entities](core/entities.md) · [simulation](core/simulation.md) · [render](core/render.md) · [interaction](core/interaction.md) · [runtime](core/runtime.md) |
 | modules | [world](modules/world.md) · [earth](modules/earth.md) · [space](modules/space.md) · [presets](modules/presets.md) · [humans](modules/human.md) |
-| kits | [dashboard](kits/dashboard.md) · [game](kits/game.md) · [authoring](kits/authoring.md) |
+| kits | [dashboard](kits/dashboard.md) · [game](kits/game.md) · [authoring](kits/authoring.md) · [compat](kits/compat.md) |
 | tools | [tools](tools.md) |
 
 ## How to read a page

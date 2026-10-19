@@ -85,7 +85,7 @@ aslnut
         state-at [built]
         replay [built]
         checkpoints [planned]
-        epochs [planned]
+        epochs [built]
       scenarios
         base [built] +1
         variant [built] +1
@@ -372,7 +372,7 @@ aslnut
         tiers [planned] +2
       fields
         raster [built] +1
-        surface [planned]
+        surface [built]
         graph [planned]
         volume [planned]
         kernels [built] +1
@@ -381,9 +381,6 @@ aslnut
         custom [built]
         coupling [planned]
         regimes [planned]
-      fidelity
-        fixed [planned]
-        observed [planned]
       measure
         probes [built] +1
         sensors [planned]
@@ -702,6 +699,6 @@ aslnut
       suite [built]
       perf [built] +1 +2 +3
       recipes [built]
-    catalog [planned]
+    catalog [built]
     cli [planned]
     mcp [planned]

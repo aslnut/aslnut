@@ -20,6 +20,7 @@ import { FeatureMark, LFLOATS, P_BOX, Prog, type Entry, type FeatureMarkProps, t
 import { lineProgram } from './line.ts';
 import { areaDrapeProgram, areaTileProgram, fillRanges, GW, IMAGE_TEXTURE, lineDrapeProgram, lineTileProgram, pieceTexture, RangeJob, segmentBox, TilePieces, withImage } from './drape.ts';
 import type { GTexture, Program } from '../../render/graphics/interface.ts';
+import type { Leveled } from '../../observation/presence.ts';
 
 export interface AreaProps<D> extends FeatureMarkProps<D> {
   color?: PerFeature<Color, D>;
@@ -100,9 +101,11 @@ export class Area<D = Feature> extends FeatureMark<D, AreaProps<D>> {
     if (!this.triJob.busy && this.segJob.step(r, this.segs.count, segmentBox(this.segs), this.segPieces, PIECE, 18, this.range) && this.segs.count) { this.segTex = pieceTexture(ctx.graphics, this.segTex, this.segPieces, `${this.id} outline`); this.segOwn = !this.segJob.busy; }
   }
   // the pieces' own ranges only make the prisms shorter (fewer pixels to fill); the drape is exact with the layer's
-  // range meanwhile: never waited for (settled), measured while frames go on (a few ms over the next frames)
+  // range meanwhile: measured while frames go on (a few ms over the next frames), and waited for (settled: its frames
+  // come by themselves, a still view that settled draws none)
   // (frames while a run goes on; a run waiting for its turn asks for one frame when its turn comes)
   override animating(s: State): boolean { return super.animating(s) || this.triJob.running || this.segJob.running; }
+  protected override measuring(): boolean { return this.draped && (this.triJob.busy || this.segJob.busy); }
   protected programs(code: ShaderCode): Prog[] {
     if (this.draped) {
       const outline = { functions: code.functions };
@@ -126,7 +129,7 @@ export class Area<D = Feature> extends FeatureMark<D, AreaProps<D>> {
     this.outlineKey = ''; this.outlineOf = null;
     if (this.draped) return this.buildDraped(ctx);
     const o = this.origin, ll = new Grow(new Float64Array(1024)), vs = new Grow(new Float32Array(2048)), idx = new Grow(new Uint32Array(1536));
-    for (const e of this.entries) {
+    for (const e of this.buildList()) {
       for (const rings of polygonsOf(e.geometry)) {
         const m = polygonMesh(o, rings, this.step), n = m.xy.length / 2, base = vs.n / 4;
         meshLonLat(o, rings, m.xy, ll);
@@ -148,20 +151,21 @@ export class Area<D = Feature> extends FeatureMark<D, AreaProps<D>> {
   private job: { of: unknown; i: number; ll: Grow<Float64Array>; tri: Grow<Float32Array>; boxes: Grow<Float64Array> } | null = null;
   private buildDraped(ctx: FrameContext): void | false {
     // new shapes while a build was under way: it starts again
-    if (this.job && this.job.of !== this.entries) this.job = null;
+    const list = this.buildList();
+    if (this.job && this.job.of !== list) this.job = null;
     // sized from the rings at first (a polygon of n corners and h holes is n + 2h - 2 triangles when nothing is split)
     if (!this.job) {
       let pts = 0, tris = 0;
-      for (const e of this.entries) for (const rings of polygonsOf(e.geometry)) { let n = 0; for (const r of rings) n += ringN(r); pts += n; tris += Math.max(0, n + 2 * (rings.length - 1) - 2); }
-      this.job = { of: this.entries, i: 0, ll: new Grow(new Float64Array(Math.max(64, pts * 2))), tri: new Grow(new Float32Array(Math.max(1, Math.ceil((tris * 12) / (GW * 4))) * GW * 4)), boxes: new Grow(new Float64Array(Math.max(64, tris * 4))) };
+      for (const e of list) for (const rings of polygonsOf(e.geometry)) { let n = 0; for (const r of rings) n += ringN(r); pts += n; tris += Math.max(0, n + 2 * (rings.length - 1) - 2); }
+      this.job = { of: list, i: 0, ll: new Grow(new Float64Array(Math.max(64, pts * 2))), tri: new Grow(new Float32Array(Math.max(1, Math.ceil((tris * 12) / (GW * 4))) * GW * 4)), boxes: new Grow(new Float64Array(Math.max(64, tris * 4))) };
     }
     const j = this.job;
     // long edges split for the globe's curve, and so that each piece's prism stands only as tall as the ground under
     // that piece (a few kilometres: little fill even over mountains)
     const step = Math.max(this.step, 2500), t0 = performance.now(), o = this.origin, { ll, tri, boxes } = j;
-    for (; j.i < this.entries.length; j.i++) {
+    for (; j.i < list.length; j.i++) {
       if (performance.now() - t0 > 4) return false;
-      const e = this.entries[j.i]!;
+      const e = list[j.i]!;
       for (const rings of polygonsOf(e.geometry)) {
         const m = polygonMesh(o, rings, step), base = ll.n / 2, xy = m.xy, t = m.tris;
         meshLonLat(o, rings, xy, ll);
@@ -207,9 +211,10 @@ export class Area<D = Feature> extends FeatureMark<D, AreaProps<D>> {
     const w = this.outlineWidths();
     const keys = w.own > 0 ? null : this.litKeys(w.hover > 0, w.selected > 0);
     const key = keys === null ? '*' : keys.length ? `+${keys.join('\u0001')}` : '';
-    if (key === this.outlineKey && this.outlineOf === this.entries) return;
-    this.outlineKey = key; this.outlineOf = this.entries;
-    const list: Entry<D>[] = keys === null ? this.entries : keys.map((k) => this.entryOf(k)!).filter(Boolean);
+    const all = this.buildList();
+    if (key === this.outlineKey && this.outlineOf === all) return;
+    this.outlineKey = key; this.outlineOf = all;
+    const list: Entry<D>[] = keys === null ? all : keys.map((k) => this.entryOf(k)!).filter(Boolean);
     const lines: SegmentLine[] = [];
     for (const e of list) polygonsOf(e.geometry).forEach((rings, pi) => rings.forEach((r, ri) => lines.push({ f: e.index, line: r, closed: true, cuts: e.cuts?.[pi]?.[ri] })));
     const draped = this.draped;
@@ -321,8 +326,8 @@ export class Area<D = Feature> extends FeatureMark<D, AreaProps<D>> {
    *  country's regencies, every 50 ms while a pointer moves */
   private pickBoxes: Float64Array | null = null; private pickOf: unknown = null;
   override groundPick(lon: number, lat: number): number | null {
-    if (!this.onTiles || this.shown <= 0) return null;
-    const es = this.entries;
+    if (!this.onTiles || this.shown <= 0 || this.props.pickable === false) return null;
+    const es = this.buildList();
     if (this.pickOf !== es) {
       const b = new Float64Array(es.length * 4);
       es.forEach((e, i) => { const x = bboxOf(e.geometry ?? null); if (x) b.set(x, i * 4); else b.set([1, 1, -1, -1], i * 4); });
@@ -339,4 +344,4 @@ export class Area<D = Feature> extends FeatureMark<D, AreaProps<D>> {
   protected freeGeometry(): void { this.upperProgs?.forEach((p) => p.destroy()); this.upperProgs = null; this.upperFor = null; this.triPieces.destroy(); this.segPieces2.destroy(); this.tileProgs?.forEach((p) => p.destroy()); this.tileProgs = null; for (const r of [this.vbuf, this.ibuf, this.sbuf, this.sibuf, this.lbuf2, this.triTex, this.segTex]) r?.destroy(); this.vbuf = this.ibuf = this.sbuf = this.sibuf = this.lbuf2 = null; this.triTex = this.segTex = null; this.scap = 0; this.outlineKey = ''; }
   override readouts() { return { count: () => this.size, triangles: () => (this.draped ? this.nTri : this.nIdx / 3), outline: () => this.segs.count }; }
 }
-export const area = <D = Feature>(p: AreaProps<D>) => new Area<D>(p);
+export const area = <D = Feature>(p: Leveled<AreaProps<D>>) => new Area<D>(p as AreaProps<D>);

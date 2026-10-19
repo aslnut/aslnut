@@ -9,6 +9,7 @@ import type { DrawCall, GBuffer, Program } from '../../../../../core/render/grap
 import { RAIN_GLSL } from '../../../../../core/render/graphics/shaders/rain.glsl.ts';
 import { RAIN_WGSL } from '../../../../../core/render/graphics/shaders/rain.wgsl.ts';
 import { D, R } from '../../../../../core/space/geo.ts';
+import type { Leveled } from '../../../../../core/observation/presence.ts';
 
 export { WEATHERS, visibilityOf, CLEAR } from '../sky/index.ts';
 export interface RainProps extends ElementProps {
@@ -66,4 +67,4 @@ export class Rain extends Element<RainProps> {
   override animating(): boolean { return this.amountNow >= 0.02 && this.props.at === undefined; }
 }
 /** rain round the eye, as hard as the sky's weather says (or your amount) */
-export const rain = (p: RainProps = {}) => new Rain(p);
+export const rain = (p: Leveled<RainProps> = {}) => new Rain(p as RainProps);

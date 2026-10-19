@@ -24,6 +24,7 @@ import { Solids } from '../src/core/geometry/shapes/solids.ts';
 import { createWebGL2 } from '../src/core/render/graphics/webgl2.ts';
 import type { Made } from '../src/core/geometry/shapes/shape.ts';
 import type { Feature } from '../src/core/data/features.ts';
+import { plane } from '../src/modules/world/plane/index.ts';
 
 const L = 145.12, B = -37.92, T0 = Date.UTC(2026, 9, 19, 0, 0, 0), KZ = 6378137 * Math.PI / 180, kx = KZ * Math.cos(B * Math.PI / 180);
 const at = (x: number, y: number): [number, number] => [L + x / kx, B + y / KZ];
@@ -53,7 +54,7 @@ function fakeGraphics() {
         write(d: ArrayBufferView) { b.data = d instanceof Float32Array ? Float32Array.from(d) : null; b.version++; }, destroy() { log.push(`destroy ${label}`); } };
       buffers.push(b as unknown as FBuf); return b as unknown as FBuf;
     },
-    texture(desc: { label?: string; width: number; height: number }) { const t = { desc, label: desc.label ?? '', data: null as ArrayBufferView | null, writes: 0, write(d: ArrayBufferView) { t.data = d instanceof Float32Array ? Float32Array.from(d) : d instanceof Uint8Array ? Uint8Array.from(d) : null; t.writes++; }, writeImage() {}, destroy() {} }; textures.push(t as unknown as FTex); return t as unknown as FTex; },
+    texture(desc: { label?: string; width: number; height: number }) { const t = { desc, label: desc.label ?? '', data: null as ArrayBufferView | null, writes: 0, version: 0, write(d: ArrayBufferView) { t.data = d instanceof Float32Array ? Float32Array.from(d) : d instanceof Uint8Array ? Uint8Array.from(d) : null; t.writes++; t.version++; }, writeImage() {}, destroy() {} }; textures.push(t as unknown as FTex); return t as unknown as FTex; },
     target(width: number, height: number) { return { width, height, texture: g.texture({ label: 'target', width, height }), destroy() {} }; },
     layerTarget(tex: FTex) { return { width: tex.desc.width, height: tex.desc.height, tex, destroy() {} }; },
     copyLayers: () => false,
@@ -293,4 +294,55 @@ test('frame: what your everyFrame work frees is freed after the frame its draws 
   b.destroy(); assert.equal(calls.filter((c) => c === 'deleteBuffer').length, 1, 'once');
   const b2 = g.buffer('vertex', 64, 'y'); b2.destroy(); assert.equal(calls.filter((c) => c === 'deleteBuffer').length, 2, 'not held: at once');
   w.dispose();
+});
+
+test('shadows: the sun\'s shadow map is drawn again when a caster\'s texture changed (its copies\' records: how far each has faded in), kept while nothing did; a plane takes a sky of yours, as the earth does', async () => {
+  const fg = standIn(), { w } = fg;
+  w.setShadows(true);
+  // a sun (a sky that lights) and one caster whose per-copy data lives in a texture, as an instance set's records do
+  class Sun extends Element { readonly kind = 'sky' as const; frame() { return []; } override light() { return { dir: [0.4, 0.9, 0] as [number, number, number], color: [1, 1, 1] as [number, number, number], ambient: [0.3, 0.3, 0.3] as [number, number, number], bounce: 0, daylight: 1, shadows: true }; } }
+  let recs: GTexture | null = null, block: GBuffer | null = null;
+  const prog = fg.g.program({ label: 'caster', wgsl: '', glsl: { vertex: '', fragment: '' }, blocks: ['Frame', 'T'], textures: [{ name: 'recs', kind: '2d', sample: 'unfilterable' }] } as unknown as ProgramDesc);
+  class Caster extends Element {
+    readonly kind = 'shape' as const;
+    frame(ctx: FrameContext): DrawCall[] {
+      recs ??= ctx.graphics.texture({ label: 'records', width: 4, height: 1, format: 'rgba32f' }); block ??= ctx.graphics.buffer('uniform', 64, 'tile');
+      return [{ program: prog, blocks: [ctx.frame, block], textures: [recs], count: 36, pickProgram: () => prog, cast: true, bounds: [-5, 0, -5, 5, 6, 5] }];
+    }
+  }
+  w.add(new Sun({ id: 'sun' }), new Caster({ id: 'house' }));
+  const shadowFrames = () => fg.frames.filter((f) => f.target && (f.target as { tex?: FTex }).tex === undefined && f.draws.some((d) => (d.program as Program & { label: string }).label === 'caster')).length;
+  await steps(w, 3);
+  const n0 = shadowFrames();
+  assert.ok(n0 >= 1 && w.shadowReport().on, 'the map drawn');
+  w.invalidate(); await steps(w, 2);
+  assert.equal(shadowFrames(), n0, 'nothing changed: kept');
+  assert.equal(w.shadowReport().kept, true);
+  // its copies fade in: their records written (a texture), nothing else changed: drawn again (it was kept, speckled)
+  recs!.write(new Float32Array(16)); w.invalidate(); await steps(w, 1);
+  assert.equal(shadowFrames(), n0 + 1, 'a caster\'s texture written: the map drawn again');
+  // WebGL2 counts every change of a texture's pixels (written, an image put in, layers copied into, drawn into)
+  const gl = new Proxy({}, { get: (_t, key) => (typeof key === 'string' && /^[A-Z0-9_]+$/.test(key) ? 1 : (...a: unknown[]) => { void a; return key === 'getParameter' ? 4096 : key === 'getExtension' ? null : key === 'getShaderParameter' || key === 'getProgramParameter' || key === 'checkFramebufferStatus' ? true : {}; }) });
+  const g2 = createWebGL2({ width: 4, height: 4, getContext: () => gl, addEventListener() {} } as unknown as HTMLCanvasElement);
+  const t2 = g2.texture({ width: 4, height: 4, format: 'rgba8' });
+  assert.equal(t2.version, 0); t2.write(new Uint8Array(64)); assert.equal(t2.version, 1);
+  w.dispose();
+  // the flat floor: its painted sky gives no light; a sky of yours in its place (sky() of the earth: the sun) lights and casts
+  const sun = new Sun({ id: 'sky' });
+  assert.equal(plane({ sky: sun }).elements()[0], sun, 'yours in its place');
+  assert.equal(plane({ sky: false }).elements().some((e) => e.kind === 'sky'), false, 'none');
+  assert.equal(plane().elements()[0]!.kind, 'sky', 'the painted one by default');
+});
+
+test('offscreen: a world on an OffscreenCanvas on the page takes no controls (it has no element to take a pointer: its host sends the input)', () => {
+  const g = globalThis as { window?: unknown }, had = 'window' in g, before = g.window;
+  g.window = {};
+  try {
+    const listened: string[] = [];
+    // an OffscreenCanvas made on the page: an event target with a size, no style, no box on the page
+    const oc = { width: 320, height: 200, addEventListener: (t: string) => { listened.push(t); }, removeEventListener() {} };
+    const w = new World({ body: null, camera: new Camera(), loader: new Loader(), ownLoader: true, graphics: fakeGraphics().g, reason: 'stand-in', profile: null, canvas: oc as never, opts: { autostart: false, attribution: false } });
+    assert.deepEqual(listened, [], 'nothing listened to (it threw before: no style to set)');
+    w.dispose();
+  } finally { if (had) g.window = before; else delete g.window; }
 });

@@ -1,1 +1,3 @@
 kits.dashboard.markers	kits.dashboard.cards
+modules.compat	kits.compat
+modules.compat.leaflet	kits.compat.leaflet

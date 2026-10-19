@@ -4,10 +4,13 @@
 // (each frame grounded: the lowest point of the body on the floor). Colours are not in it: they come from each
 // instance's palette, so one figure dresses a crowd. Pure (no graphics): a worker can make it.
 //   const fig = humanFigure(tpl, { body: { gender_female: 1 }, hair: 'bob', gait: 'brisk' })
+//   const fitted = humanFigure(tpl, { body: { gender_female: 1 }, fit: await loadFit(url) })   (a base mesh's silhouette)
 import { skeleton as makeSkeleton, skinPoint, type Skeleton } from '../../../../core/entities/body/skeleton.ts';
 import { bakeClip, figure, skinMesh, smoothNormals, type Clip, type Figure, type PoseFrame } from '../../../../core/entities/body/skin.ts';
 import { generate, vertexParts } from './generator.ts';
 import type { Template } from './template.ts';
+import { fitBody, type BodyFit } from './fit.ts';
+import { AslnutError } from '../../../../core/world/errors.ts';
 import { ears, earIndex, nose } from './features.ts';
 import { fitHair } from '../hair/fit.ts';
 import { buildGarment, GARMENTS, type Garment, type GarmentType } from '../clothing/garments.ts';
@@ -20,6 +23,9 @@ import { FACE_MATERIAL } from '../face/index.ts';
 export interface FigureSpec {
   /** the body's sliders (body › generator: MORPHS) */
   body?: Record<string, number>;
+  /** a fit (body › fit: a base mesh's silhouette, made by tools/humans-fit.mjs) on top of the sliders; none: the
+   *  generated body */
+  fit?: BodyFit | null;
   /** a hair style of the template (hair › styles); null: none */
   hair?: string | null;
   /** garments made into it (clothing › garments) */
@@ -68,7 +74,8 @@ let partsCache: Uint8Array | null = null;
 
 /** make a person's figure from a template */
 export function humanFigure(tpl: Template, spec: FigureSpec = {}, o: { id?: string; garmentTypes?: Readonly<Record<string, GarmentType>> } = {}): HumanFigure {
-  const g = generate(spec.body ?? {}), B1 = g.positions, P = g.P, n = tpl.verts;
+  if (spec.fit && spec.fit.verts !== tpl.verts) throw new AslnutError('E-LOAD-005', `humans fit: it fits ${spec.fit.verts} vertices, the template has ${tpl.verts}`, { fix: 'make the fit for this template (tools/humans-fit.mjs --template)' });
+  const g = fitBody(generate(spec.body ?? {}), spec.fit), B1 = g.positions, P = g.P, n = tpl.verts;
   base ??= generate({}).positions;
   partsCache ??= vertexParts();
   const bone = (name: string) => tpl.bones.findIndex((b) => b.name === name), head = bone('Head');
@@ -136,5 +143,5 @@ export function humanFigure(tpl: Template, spec: FigureSpec = {}, o: { id?: stri
 /** a figure's key: what its geometry and motion are made from (people with the same share one figure) */
 export function figureKey(spec: FigureSpec): string {
   const r = (v: number) => Math.round(v * 1000) / 1000, body = Object.entries(spec.body ?? {}).filter(([, v]) => v).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}:${r(v)}`).join(',');
-  return `h|${body}|${spec.hair ?? '-'}|${JSON.stringify(spec.garments ?? [])}|${typeof spec.gait === 'string' ? spec.gait : JSON.stringify(spec.gait ?? {})}|${spec.face === false ? 0 : 1}|${JSON.stringify(spec.frames ?? {})}|${Object.keys(spec.poses ?? {}).join(',')}`;
+  return `h|${body}|${spec.fit ? spec.fit.key : '-'}|${spec.hair ?? '-'}|${JSON.stringify(spec.garments ?? [])}|${typeof spec.gait === 'string' ? spec.gait : JSON.stringify(spec.gait ?? {})}|${spec.face === false ? 0 : 1}|${JSON.stringify(spec.frames ?? {})}|${Object.keys(spec.poses ?? {}).join(',')}`;
 }

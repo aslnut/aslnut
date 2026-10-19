@@ -9,7 +9,7 @@
 - **Checkpoint 1 · the healthy-city twin (regions, walking, sun and shadows, heat): 99% (153 built, 3 partly / 156)**
 - **Checkpoint 2 · the city at night in rain (a game: streets, traffic, people, lights, weather): 69% (145 built, 19 partly / 225)**
 - **Checkpoint 3 · the riverfront city core (quays, outdoor stairs and terraces, bridges, a station; built from scans and data): 72% (125 built, 9 partly / 181)**
-- **Overall (every part): 47% (239 built, 37 partly / 545)** · built 239 · partly 37 · planned 224 · proposed 45 · open 0.
+- **Overall (every part): 48% (242 built, 37 partly / 543)** · built 242 · partly 37 · planned 219 · proposed 45 · open 0.
 
 ## Checkpoints
 
@@ -882,8 +882,8 @@ aslnut  72% (125 built, 9 partly / 181)
 ## The whole tree, 4 levels
 
 ```
-aslnut  47% (239 built, 37 partly / 545)
-├── core  54% (176 built, 28 partly / 355)
+aslnut  48% (242 built, 37 partly / 543)
+├── core  54% (178 built, 28 partly / 353)
 │   ├── space  21% (3 built, 2 partly / 19)
 │   │   ├── bodies  partly
 │   │   ├── frames  0% (0 built, 0 partly / 5)
@@ -916,7 +916,7 @@ aslnut  47% (239 built, 37 partly / 545)
 │   │   ├── zones  built
 │   │   ├── ranges  planned
 │   │   └── deep  planned
-│   ├── data  74% (35 built, 1 partly / 48)
+│   ├── data  76% (36 built, 1 partly / 48)
 │   │   ├── sources  90% (9 built, 0 partly / 10)
 │   │   │   ├── tiles  80% (4 built, 0 partly / 5)
 │   │   │   ├── files  100% (2 built, 0 partly / 2)
@@ -940,12 +940,12 @@ aslnut  47% (239 built, 37 partly / 545)
 │   │   │   ├── upsert  built
 │   │   │   ├── patch  built
 │   │   │   └── remove  built
-│   │   ├── history  60% (3 built, 0 partly / 5)
+│   │   ├── history  80% (4 built, 0 partly / 5)
 │   │   │   ├── log  built
 │   │   │   ├── state-at  built
 │   │   │   ├── replay  built
 │   │   │   ├── checkpoints  planned
-│   │   │   └── epochs  planned
+│   │   │   └── epochs  built
 │   │   ├── scenarios  80% (4 built, 0 partly / 5)
 │   │   │   ├── base  built
 │   │   │   ├── variant  built
@@ -1107,7 +1107,7 @@ aslnut  47% (239 built, 37 partly / 545)
 │   │       ├── data  built
 │   │       ├── player  built
 │   │       └── script  planned
-│   ├── simulation  21% (7 built, 0 partly / 33)
+│   ├── simulation  26% (8 built, 0 partly / 31)
 │   │   ├── agents  0% (0 built, 0 partly / 6)
 │   │   │   ├── behaviour  planned
 │   │   │   ├── rhythm  planned
@@ -1115,9 +1115,9 @@ aslnut  47% (239 built, 37 partly / 545)
 │   │   │   ├── senses  planned
 │   │   │   ├── populations  planned
 │   │   │   └── tiers  planned
-│   │   ├── fields  40% (2 built, 0 partly / 5)
+│   │   ├── fields  60% (3 built, 0 partly / 5)
 │   │   │   ├── raster  built
-│   │   │   ├── surface  planned
+│   │   │   ├── surface  built
 │   │   │   ├── graph  planned
 │   │   │   ├── volume  planned
 │   │   │   └── kernels  built
@@ -1126,9 +1126,6 @@ aslnut  47% (239 built, 37 partly / 545)
 │   │   │   ├── custom  built
 │   │   │   ├── coupling  planned
 │   │   │   └── regimes  planned
-│   │   ├── fidelity  0% (0 built, 0 partly / 2)
-│   │   │   ├── fixed  planned
-│   │   │   └── observed  planned
 │   │   ├── measure  33% (1 built, 0 partly / 3)
 │   │   │   ├── probes  built
 │   │   │   ├── sensors  planned
@@ -1274,7 +1271,7 @@ aslnut  47% (239 built, 37 partly / 545)
 │       ├── terraform  planned
 │       ├── diffs  planned
 │       └── pieces  proposed
-└── tools  27% (8 built, 5 partly / 39)
+└── tools  29% (9 built, 5 partly / 39)
     ├── geo  planned
     ├── scan  0% (0 built, 0 partly / 5)
     │   ├── classify  proposed
@@ -1318,7 +1315,7 @@ aslnut  47% (239 built, 37 partly / 545)
     │   ├── suite  built
     │   ├── perf  built
     │   └── recipes  built
-    ├── catalog  planned
+    ├── catalog  built
     ├── cli  planned
     └── mcp  planned
 ```
@@ -1327,7 +1324,7 @@ aslnut  47% (239 built, 37 partly / 545)
 
 | id | status | checkpoints |
 |---|---|---|
-| `core` | 54% (176 built, 28 partly / 355) | 1 2 3 |
+| `core` | 54% (178 built, 28 partly / 353) | 1 2 3 |
 | `core.space` | 21% (3 built, 2 partly / 19) | 1 |
 | `core.space.bodies` | partly |  |
 | `core.space.frames` | 0% (0 built, 0 partly / 5) |  |
@@ -1360,7 +1357,7 @@ aslnut  47% (239 built, 37 partly / 545)
 | `core.time.zones` | built | 1 2 3 |
 | `core.time.ranges` | planned |  |
 | `core.time.deep` | planned |  |
-| `core.data` | 74% (35 built, 1 partly / 48) | 1 2 3 |
+| `core.data` | 76% (36 built, 1 partly / 48) | 1 2 3 |
 | `core.data.sources` | 90% (9 built, 0 partly / 10) | 1 2 3 |
 | `core.data.sources.tiles` | 80% (4 built, 0 partly / 5) | 1 2 3 |
 | `core.data.sources.tiles.xyz` | built | 1 2 3 |
@@ -1401,12 +1398,12 @@ aslnut  47% (239 built, 37 partly / 545)
 | `core.data.live.upsert` | built |  |
 | `core.data.live.patch` | built |  |
 | `core.data.live.remove` | built |  |
-| `core.data.history` | 60% (3 built, 0 partly / 5) |  |
+| `core.data.history` | 80% (4 built, 0 partly / 5) |  |
 | `core.data.history.log` | built |  |
 | `core.data.history.state-at` | built |  |
 | `core.data.history.replay` | built |  |
 | `core.data.history.checkpoints` | planned |  |
-| `core.data.history.epochs` | planned |  |
+| `core.data.history.epochs` | built |  |
 | `core.data.scenarios` | 80% (4 built, 0 partly / 5) | 1 |
 | `core.data.scenarios.base` | built | 1 |
 | `core.data.scenarios.variant` | built | 1 |
@@ -1683,7 +1680,7 @@ aslnut  47% (239 built, 37 partly / 545)
 | `core.entities.drive.data` | built | 2 |
 | `core.entities.drive.player` | built | 1 2 3 |
 | `core.entities.drive.script` | planned | 2 |
-| `core.simulation` | 21% (7 built, 0 partly / 33) | 1 2 |
+| `core.simulation` | 26% (8 built, 0 partly / 31) | 1 2 |
 | `core.simulation.agents` | 0% (0 built, 0 partly / 6) | 2 |
 | `core.simulation.agents.behaviour` | planned | 2 |
 | `core.simulation.agents.rhythm` | planned | 2 |
@@ -1691,9 +1688,9 @@ aslnut  47% (239 built, 37 partly / 545)
 | `core.simulation.agents.senses` | planned |  |
 | `core.simulation.agents.populations` | planned | 2 |
 | `core.simulation.agents.tiers` | planned | 2 |
-| `core.simulation.fields` | 40% (2 built, 0 partly / 5) | 1 |
+| `core.simulation.fields` | 60% (3 built, 0 partly / 5) | 1 |
 | `core.simulation.fields.raster` | built | 1 |
-| `core.simulation.fields.surface` | planned |  |
+| `core.simulation.fields.surface` | built |  |
 | `core.simulation.fields.graph` | planned |  |
 | `core.simulation.fields.volume` | planned |  |
 | `core.simulation.fields.kernels` | built | 1 |
@@ -1702,9 +1699,6 @@ aslnut  47% (239 built, 37 partly / 545)
 | `core.simulation.rules.custom` | built |  |
 | `core.simulation.rules.coupling` | planned |  |
 | `core.simulation.rules.regimes` | planned |  |
-| `core.simulation.fidelity` | 0% (0 built, 0 partly / 2) |  |
-| `core.simulation.fidelity.fixed` | planned |  |
-| `core.simulation.fidelity.observed` | planned |  |
 | `core.simulation.measure` | 33% (1 built, 0 partly / 3) | 1 |
 | `core.simulation.measure.probes` | built | 1 |
 | `core.simulation.measure.sensors` | planned |  |
@@ -1979,7 +1973,7 @@ aslnut  47% (239 built, 37 partly / 545)
 | `kits.authoring.terraform` | planned |  |
 | `kits.authoring.diffs` | planned | 3 |
 | `kits.authoring.pieces` | proposed | 3 |
-| `tools` | 27% (8 built, 5 partly / 39) | 1 2 3 |
+| `tools` | 29% (9 built, 5 partly / 39) | 1 2 3 |
 | `tools.geo` | planned |  |
 | `tools.scan` | 0% (0 built, 0 partly / 5) | 3 |
 | `tools.scan.classify` | proposed | 3 |
@@ -2023,6 +2017,6 @@ aslnut  47% (239 built, 37 partly / 545)
 | `tools.checks.suite` | built |  |
 | `tools.checks.perf` | built | 1 2 3 |
 | `tools.checks.recipes` | built |  |
-| `tools.catalog` | planned |  |
+| `tools.catalog` | built |  |
 | `tools.cli` | planned |  |
 | `tools.mcp` | planned |  |

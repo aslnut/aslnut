@@ -16,8 +16,10 @@
 //           part of the ground shows the sky's pale horizon (a tile culled at sea level under high ground, a crack
 //           between levels); on WebGPU and WebGL2 in Chromium, and WebGL2 in Firefox (network: real tiles)
 //   firefox WebGL2 in Firefox: a world renders, settles and reads back a frame that is not black
+//   offscreen a world on an OffscreenCanvas, on the page and in a worker (examples/offscreen): it renders, settles and
+//           reads back a frame with its points in it, on the graphics asked for
 //   recipes the authoring guide's recipes (tools/smoke-recipes.mjs, its own server, the network mocked): only when named
-//   node tools/checks.mjs [drape,blink,motion,still,idle,rejections,holes,whiteholes,firefox,recipes]     (run `npm run examples` first) · images in .out/checks/
+//   node tools/checks.mjs [drape,blink,motion,still,idle,rejections,holes,whiteholes,firefox,offscreen,recipes]     (run `npm run examples` first) · images in .out/checks/
 import { serve } from './serve.mjs';
 import { launch, openDemo, playwright } from './browser.mjs';
 import { png } from './png.mjs';
@@ -26,7 +28,7 @@ import { join } from 'node:path';
 
 const OUT = join(import.meta.dirname, '..', '.out', 'checks'); mkdirSync(OUT, { recursive: true });
 const PORT = Number(process.env.CHECKS_PORT ?? 8095), base = `http://127.0.0.1:${PORT}/examples/hello-earth/`;
-const which = (process.argv[2] ?? 'drape,blink,motion,still,idle,rejections,holes,whiteholes,firefox').split(',');
+const which = (process.argv[2] ?? 'drape,blink,motion,still,idle,rejections,holes,whiteholes,firefox,offscreen').split(',');
 const srv = await serve(PORT), browser = await launch();
 let failed = 0;
 const check = (api, name, ok, detail) => { if (!ok) failed++; console.log(`${ok ? 'ok  ' : 'FAIL'} ${api.padEnd(6)} ${name}${detail ? ` · ${detail}` : ''}`); };
@@ -38,6 +40,18 @@ const fillPct = (px) => { let n = 0; for (let i = 0; i < px.length; i += 4) if (
 const groundPct = (px) => { let n = 0; for (let i = 0; i < px.length; i += 4) if (px[i + 2] > px[i] + 12 && px[i + 2] > 30 && px[i + 1] < 140) n++; return (100 * n) / (px.length / 4); };
 
 for (const api of ['webgpu', 'webgl2']) {
+  if (which.includes('offscreen')) {
+    for (const where of ['page', 'worker']) {
+      const page = await browser.newPage({ viewport: { width: 480, height: 320 } }), errs = [];
+      page.on('pageerror', (e) => errs.push(e.message)); page.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource/.test(m.text())) errs.push(m.text()); });
+      try {
+        await page.goto(`http://127.0.0.1:${PORT}/examples/offscreen/?where=${where}&graphics=${api}`);
+        await page.waitForFunction(() => window.aslnutOffscreen, null, { timeout: 120000 });
+        const r = await page.evaluate(() => window.aslnutOffscreen);
+        check(api, `offscreen: a world on an OffscreenCanvas ${where === 'page' ? 'on the page' : 'in a worker'}`, !r.error && r.api === api && r.red > 500 && r.colours > 10 && !errs.length, r.error ? r.error.slice(0, 300) : `${r.width} × ${r.height} on ${r.api}, ${r.red} px of its points, ${r.colours} colours, ${r.frames} frames${errs.length ? ` · ${errs.slice(0, 2).join(' | ')}` : ''}`);
+      } catch (e) { check(api, `offscreen ${where}`, false, e.message.slice(0, 300)); } finally { await page.close(); }
+    }
+  }
   if (which.includes('drape')) {
     const shot = async (go) => {
       const { page } = await openDemo(browser, `${base}?go=${go}&graphics=${api}&dpr=1&clock=30`, { width: 390, height: 844 });

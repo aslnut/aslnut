@@ -7,7 +7,7 @@
 //   const m = heatModel(r); const f = await m.field(input)        w.add(raster({ source: heatRaster(r, grid, …) }))
 import { raster as rasters, type RasterSource } from '../../../../../core/data/sources/raster.ts';
 import type { Material } from '../../../../../core/simulation/phenomena/heat/physics.ts';
-import { constants } from '../../../../../core/simulation/constants.ts';
+import { constants as processConstants, type Constants } from '../../../../../core/simulation/constants.ts';
 import type { HeatInput, HeatOptions, HeatRasters } from '../../../../../core/simulation/phenomena/heat/model.ts';
 import { heat, HEAT_RAMP, type Heat, type HeatMetric, type HeatProps } from '../../../../../core/simulation/phenomena/heat/index.ts';
 import { D } from '../../../../../core/space/geo.ts';
@@ -35,13 +35,13 @@ export interface CityRasters extends HeatRasters {
   streetNames: string[];
 }
 /** the street level's tiles round a centre as heat rasters: `size` metres a side, `cell` metres a cell */
-export function cityRasters(tiles: readonly { tile: CityTile; ctx: DetailContext }[], o: { centre: [number, number]; size: number; cell?: number; changes?: HeatChanges; /** the trees as the street level draws them (their crowns, their canopy) */ trees?: TreeLook }): CityRasters {
+export function cityRasters(tiles: readonly { tile: CityTile; ctx: DetailContext }[], o: { centre: [number, number]; size: number; cell?: number; changes?: HeatChanges; /** the trees as the street level draws them (their crowns, their canopy) */ trees?: TreeLook; /** the tables its materials come from (default the process's; a world's own: w.constants) */ constants?: Constants }): CityRasters {
   const cell = o.cell ?? 2, w = Math.ceil(o.size / cell), h = w, n = w * h, ch = o.changes ?? {};
   const origin = tiles[0]?.ctx.origin ?? o.centre, kx = 111320 * Math.cos(origin[1] * D);
   // the area's corner in the tiles' metric frame
   const ax0 = (o.centre[0] - origin[0]) * kx - o.size / 2, az0 = -(o.centre[1] - origin[1]) * KZ - o.size / 2;
   // the materials as the constants table holds them now (core › simulation › constants: replace a value, the model follows)
-  const mats: Material[] = constants.materials(['drygrass', 'grass', 'asphalt', 'coolpave', 'concrete', 'roof', 'water']);
+  const mats: Material[] = (o.constants ?? processConstants).materials(['drygrass', 'grass', 'asphalt', 'coolpave', 'concrete', 'roof', 'water']);
   const M = { dry: 0, grass: 1, asphalt: 2, cool: 3, concrete: 4, roof: 5, water: 6 };
   const lawn = ch.wateredGrass ? M.grass : M.dry;
   const mat = new Uint8Array(n).fill(lawn), bH = new Float32Array(n), cTop = new Float32Array(n), cBase = new Float32Array(n), cTrans = new Float32Array(n), region = new Uint8Array(n), walk = new Uint8Array(n);
@@ -131,8 +131,8 @@ export function heatRaster(r: CityRasters, grid: Float32Array, o: { domain: [num
  *  centre, the heat element over them (run it: `await h.run()`); `changes` make a scenario's rasters to compare
  *    const h = w.add(cityHeat(street.tiles(), { centre, size: 360, input })); await h.run()
  *    await h.compare(cityRasters(street.tiles(), { centre, size: 360, changes: { streetTrees: true } })) */
-export function cityHeat(tiles: Parameters<typeof cityRasters>[0], o: { id?: string; centre: [number, number]; size?: number; cell?: number; changes?: HeatChanges; trees?: TreeLook; input: HeatInput; options?: Partial<HeatOptions>; metric?: HeatMetric } & Omit<HeatProps, 'id' | 'rasters' | 'input' | 'options' | 'metric'>): Heat {
-  const { id, centre, size, cell, changes, trees, ...rest } = o;
-  return heat({ ...rest, id: id ?? 'heat', rasters: cityRasters(tiles, { centre, size: size ?? 360, cell: cell ?? 2, changes, trees }) });
+export function cityHeat(tiles: Parameters<typeof cityRasters>[0], o: { id?: string; centre: [number, number]; size?: number; cell?: number; changes?: HeatChanges; trees?: TreeLook; constants?: Constants; input: HeatInput; options?: Partial<HeatOptions>; metric?: HeatMetric } & Omit<HeatProps, 'id' | 'rasters' | 'input' | 'options' | 'metric'>): Heat {
+  const { id, centre, size, cell, changes, trees, constants, ...rest } = o;
+  return heat({ ...rest, id: id ?? 'heat', rasters: cityRasters(tiles, { centre, size: size ?? 360, cell: cell ?? 2, changes, trees, constants }) });
 }
 export { HEAT_RAMP };

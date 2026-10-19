@@ -121,10 +121,7 @@ void main() {
   vec3 position = v_world;
   float reveal = v_state.z;
   float mode = u.reveal.x;
-  // dashes, flowing along at u.b.y px a second (0: still)
-  float dashP = max(u.a.z + u.a.w, 0.0001);
-  float dashAt = v_alongPx - time * u.b.y;
-  if (u.a.z > 0.0 && mod(dashAt, dashP) > u.a.z) {
+  if (!dashOn(v_alongPx + featAt(v_idx, 3).w - time * u.b.y, featAt(v_idx, 6))) {
     discard;
   }
   if (mode == 1.0 || mode == 3.0) {

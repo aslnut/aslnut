@@ -25,6 +25,28 @@ test('tiles: stationary loading fills a larger window; motion restores the confi
   for (const done of pending) done(null);
 });
 
+test('tiles: a view is not settled while the ground it falls back on is on its way (a fallback\'s heights coming after its imagery)', async () => {
+  // its own tiles in with their heights, their coarser fallbacks (two levels up) shown with heights still to come: those
+  // heights change what heightAt answers (the version is bumped: every reader of the ground reads again), so the view
+  // is not done until they are in. Not waited for, they came after it settled, on a still view that had rested
+  const later: ((h: Float32Array | null) => void)[] = [];
+  const tiles = new TileSet({ layers: 64, maxTiles: 100, inflight: 16, fade: 0, fadeH: 0, hold: 0, isMiss: () => false,
+    load: (e) => Promise.resolve(e.z === 7 ? { heights: new Float32Array(33 * 33) } : { heights: null, later: new Promise<Float32Array | null>((ok) => later.push(ok)) }) });
+  const want = [0, 1, 2, 3].map((i) => ({ z: 7, x: 64 + i, y: 64, c: i, d: i })), centre = { lon: 0, lat: 0 };
+  let t = 0; const frame = async () => { tiles.update(want, 'one', (t += 100), centre, [], 16); await new Promise<void>((ok) => setImmediate(ok)); };
+  for (let i = 0; i < 4; i++) await frame();
+  const own = want.every((w) => { const e = [...tiles.cache.values()].find((x) => x.z === w.z && x.x === w.x && x.y === w.y); return e && e.slot >= 0 && e.heights && !e.busy; });
+  assert.ok(own, 'its own tiles are in, with their heights');
+  assert.ok([...tiles.cache.values()].some((e) => e.z === 5 && e.slot >= 0 && e.hBusy), 'a fallback is shown, its heights on the way');
+  assert.equal(tiles.settle(want, 'one').done, false, 'not settled while the fallback\'s heights are on the way');
+  const v0 = tiles.heightsVersion;
+  for (const ok of later.splice(0)) ok(new Float32Array(33 * 33));
+  await new Promise<void>((ok) => setImmediate(ok)); await frame();
+  assert.ok(tiles.heightsVersion > v0, 'their coming bumps the ground\'s version');
+  assert.equal(tiles.settle(want, 'one').done, true, 'settled once they are in');
+  tiles.dispose();
+});
+
 test('surface: a pool growth whose copy did not land keeps the pool as it was (its tiles still shown); one that lands grows it', async () => {
   const { Surface } = await import('../src/modules/world/surface/surface.ts');
   type Tex = { label: string; layers: number; destroyed: boolean; destroy(): void };

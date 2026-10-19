@@ -145,7 +145,7 @@ export function layers(w: World, o: LayersOptions = {}): LayersHandle {
   };
   const legendOf = (l: Element): { legend: Legend | null; swatch: string | null } => {
     const own = o.legends?.[l.id], p = l.props as unknown as Record<string, unknown>;
-    const lg = own ?? (p.legend as Legend | undefined) ?? (typeof (l as { legendImage?: unknown }).legendImage === 'string' ? { kind: 'image' as const, items: [], image: (l as unknown as { legendImage: string }).legendImage } : undefined);
+    const lg = own ?? (p.legend as Legend | undefined) ?? (typeof (l as { legend?: unknown }).legend === 'function' ? (l as unknown as { legend(): Legend }).legend() : undefined) ?? (typeof (l as { legendImage?: unknown }).legendImage === 'string' ? { kind: 'image' as const, items: [], image: (l as unknown as { legendImage: string }).legendImage } : undefined);
     if (lg) return { legend: isScale(lg) ? (lg as Scale<never, unknown>).legend({ format: o.format }) : lg as Legend, swatch: null };
     const c = p.color;
     if (isScale(c)) { try { return { legend: (c as Scale<never, unknown>).legend({ format: o.format }), swatch: null }; } catch { return { legend: null, swatch: null }; } }

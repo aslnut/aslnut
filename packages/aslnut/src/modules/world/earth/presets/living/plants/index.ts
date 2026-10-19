@@ -14,6 +14,7 @@ import type { Feature } from '../../../../../../core/data/features.ts';
 import type { AttachContext } from '../../../../../../core/world/element.ts';
 import { D } from '../../../../../../core/space/geo.ts';
 import { SPECIES, speciesOf } from './species.ts';
+import type { Leveled } from '../../../../../../core/observation/presence.ts';
 
 /** how trees look: the species drawn (each grown from its branching spec, a seeded mix by weight), how many variants
  *  of each, and the canopy. The mix is yours (by default one plain tree, so a street level draws something); a tree
@@ -128,9 +129,11 @@ export interface VegetationProps extends SolidsProps {
 }
 const CHUNK = 500, KZ = 110574;
 export class Vegetation extends Solids {
-  private vp: VegetationProps; private src: Source | null = null; private seen = -1; private off: (() => void) | null = null;
+  /** its props as it runs (given by level: the values for the level now) */
+  private get vp(): VegetationProps { return this.props as unknown as VegetationProps; }
+  private src: Source | null = null; private seen = -1; private off: (() => void) | null = null;
   private infos = new Map<string, Map<number, { id: string | number; props: Record<string, unknown> }>>();
-  constructor(p: VegetationProps) { super({ hover: false, ...p }); this.vp = p; }
+  constructor(p: VegetationProps) { super({ hover: false, ...p }); }
   override async attach(ctx: AttachContext): Promise<void> {
     await super.attach(ctx);
     const d = this.vp.data;
@@ -184,4 +187,4 @@ export class Vegetation extends Solids {
     }
   }
 }
-export const vegetation = (p: VegetationProps) => new Vegetation(p);
+export const vegetation = (p: Leveled<VegetationProps>) => new Vegetation(p as VegetationProps);

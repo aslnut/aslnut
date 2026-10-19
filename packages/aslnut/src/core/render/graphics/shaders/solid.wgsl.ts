@@ -28,6 +28,9 @@ var<private> t: T;
 @group(1) @binding(2) var tints: texture_2d<f32>;
 // the chunk's square seen from above (the imagery material, 15: its 500 m, x east, z south; 1 × 1: none)
 @group(1) @binding(3) var picture: texture_2d<f32>;
+// a surface field's colours on this mesh (core › simulation › fields › surface: solid-field.wgsl.ts sets it): a theme's
+// subject, kept
+var<private> fieldNear: f32;
 ${LIGHT_WGSL(1)}
 const GN = 51;
 const GSTEP = 10.0;
@@ -167,6 +170,8 @@ fn shadeSolid(base: vec3f, n0: vec3f, world: vec3f, id: f32, mat0: f32) -> vec3f
   var c = mix(base, tn.rgb, tn.a);
   // a theme's subjects keep their colour: what an analysis tints (the selected too: its colour is a tint), the hovered
   var keep = step(0.002, tn.a);
+  // (a surface field's colours on it: kept too)
+  keep = max(keep, fieldNear);
   if (abs(id - t.v.z) < 0.5) {
     c = mix(c, t.w.rgb, 0.45);
     keep = 1.0;
@@ -271,6 +276,7 @@ struct O {
 }
 @fragment fn fs(i: O) -> @location(0) vec4f {
   tileIn(i.ck, i.co);
+  /*@fieldfragment*/
   if (t.v.w < 1.0 && dither(i.pos.xy) > t.v.w) {
     discard;
   }
@@ -295,12 +301,13 @@ struct O {
 `;
 export const SOLID_WGSL = /* wgsl */ `${SOLID_COMMON_WGSL}
 struct I { @location(0) a: vec4f, @location(1) b: vec4f }
-@vertex fn vs(i: I) -> O {
+@vertex fn vs(i: I, @builtin(vertex_index) vi: u32) -> O {
   t = tb;
   let h = groundAt(i.b.x, i.b.y) * t.v.x + i.a.y;
   var position = placeOf(i.a.x, h, i.a.z);
   var o: O;
   o.col = unpackRGB(i.a.w);
+  /*@fieldvertex*/
   o.n = unpackNormal(i.b.z);
   // the id's high part is the material
   let mat = floor(i.b.w / 65536.0);

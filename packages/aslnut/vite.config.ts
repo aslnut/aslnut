@@ -14,11 +14,12 @@ if (building) writeFileSync(resolve(root, 'BUILD'), `${BUILD}\n`);
 // `import … from 'aslnut'` (the recipes, written as a person writes them): the package's own source, its subpaths too
 // ('aslnut/modules/presets/vehicles'); the bare name through the recipes page's harness (examples/recipes/aslnut.ts:
 // the package, each world it makes noted for the checks). tsc reads the same names through tsconfig's paths. A recipe
-// is a script (it runs for what it does, it exports nothing): kept whole, though the package says it has no side effects.
+// is a script (it runs for what it does, it exports nothing): kept whole, though the package says it has no side effects;
+// so is the Leaflet example's plain page (examples/leaflet/page.js).
 const self = {
   name: 'aslnut-self',
   enforce: 'pre' as const,
-  transform(code: string, id: string) { return /\/examples\/recipes\/(trials\/)?[\w-]+\.ts$/.test(id) ? { code, map: null, moduleSideEffects: true } : null; },
+  transform(code: string, id: string) { return /\/examples\/recipes\/(trials\/)?[\w-]+\.ts$|\/examples\/leaflet\/page\.js$/.test(id) ? { code, map: null, moduleSideEffects: true } : null; },
   // llms.txt at the site's root (the authoring guide, the recipes, the imports, the API index: made now from its sources)
   async generateBundle() { (this as unknown as { emitFile(f: object): void }).emitFile({ type: 'asset', fileName: 'llms.txt', source: await llms() }); },
   resolveId(id: string) {
@@ -35,7 +36,7 @@ export default defineConfig({
   plugins: [self],
   build: {
     outDir: process.env.EXAMPLES_OUT ?? 'dist-examples', emptyOutDir: true, target: 'es2022', sourcemap: true, minify: false,
-    rollupOptions: { input: { 'hello-earth': resolve(root, 'examples/hello-earth/index.html'), suite: resolve(root, 'examples/suite/index.html'), 'healthy-city': resolve(root, 'examples/healthy-city/index.html'), primitives: resolve(root, 'examples/primitives/index.html'), roads: resolve(root, 'examples/roads/index.html'), fleet: resolve(root, 'examples/fleet/index.html'), layers: resolve(root, 'examples/layers/index.html'), lego: resolve(root, 'examples/lego/index.html'), recipes: resolve(root, 'examples/recipes/index.html'), journey: resolve(root, 'examples/journey/index.html'), react: resolve(root, 'examples/react/index.html') } },
+    rollupOptions: { input: { 'hello-earth': resolve(root, 'examples/hello-earth/index.html'), suite: resolve(root, 'examples/suite/index.html'), 'healthy-city': resolve(root, 'examples/healthy-city/index.html'), primitives: resolve(root, 'examples/primitives/index.html'), roads: resolve(root, 'examples/roads/index.html'), fleet: resolve(root, 'examples/fleet/index.html'), layers: resolve(root, 'examples/layers/index.html'), lego: resolve(root, 'examples/lego/index.html'), recipes: resolve(root, 'examples/recipes/index.html'), journey: resolve(root, 'examples/journey/index.html'), react: resolve(root, 'examples/react/index.html'), offscreen: resolve(root, 'examples/offscreen/index.html') } },
   },
   server: { port: 5190, host: true },
 });

@@ -8,6 +8,7 @@ import { AslnutError } from '../../../world/errors.ts';
 import { RasterField, type FieldDraw, type FieldProps } from '../../fields/raster.ts';
 import { rules } from '../../rules.ts';
 import { DEFAULT_HEAT_OPTIONS, heatModel, type HeatField, type HeatInput, type HeatModel, type HeatOptions, type HeatPoint, type HeatRasters } from './model.ts';
+import type { Leveled } from '../../../observation/presence.ts';
 
 type LonLat = [number, number];
 /** heat rasters placed on the Earth (x east, z south metres from the north-west corner) */
@@ -117,4 +118,4 @@ export class Heat extends RasterField {
   override readouts(): Record<string, () => unknown> { return { ...super.readouts(), metric: () => this.metric, utci: () => this.summary?.utci ?? null, busy: () => this.busy }; }
 }
 /** urban heat as an element: heat({ id, rasters, input, metric }) */
-export const heat = (p: HeatProps) => new Heat(p);
+export const heat = (p: Leveled<HeatProps>) => new Heat(p as HeatProps);
