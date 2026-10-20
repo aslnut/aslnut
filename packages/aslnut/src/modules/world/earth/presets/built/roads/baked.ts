@@ -295,6 +295,12 @@ function clampSamples(out: Float32Array, t: { z: number; x: number; y: number },
   }
   return out;
 }
+/** the least and most ix, then iz, of a pack's tiles ([0, -1, 0, -1] when it has none: no cell is walked) */
+function tileBox(tiles: [number, number][]): [number, number, number, number] {
+  let a = Infinity, b = -Infinity, c = Infinity, d = -Infinity;
+  for (const [ix, iz] of tiles) { if (ix < a) a = ix; if (ix > b) b = ix; if (iz < c) c = iz; if (iz > d) d = iz; }
+  return tiles.length ? [a, b, c, d] : [0, -1, 0, -1];
+}
 export function clampTerrain(base: Terrain, url: string, o: { batter?: number; reach?: number; legacy?:boolean;
   /** between the samples too (default on): every sample of a mesh cell a road touches goes under that road's surface,
    *  at every level of the terrain, so no triangle rises through a road (nor a finer tile drawn on these heights while
@@ -310,11 +316,12 @@ export function clampTerrain(base: Terrain, url: string, o: { batter?: number; r
   type Ctx = Parameters<Terrain['heights']>[2];
   const get = <T,>(ctx: Ctx, u: string) => (ctx as { loader: { get<T>(u: string, o: { kind: 'json' }): Promise<T | null> } }).loader.get<T>(u, { kind: 'json' });
   // the index, then each 500 m tile of the clamp as the ground under it is made
-  let head: Promise<{ origin: [number, number]; size: number; tiles: Set<string>; kx: number; terrain?: BakedGround|null; from: string } | null> | null = null;
+  // (`box`: the least and most ix, iz of its tiles: a coarse terrain tile, a quarter of the globe, walks only those)
+  let head: Promise<{ origin: [number, number]; size: number; tiles: Set<string>; box: [number, number, number, number]; kx: number; terrain?: BakedGround|null; from: string } | null> | null = null;
   const tiles = new Map<string, Promise<ClampIndex | null>>();
   const base2 = url.replace(/[^/]*$/, '');
   // (`tilesFrom`: the contract tiles of another pack, relative to this one: a stage's own ground over the final clamp)
-  const headOf = (ctx: Ctx) => (head ??= get<{v:number;origin:[number,number];size:number;tiles:[number,number][];terrain?:string;tilesFrom?:string}>(ctx,url).then(async j => j ? {origin:j.origin,size:j.size,tiles:new Set(j.tiles.map(t=>`${t[0]}_${t[1]}`)),kx:111320*Math.cos(j.origin[1]*Math.PI/180),from:j.tilesFrom?normalise(`${base2}${j.tilesFrom}`):base2,...(j.terrain?{terrain:await get<BakedGround>(ctx,`${base2}${j.terrain}`)}:{})} : null));
+  const headOf = (ctx: Ctx) => (head ??= get<{v:number;origin:[number,number];size:number;tiles:[number,number][];terrain?:string;tilesFrom?:string}>(ctx,url).then(async j => j ? {origin:j.origin,size:j.size,tiles:new Set(j.tiles.map(t=>`${t[0]}_${t[1]}`)),box:tileBox(j.tiles),kx:111320*Math.cos(j.origin[1]*Math.PI/180),from:j.tilesFrom?normalise(`${base2}${j.tilesFrom}`):base2,...(j.terrain?{terrain:await get<BakedGround>(ctx,`${base2}${j.terrain}`)}:{})} : null));
   const tileOf = (ctx: Ctx, k: string, origin: [number, number], from: string) => { let p = tiles.get(k); if (!p) { p = get<ClampJson>(ctx, `${from}clamp/${k}.json`).then((j) => (j ? clampIndex({ ...j, origin },{legacy:o.legacy}) : null)); tiles.set(k, p); } return p; };
   return {
     kind: 'terrain', id: `${base.id}-clamped`, attribution: base.attribution, terms: base.terms, when: base.when, where: base.where,
@@ -329,7 +336,10 @@ export function clampTerrain(base: Terrain, url: string, o: { batter?: number; r
       const [lo0, la0] = tilePoint(t.z, t.x, t.y, 0, 0), [lo1, la1] = tilePoint(t.z, t.x, t.y, 1, 1);
       const X = (lon: number) => (lon - hd.origin[0]) * hd.kx, Z = (lat: number) => -(lat - hd.origin[1]) * 110574;
       const keys: string[] = [];
-      for (let ix = Math.floor(Math.min(X(lo0), X(lo1)) / hd.size); ix <= Math.floor(Math.max(X(lo0), X(lo1)) / hd.size); ix++) for (let iz = Math.floor(Math.min(Z(la0), Z(la1)) / hd.size); iz <= Math.floor(Math.max(Z(la0), Z(la1)) / hd.size); iz++) { const k = `${ix}_${iz}`; if (hd.tiles.has(k)) keys.push(k); }
+      // (only where the pack has tiles: a z2 tile's own footprint is some 270 million cells of 500 m)
+      const ix0 = Math.max(hd.box[0], Math.floor(Math.min(X(lo0), X(lo1)) / hd.size)), ix1 = Math.min(hd.box[1], Math.floor(Math.max(X(lo0), X(lo1)) / hd.size));
+      const iz0 = Math.max(hd.box[2], Math.floor(Math.min(Z(la0), Z(la1)) / hd.size)), iz1 = Math.min(hd.box[3], Math.floor(Math.max(Z(la0), Z(la1)) / hd.size));
+      for (let ix = ix0; ix <= ix1; ix++) for (let iz = iz0; iz <= iz1; iz++) { const k = `${ix}_${iz}`; if (hd.tiles.has(k)) keys.push(k); }
       if (!keys.length && !hd.terrain) return h;
       // the clamp tiles: built here, or their JSON as it came for a worker (built there)
       const lane = o.worker, raw = lane ? await Promise.all(keys.map((k) => get<ClampJson>(ctx, `${hd.from}clamp/${k}.json`))) : null;

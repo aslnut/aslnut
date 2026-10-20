@@ -236,6 +236,20 @@ test('the clamp in a worker: the same heights, every level (only the ground and 
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('a coarse terrain tile over the pack walks only the pack\'s own tiles (a z2 tile is some 270 million cells of 500 m)', async () => {
+  const { dir, base } = roadPack();
+  try {
+    const ctx = { loader: { get: async (u: string) => (existsSync(u) ? JSON.parse(readFileSync(u, 'utf8')) : null) } } as never;
+    const clamped = clampTerrain(base, `${dir}/clamp.json`);
+    for (const z of [0, 2, 5, 9]) {
+      const k = 2 ** z, x = Math.floor(((O[0] + 180) / 360) * k), r = (O[1] * Math.PI) / 180, y = Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * k);
+      const t0 = performance.now(), h = await clamped.heights({ z, x, y }, 33, ctx), ms = performance.now() - t0;
+      assert.ok(h && h.length === 33 * 33, `z${z}: heights for every sample`);
+      assert.ok(ms < 1000, `z${z} ${x}/${y}: ${Math.round(ms)} ms`);
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('solids read their ground again a slice a frame, in view and nearest first; not settled until every chunk is read whole at the same terrain (however many frames it took)', async () => {
   let uid = 0, level = 10, step = 0.5, gv = 1;
   const res = () => ({ uid: uid++, version: 0, write() {}, destroy() {} });

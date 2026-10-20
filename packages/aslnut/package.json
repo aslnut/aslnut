@@ -1,6 +1,6 @@
 {
   "name": "aslnut",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A world engine for the web: GIS, digital twins and 3D viz on WebGPU and WebGL2",
   "license": "Apache-2.0",
   "author": "aslnut",
