@@ -575,6 +575,13 @@ export class World implements WorldLike {
   get graphicsApi(): string { return this.api; }
   /** bumped whenever the ground's heights change (draped layers read the ground again) */
   get groundVersion(): number { let v = 0; for (const l of this.elements) { const g = (l as unknown as { groundVersion?: number }).groundVersion; if (typeof g === 'number') v += g; } return v; }
+  /** where the ground changed after `v` (of groundVersion): boxes, or null when not known (read it all again) */
+  groundChangedSince(v: number): { v?: number; w: number; s: number; e: number; n: number }[] | null {
+    type GroundLayer = { groundVersion?: number; groundChangedSince?: (v: number) => { v?: number; w: number; s: number; e: number; n: number }[] | null };
+    let src: GroundLayer | null = null;
+    for (const l of this.elements) { const g = l as unknown as GroundLayer; if (typeof g.groundVersion === 'number') { if (src) return null; src = g; } }
+    return src?.groundChangedSince ? src.groundChangedSince(v) : null;
+  }
   get exaggeration(): number { return this.body?.exaggeration?.(this.state) ?? 1; }
   /** the ground's height (m, true) where the surface knows it; NaN where it does not (yet) */
   heightAt(lon: number, lat: number): number {

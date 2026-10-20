@@ -8107,6 +8107,13 @@ export interface WorldLike {
     readonly groundMarksChosen?: boolean;
     rangeIn?(w: number, s: number, e: number, n: number): [number, number] | null;
     readonly groundVersion: number;
+    groundChangedSince?(v: number): {
+        v?: number;
+        w: number;
+        s: number;
+        e: number;
+        n: number;
+    }[] | null;
     readonly context: 'app' | 'video';
     readonly now: number;
     elementsOfKind(kind: Kind): readonly Element[];
@@ -8945,6 +8952,13 @@ export declare class World implements WorldLike {
     });
     get graphicsApi(): string;
     get groundVersion(): number;
+    groundChangedSince(v: number): {
+        v?: number;
+        w: number;
+        s: number;
+        e: number;
+        n: number;
+    }[] | null;
     get exaggeration(): number;
     heightAt(lon: number, lat: number): number;
     standAt(lon: number, lat: number, near?: number): number;
@@ -20937,6 +20951,13 @@ export declare class Surface extends Element<SurfaceProps> {
     rangeIn(w: number, s: number, e: number, n: number): [number, number] | null;
     heightAt(lon: number, lat: number): number;
     get groundVersion(): number;
+    groundChangedSince(v: number): {
+        v: number;
+        w: number;
+        s: number;
+        e: number;
+        n: number;
+    }[] | null;
     attribution(): string[];
     detach(): void;
 }

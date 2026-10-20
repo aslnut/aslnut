@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+
+- **Orbiting over terrain no longer stalls the street level:** each terrain tile that loaded or refined while the camera moved made every solid (buildings, trees, shapes on the ground) check its ground again everywhere, on the main thread. The terrain now tells where its heights changed (`w.groundChangedSince(v)`: boxes, `[]` nowhere, `null` when not known; optional on `WorldLike`), and while the camera moves a chunk whose square no changed tile meets keeps its ground; once the camera rests every chunk passed over that way is checked again, so a change no box told of (a tile let go, a level switch) still reaches it. A chunk's ground holds while no probe moved by more than half a pixel at its distance (never less than 2 cm), and one chunk near the eye is read whole a frame beyond the frame's budget (it was three). Measured orbiting a suburb-sized scene: ground reads 29 % → 7 % of the main thread, the 95th-percentile frame 17.9 → 10.2 ms.
+- **The baker:** a degenerate face whose band line comes out empty is skipped (the bake panicked dividing by zero in `assemble`).
+
 ## 0.1.4
 
 - **A feature is drawn where its own row says, whatever other rows come, go or move:** new data that moved a layer's origin (the middle of its data's box) drew the arcs it kept that far off (arcs off their houses by hundreds of metres, shifting with each batch), and a line or area whose build ran over frames drew its old shapes from the new origin meanwhile (kilometres off for those frames); the view's offset is now from the origin of what is drawn, and kept arcs take their ends from the origin now. An arc whose end has no ground known yet waits (drawn as nothing; `readouts().waiting`) instead of standing at sea level and jumping up when the ground comes; an end whose ground goes unknown stays where it was.

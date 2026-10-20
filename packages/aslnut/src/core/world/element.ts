@@ -76,6 +76,8 @@ export interface WorldLike {
   rangeIn?(w: number, s: number, e: number, n: number): [number, number] | null;
   /** bumped whenever the ground's heights change (draped layers read the ground again) */
   readonly groundVersion: number;
+  /** where the ground changed after `v` (of groundVersion): boxes ([] nowhere), or null when not known */
+  groundChangedSince?(v: number): { v?: number; w: number; s: number; e: number; n: number }[] | null;
   /** 'app' or 'video': which reveal a `{ video, app }` reveal plays */
   readonly context: 'app' | 'video';
   /** the world's clock, ms */

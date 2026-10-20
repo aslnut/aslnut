@@ -275,6 +275,47 @@ test('solids read their ground again a slice a frame, in view and nearest first;
   assert.ok(one.grids.every((gr) => gr.some((h) => h === 13.5)), 'every grid read whole at the last terrain (the step between the probes in it)');
 });
 
+test('solids read their ground again, while the camera moves, only where it changed (a changed tile that meets no chunk asks nothing, one that meets a chunk has it read); resting, every chunk passed over is checked (a change no box told of still reaches it); not known where: all of them', async () => {
+  let level = 10, gv = 1, boxes: { v: number; w: number; s: number; e: number; n: number }[] | null = [];
+  const res = () => ({ uid: 0, version: 0, write() {}, destroy() {} });
+  const g = { api: 'webgl2', program: () => ({ ready: Promise.resolve(), destroy() {} }), buffer: res, texture: res, target: res } as never;
+  let asks = 0;
+  const world = { id: 'w', heightAt: () => { asks++; return level; }, exaggeration: 1, error: (e: unknown) => { throw e; }, graphicsApi: 'webgl2', get groundVersion() { return gv; },
+    groundChangedSince: (v: number) => (boxes === null ? null : boxes.filter((b) => b.v > v)), context: 'app', now: 0, elementsOfKind: () => [], invalidate() {} };
+  const cam = new Camera({ lon: O[0] + 250 / KX, lat: O[1] - 250 / KZ, zoom: 17, tilt: 0 }); cam.update(390, 844, 16);
+  const s = new Solids({ id: 'w', groundMs: 1000, fade: 0 });
+  await s.attach({ graphics: g, loader: null as never, profile: null, camera: cam, world } as never);
+  s.shown = s.target = 1;
+  const mb = new MeshBuilder(); mb.quadUp([10, 0.2, 10], [20, 0.2, 10], [20, 0.2, 20], [10, 0.2, 20], '#3f7fae'); const mesh = mb.build();
+  for (const [k, at] of [['here', [0, 0]], ['next', [500, 0]]] as const) s.put(k, { origin: O, at: [at[0], at[1]], mesh });
+  let n = 0; const frame = () => { n++; s.frame({ graphics: g, camera: cam, s: makeState({ view: { lon: cam.lon, lat: cam.lat, zoom: 17 } }), frame: res() as never, now: 0, n, dt: 16, world: world as never, shadowMap: res() as never }); };
+  for (let k = 0; k < 20 && !s.status().ready; k++) frame();
+  const chunks = (s as unknown as { chunks: Map<string, { groundRead: number; ground: Float32Array }> }).chunks;
+  // the camera moving (a hand on it): the change boxes decide who reads
+  const moving = (on: boolean) => { (cam as unknown as { changedFrames: number }).changedFrames = on ? 5 : 0; };
+  moving(true);
+  // a tile far away changed: no chunk asks the ground anything
+  level = 11; gv++; boxes = [{ v: gv, w: O[0] + 5000 / KX, e: O[0] + 5500 / KX, n: O[1] - 5000 / KZ, s: O[1] - 5500 / KZ }];
+  asks = 0; frame();
+  assert.equal(asks, 0, 'a change that meets no chunk asks nothing');
+  assert.ok([...chunks.values()].every((c) => c.groundRead === gv) && s.status().ready, 'and every chunk keeps its ground at the new version');
+  assert.ok([...chunks.values()].every((c) => c.ground[0] === 10), '(its ground as it was: nothing there changed)');
+  // a tile over 'here' changed by 1 m: 'here' is read again, 'next' (500 m east, beyond the margin) is not
+  level = 12; gv++; boxes = [...boxes, { v: gv, w: O[0] + 100 / KX, e: O[0] + 200 / KX, n: O[1] - 100 / KZ, s: O[1] - 200 / KZ }];
+  for (let k = 0; k < 20 && !s.status().ready; k++) frame();
+  assert.equal(chunks.get('here')!.ground[0], 12, 'the chunk the change meets is read again');
+  assert.equal(chunks.get('next')!.ground[0], 10, 'the one it does not meet keeps its ground');
+  // the camera rests: the chunk the boxes passed over is checked as before, and the change no box told of (the stub's
+  // ground is 12 everywhere) reaches it
+  moving(false);
+  for (let k = 0; k < 20 && (!s.status().ready || chunks.get('next')!.ground[0] !== 12); k++) frame();
+  assert.equal(chunks.get('next')!.ground[0], 12, 'resting, the chunk passed over is read again: its ground is right');
+  // not known where (an old version, a terrain turned on): every chunk is read again
+  level = 13; gv++; boxes = null;
+  for (let k = 0; k < 20 && !s.status().ready; k++) frame();
+  assert.ok([...chunks.values()].every((c) => c.ground[0] === 13), 'not known where: every chunk read again');
+});
+
 test('road chunk versions reject unknown layouts before interpreting numeric data', async () => {
   const { decodeTile, encodeNumbers } = await import('../src/core/data/loading/chunks/numbers.ts');
   const { AslnutError } = await import('../src/core/world/errors.ts');

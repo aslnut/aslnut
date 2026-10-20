@@ -311,6 +311,8 @@ pub fn assemble(seed: &Seed, d: &Design, h: &Heights, ix: &Index, ln: &Lines, ti
     for (li, bi, line) in &ln.band_lines {
         if *bi != 2 { continue; }
         let m = line.len();
+        // (a degenerate face's band line can come out empty: nothing to draw, and `k % m` must not divide by zero)
+        if m == 0 { continue; }
         let mut run: Vec<[f64; 6]> = Vec::new();
         let mut run_tile = (i32::MIN, i32::MIN);
         let push_run = |run: &mut Vec<[f64; 6]>, pieces: &mut Vec<Piece>, clamp_edges: &mut Vec<Vec<P3>>| { if run.len() > 1 { clamp_edges.push(gentle(run.iter().map(|q| [q[0], q[1], q[2]]).collect(), 0.4)); pieces.push(Piece::Edge { kind: "edge", info: pid, pts: std::mem::take(run) }); } else { run.clear(); } };

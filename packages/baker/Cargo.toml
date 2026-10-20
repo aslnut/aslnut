@@ -1,6 +1,6 @@
 [package]
 name = "aslnut-baker"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "Road baker: designs streets from map lines (curves, cross-sections, junction patterns, one planar partition, heights) and writes aslnut's baked roads pack"
 license = "Apache-2.0"

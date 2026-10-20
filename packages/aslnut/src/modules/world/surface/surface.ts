@@ -237,7 +237,7 @@ export class Surface extends Element<SurfaceProps> {
     const cam = ctx.camera, act = this.active(ctx.s);
     this.ver = act.ver; this.act = act;
     const tk = act.terrain.map((t) => `${t.id}:${t.version}`).join('|');
-    if (tk !== this.terrainKey) { this.terrainKey = tk; this.terrainBumps++; }
+    if (tk !== this.terrainKey) { this.terrainKey = tk; this.terrainBumps++; this.bumpedAt = this.groundVersion; }
     const q = this.qopts();
     // hysteresis while the camera moves (no flicker of levels); none when it is still: a still view always gets
     // the same tiles, whatever the way it came (captures, states, settled frames are exact)
@@ -766,7 +766,16 @@ export class Surface extends Element<SurfaceProps> {
   }
   /** bumped whenever the ground's heights change (tiles' heights in, terrain turned on or off) */
   get groundVersion(): number { return (this.tiles?.heightsVersion ?? 0) + this.terrainBumps; }
-  private terrainBumps = 0; private terrainKey = ''; private zMax = 0;
+  private terrainBumps = 0; private terrainKey = ''; private zMax = 0; private bumpedAt = 0;
+  /** where the ground changed after `v` (of groundVersion): boxes [] when nowhere; null when not known (a terrain
+   *  turned on or off, or older than what the tiles remember: read it all again) */
+  groundChangedSince(v: number): { v: number; w: number; s: number; e: number; n: number }[] | null {
+    if (v >= this.groundVersion) return [];
+    if (v < this.bumpedAt || !this.tiles) return null;
+    // (the tiles count their own versions: the ground's are theirs plus the terrain's bumps, none since bumpedAt)
+    const b = this.tiles.heightsChangedSince(v - this.terrainBumps), k = this.terrainBumps;
+    return b ? b.map((x) => ({ v: x.v + k, w: x.w, s: x.s, e: x.e, n: x.n })) : null;
+  }
   override attribution(): string[] {
     const a = this.act;
     return a ? [...a.imagery.map((i) => i.src.attribution), ...a.terrain.map((t) => t.attribution)] : [];

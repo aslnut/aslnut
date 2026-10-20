@@ -43,6 +43,13 @@ test('tiles: a view is not settled while the ground it falls back on is on its w
   for (const ok of later.splice(0)) ok(new Float32Array(33 * 33));
   await new Promise<void>((ok) => setImmediate(ok)); await frame();
   assert.ok(tiles.heightsVersion > v0, 'their coming bumps the ground\'s version');
+  // where they changed it, in degrees (a reader of the ground reads again only there): the z5 fallbacks' boxes
+  const boxes = tiles.heightsChangedSince(v0)!;
+  assert.ok(boxes.length > 0 && boxes.every((b) => b.v > v0), 'each change after v0 with its box');
+  const z5 = (x: number, y: number) => { const k = 32; return [x / k * 360 - 180, (2 * Math.atan(Math.exp(Math.PI * (1 - (2 * (y + 1)) / k))) - Math.PI / 2) * 180 / Math.PI, (x + 1) / k * 360 - 180, (2 * Math.atan(Math.exp(Math.PI * (1 - (2 * y) / k))) - Math.PI / 2) * 180 / Math.PI]; };
+  const want5 = z5(16, 16);
+  assert.ok(boxes.some((b) => Math.abs(b.w - want5[0]!) < 1e-9 && Math.abs(b.s - want5[1]!) < 1e-9 && Math.abs(b.e - want5[2]!) < 1e-9 && Math.abs(b.n - want5[3]!) < 1e-9), `a box is the z5 tile's, in degrees (${JSON.stringify(boxes[0])})`);
+  assert.deepEqual(tiles.heightsChangedSince(tiles.heightsVersion), [], 'nothing changed after the latest version');
   assert.equal(tiles.settle(want, 'one').done, true, 'settled once they are in');
   tiles.dispose();
 });

@@ -344,6 +344,8 @@ pub fn lines(ix: &Index, d: &Design) -> Lines {
             if bi == 2 && lp.verts.iter().all(|v| v.w.gap < 0.02) && lp.verts.iter().all(|v| v.w.footpath < 0.05) { continue; }
             let raw = band_line(d, lp, *dep);
             let m = raw.len();
+            // (a degenerate loop gives no band line: none kept, so no reader of band_lines meets an empty one)
+            if m == 0 { continue; }
             // valid: on this face's side and as deep as meant
             let ok: Vec<bool> = raw.iter().map(|(p, good, _)| {
                 if !*good { return false; }

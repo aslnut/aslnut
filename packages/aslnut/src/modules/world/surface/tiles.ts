@@ -5,8 +5,11 @@
 // own rise in). Time is the world's clock (ms), never the wall clock: a capture steps it exactly, and `settle` is a
 // pure function of the state.
 import type { Priority } from '../../../core/data/loading/loader.ts';
-import { D, mercY, tileBounds, wrap } from '../../../core/space/geo.ts';
+import { D, mercY, tileBBox, tileBounds, wrap } from '../../../core/space/geo.ts';
 import type { Want } from './quadtree.ts';
+
+/** how many height changes are remembered with their boxes (older: everything is read again) */
+const HLOG = 512;
 
 export const N = 33;            // mesh points per tile side (the shader's N)
 export const REC = 28;          // floats per tile record (7 texels; the 7th: the ground marks' overlay, written by the surface)
@@ -84,6 +87,23 @@ export class TileSet {
   count = 0;
   /** bumped whenever heights change anywhere (draped layers re-read the ground then) */
   heightsVersion = 0;
+  /** where heights changed, by version (the last HLOG of them): what reads the ground can read again only there */
+  private hLog: { v: number; w: number; s: number; e: number; n: number }[] = [];
+  private heightsChanged(e: Entry): void {
+    this.heightsVersion++;
+    // (in degrees: tileBounds gives its north and south as Mercator y)
+    const [w, s, ea, n] = tileBBox(e.z, e.x, e.y);
+    this.hLog.push({ v: this.heightsVersion, w, s, e: ea, n });
+    if (this.hLog.length > HLOG) this.hLog.splice(0, this.hLog.length - HLOG);
+  }
+  /** the boxes whose heights changed after version `v` ([]: none); null when that is older than what is kept (read
+   *  everything again) */
+  heightsChangedSince(v: number): { v: number; w: number; s: number; e: number; n: number }[] | null {
+    if (v >= this.heightsVersion) return [];
+    const first = this.hLog[0];
+    if (!first || first.v > v + 1) return null;
+    return this.hLog.filter((x) => x.v > v);
+  }
   private mid = new Set<number>(); private wanted = new Set<Entry>(); private near = new Set<number>(); private busyNow = new Set<Entry>();
   /** an ancestor of it is shown already (its piece stands in while it loads) */
   ancestorShown(e: Entry): boolean { for (let u = 1; u <= e.z; u++) { const a = this.cache.get(tkey(e.z - u, e.x >> u, e.y >> u)); if (a && a.slot >= 0) return true; } return false; }
@@ -329,7 +349,7 @@ export class TileSet {
     // heights that come with the imagery rise with its fade (no longer than it): the view is complete when the
     // imagery is; heights that come later rise over `fadeH` under a picture already shown
     if (p.heights && !e.heights) { e.hAt = now; e.hDur = over ? this.o.fade : 0; }
-    if (p.heights) this.heightsVersion++;
+    if (p.heights) this.heightsChanged(e);
     e.heights = p.heights; e.pend = null; this.pending.delete(e);
   }
   /** where the camera is going (also between frames: a still view loads it), with room left only: the coarser
@@ -382,7 +402,7 @@ export class TileSet {
           this.keepHeights(e, h);
           if (e.pend?.slot === s) e.pend.heights = true;
           else if (e.slot === s) { e.heights = true; e.hAt = this.now; e.hDur = this.o.fadeH; }
-          this.heightsVersion++;
+          this.heightsChanged(e);
         }, (err: unknown) => {
           if (!this.alive) return;
           e.hBusy = false;

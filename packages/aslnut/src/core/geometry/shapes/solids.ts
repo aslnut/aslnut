@@ -174,9 +174,15 @@ export interface CountedCell { lon: number; lat: number; count: number }
 export interface SolidPicked extends SolidInfo { chunk: string; local: number }
 
 const GN = 51, STEP = 10, KZ = 110574;
-/** a chunk in view nearer than this (m) has its ground read first, up to three a frame whatever it takes: a metre of
- *  ground is a pixel or more there on a phone */
+/** a chunk in view nearer than this (m) has its ground read first, one a frame whatever it takes (more within
+ *  `groundMs`): a metre of ground is a pixel or more there on a phone */
 const GROUND_NEAR = 1500;
+/** a chunk's ground still holds when no probe moved by more than half a pixel at its distance, and never less than
+ *  this (m, true): a finer terrain tile of the same ground interpolates it a little differently, which no one can see */
+const GROUND_HOLDS_M = 0.02;
+/** a changed terrain tile meets a chunk within this (m) round its square: the heights at its edge are interpolated
+ *  from the tile's samples on both sides */
+const GROUND_MARGIN = 40;
 /** a flat ground's grid (every chunk on flat ground shares it: never written) and the grid a read is made in */
 const FLAT = new Float32Array(GN * GN), READ = new Float32Array(GN * GN);
 /** a box in the world (m from the view's centre): least x, y, z, then most */
@@ -232,6 +238,9 @@ interface Chunk {
   glayer: number;
   /** the ground version its grid was last read whole at (groundSeen: checked, a probe may have held it since) */
   groundRead: number;
+  /** stamped at a version by the change boxes alone (no tile there changed, as they tell): checked again once the
+   *  camera rests, so a change no box told of (a tile let go, a level switch) still reaches it */
+  groundSkipped?: boolean;
   /** in view last frame, and how far (m, from the camera's ground point to its square): its ground read in that order;
    *  the frame since it waits for its ground to be checked (its wait over its distance orders those in view: none waits
    *  long behind nearer ones whose ground keeps moving) */
@@ -715,11 +724,14 @@ export class Solids extends Element<SolidsProps> {
   private groundHolds(ctx: FrameContext, c: Chunk): boolean {
     if (!c.groundFull) return false;
     const kx = kxOf(c.spec.origin[1]), gr = c.ground;
+    // half a pixel at the chunk's distance (m on screen), as true metres of height
+    const cam = ctx.camera as { fov?: number; height?: number }, px = (2 * Math.max(1, c.away) * Math.tan((cam.fov ?? 0.87) / 2)) / Math.max(1, cam.height ?? 800);
+    const tol = Math.max(GROUND_HOLDS_M, (0.5 * px) / Math.max(1e-6, ctx.world.exaggeration || 1));
     const n = Math.min(GN, Math.ceil(Math.min(500, c.spec.side ?? 500) / STEP) + 2), q = (n - 1) / 4;
     for (let j = 0; j < n; j += q) for (let i = 0; i < n; i += q) {
       const gi = Math.round(i), gj = Math.round(j);
       const h = ctx.world.heightAt(c.spec.origin[0] + (c.spec.at[0] + gi * STEP) / kx, c.spec.origin[1] - (c.spec.at[1] + gj * STEP) / KZ);
-      if (!(Math.abs(h - gr[gj * GN + gi]!) < 1e-3)) return false;
+      if (!(Math.abs(h - gr[gj * GN + gi]!) < tol)) return false;
     }
     return true;
   }
@@ -732,9 +744,22 @@ export class Solids extends Element<SolidsProps> {
   private groundFrame = 0;
   private groundUnder(ctx: FrameContext, gv: number): void {
     let pend: Chunk[] | null = null;
+    // where the ground changed since the oldest version a chunk holds (null: not known, every chunk is checked). Only
+    // while the camera moves: resting, every chunk the boxes passed over is checked as before (probe, then whole)
+    const moving = !!(ctx.camera as { moving?: boolean }).moving;
+    const since = moving && ctx.world.groundChangedSince ? (v: number) => ctx.world.groundChangedSince!(v) : null;
+    let minRead = Infinity;
+    for (const c of this.chunks.values()) if (c.groundRead !== gv && c.groundRead >= 0) minRead = Math.min(minRead, c.groundRead);
+    const changed = since && minRead < Infinity ? since(minRead) : null;
     for (const c of this.chunks.values()) {
-      if (c.groundRead === gv) continue;
+      if (c.groundRead === gv && !(c.groundSkipped && !moving)) continue;
       if (c.spec.free) { c.groundSeen = c.groundRead = gv; c.groundFull = true; continue; }
+      // (resting: one the boxes passed over is checked now, from a version before this one)
+      if (c.groundRead === gv) { c.groundSkipped = false; c.groundRead = c.groundSeen = gv - 1; }
+      // a chunk read whole whose square no changed tile meets keeps its ground: nothing to ask. Also one whose ground
+      // is not all known yet (a part over terrain not loaded: off screen, behind the eye): read again only when a tile
+      // arrives over it, not at every tile anywhere (it can never hold a probe: it was read again whole every time)
+      if (changed && c.groundRead >= 0 && !this.groundMeets(c, changed, c.groundRead)) { c.groundSeen = c.groundRead = gv; c.groundSkipped = true; c.waits = 0; continue; }
       (pend ??= []).push(c);
     }
     if (!pend) return;
@@ -751,7 +776,7 @@ export class Solids extends Element<SolidsProps> {
     for (const c of pend) {
       if (rank(c) !== 0) break;
       if (this.groundHolds(ctx, c)) { c.groundSeen = gv; c.waits = 0; continue; }
-      if (reads >= 3 && performance.now() - t0 > ms) continue;
+      if (reads >= 1 && performance.now() - t0 > ms) continue;
       c.groundSeen = c.groundRead = gv; c.waits = 0; this.readGround(ctx, c); reads++;
     }
     let done = 0;
@@ -759,9 +784,18 @@ export class Solids extends Element<SolidsProps> {
     for (const c of pend.filter((x) => x.groundRead !== gv && rank(x) !== 0).sort(order)) {
       if ((done || reads) && performance.now() - t0 > ms) break;
       done++;
-      if (c.groundSeen !== gv && this.groundHolds(ctx, c)) { c.groundSeen = gv; c.waits = 0; continue; }
+      // (a probe that holds puts it last; with time left in the frame it is read whole now all the same)
+      if (c.groundSeen !== gv && this.groundHolds(ctx, c)) { c.groundSeen = gv; c.waits = 0; if (performance.now() - t0 > ms) continue; }
       c.groundSeen = c.groundRead = gv; c.waits = 0; this.readGround(ctx, c);
     }
+  }
+  /** does a box of ground changed after the version the chunk was read at meet its square (with GROUND_MARGIN)? */
+  private groundMeets(c: Chunk, boxes: { v?: number; w: number; s: number; e: number; n: number }[], read: number): boolean {
+    const kx = kxOf(c.spec.origin[1]), side = Math.min(500, c.spec.side ?? 500) + 2 * STEP;
+    const w = c.spec.origin[0] + (c.spec.at[0] - GROUND_MARGIN) / kx, e = c.spec.origin[0] + (c.spec.at[0] + side + GROUND_MARGIN) / kx;
+    const n = c.spec.origin[1] - (c.spec.at[1] - GROUND_MARGIN) / KZ, s = c.spec.origin[1] - (c.spec.at[1] + side + GROUND_MARGIN) / KZ;
+    for (const b of boxes) { if (b.v !== undefined && b.v <= read) continue; if (b.w <= e && b.e >= w && b.s <= n && b.n >= s) return true; }
+    return false;
   }
   /** read a chunk's ground grid from the world's terrain (NaN where it is not known yet: kept from before, or 0) */
   private readGround(ctx: FrameContext, c: Chunk): void {
